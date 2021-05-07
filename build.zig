@@ -93,4 +93,14 @@ pub fn build(b: *Builder) void {
     // GLFW
     nyancoreLib.linkSystemLibrary("glfw");
     nyancoreLib.addPackagePath("glfw", "third_party/glfw-zig/glfw.zig");
+
+    // Dear ImGui
+    const imguiLib = b.addStaticLibrary("imgui", null);
+    imguiLib.linkLibC();
+    imguiLib.addIncludeDir("third_party/cimgui/");
+    imguiLib.addIncludeDir("third_party/cimgui/imgui");
+    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui.cpp", &[_][]const u8{});
+    imguiLib.addCSourceFile("third_party/cimgui/cimgui.cpp", &[_][]const u8{});
+    nyancoreLib.step.dependOn(&imguiLib.step);
+    nyancoreLib.linkLibrary(imguiLib);
 }
