@@ -73,10 +73,13 @@ pub const ResourceGenStep = struct {
 
 pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
+
     const nyancoreLib = b.addStaticLibrary("nyancore", "src/main.zig");
     nyancoreLib.setBuildMode(mode);
+    nyancoreLib.linkLibC();
     nyancoreLib.install();
 
+    // Vulkan
     const gen = vkgen.VkGenerateStep.init(b, "resources/vk.xml", "vk.zig");
     nyancoreLib.step.dependOn(&gen.step);
     nyancoreLib.addPackage(gen.package);
@@ -86,4 +89,8 @@ pub fn build(b: *Builder) void {
     //res.addShader("ui_frag", "resources/shaders/ui.frag");
     nyancoreLib.step.dependOn(&res.step);
     nyancoreLib.addPackage(res.package);
+
+    // GLFW
+    nyancoreLib.linkSystemLibrary("glfw");
+    nyancoreLib.addPackagePath("glfw", "third_party/glfw-zig/glfw.zig");
 }
