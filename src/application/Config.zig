@@ -1,30 +1,49 @@
 const Allocator = std.mem.Allocator;
 const std = @import("std");
 
+const BufMap = std.BufMap;
+const Entry = std.StringHashMap([]const u8).Entry;
+
 pub const Config = struct {
     allocator: *Allocator,
     appname: []const u8,
-    map: std.AutoHashMap([]const u8, []const u8),
+    config_file: []const u8,
+    map: BufMap,
 
-    pub fn init(allocator: *Allocator, appname: []const u8) Config {
+    pub fn init(allocator: *Allocator, appname: []const u8, config_file: []const u8) Config {
         return Config{
             .allocator = allocator,
             .appname = appname,
-            .map = std.AutoHashMap([]const u8, []const u8).init(allocator),
+            .config_file = config_file,
+            .map = BufMap.init(allocator),
         };
     }
 
     pub fn deinit(self: *Config) void {
-        var it = self.map.iterator();
-        while (it.next()) |entry| {
-            self.allocator.free(entry.key);
-            self.allocator.free(entry.value);
-        }
-
         self.map.deinit();
     }
 
-    pub fn loadConfig(self: *Config, config_file: []const u8) !void {
+    pub fn load(self: *Config) !void {
+        const config_path: []const u8 = try self.getValidConfigFilePath();
+        defer self.allocator.free(config_path);
+
+        const file: std.fs.File = try std.fs.createFileAbsolute(config_path, .{ .read = true, .truncate = false });
+        defer file.close();
+
+        try self.parse(file);
+    }
+
+    pub fn flush(self: *Config) !void {
+        const config_path: []const u8 = try self.getValidConfigFilePath();
+        defer self.allocator.free(config_path);
+
+        const file: std.fs.File = try std.fs.createFileAbsolute(config_path, .{ .read = false, .truncate = true });
+        defer file.close();
+
+        try self.write(file);
+    }
+
+    fn getValidConfigFilePath(self: *Config) ![]const u8 {
         const dir_path: []const u8 = try std.fs.getAppDataDir(self.allocator, self.appname);
         defer self.allocator.free(dir_path);
 
@@ -33,16 +52,11 @@ pub const Config = struct {
             else => return err,
         };
 
-        const config_path: []const u8 = std.fs.path.join(self.allocator, &[_][]const u8{ dir_path, config_file }) catch unreachable;
-        defer self.allocator.free(config_path);
-
-        const file: std.fs.File = try std.fs.createFileAbsolute(config_path, .{ .read = true, .truncate = false });
-        defer file.close();
-
-        try self.parseConfig(file);
+        const config_path: []const u8 = std.fs.path.join(self.allocator, &[_][]const u8{ dir_path, self.config_file }) catch unreachable;
+        return config_path;
     }
 
-    fn parseConfig(self: *Config, config_file: std.fs.File) !void {
+    fn parse(self: *Config, config_file: std.fs.File) !void {
         const reader: std.fs.File.Reader = config_file.reader();
 
         var buffer: [1024]u8 = undefined;
@@ -61,25 +75,67 @@ pub const Config = struct {
             const value: []const u8 = it.rest();
             std.mem.copy(u8, groupBuffer[groupLen..], name);
 
-            const nameDupe: []const u8 = try self.allocator.dupe(u8, groupBuffer[0..(groupLen + name.len)]);
-            const valueDupe: []const u8 = try self.allocator.dupe(u8, value);
+            try self.map.set(groupBuffer[0..(groupLen + name.len)], value);
+        }
+    }
 
-            try self.map.putNoClobber(nameDupe, valueDupe);
+    fn compareEntries(context: void, left: Entry, right: Entry) bool {
+        return std.mem.lessThan(u8, left.key, right.key);
+    }
+
+    fn write(self: *Config, config_file: std.fs.File) !void {
+        const writer: std.fs.File.Writer = config_file.writer();
+
+        var buffer: []Entry = try self.allocator.alloc(Entry, self.map.count());
+        defer self.allocator.free(buffer);
+
+        var ind: usize = 0;
+        var it = self.map.iterator();
+        while (it.next()) |entry| {
+            buffer[ind] = entry.*;
+            ind += 1;
+        }
+
+        std.sort.sort(Entry, buffer, {}, compareEntries);
+
+        var current_group: []const u8 = undefined;
+        var current_group_len: usize = 0;
+        for (buffer) |entry| {
+            const group_end: usize = std.mem.indexOf(u8, entry.key, "_") orelse 0;
+            if ((group_end != current_group_len) or !std.mem.eql(u8, current_group, entry.key[0..group_end])) {
+                current_group_len = group_end;
+                current_group = entry.key[0..group_end];
+                try writer.print("[{}]\n", .{current_group});
+            }
+
+            try writer.print("{}={}\n", .{
+                entry.key[(group_end + 1)..],
+                entry.value,
+            });
         }
     }
 };
 
-test "load config" {
-    var config: Config = Config.init(std.testing.allocator, "nyancore");
-    defer config.deinit();
+test "write and load config" {
+    // Write
+    {
+        var write_config: Config = Config.init(std.testing.allocator, "nyancore", "test.conf");
+        defer write_config.deinit();
 
-    try config.loadConfig("test.conf");
+        try write_config.map.set("test0_key0", "key 0 value");
+        try write_config.map.set("test1_key1", "key 1 value");
 
-    const stdout = std.io.getStdOut().writer();
-    try stdout.print("\n", .{});
+        try write_config.flush();
+    }
 
-    var it = config.map.iterator();
-    while (it.next()) |entry| {
-        try stdout.print("{}\n", .{entry});
+    // Read
+    {
+        var read_config: Config = Config.init(std.testing.allocator, "nyancore", "test.conf");
+        defer read_config.deinit();
+
+        try read_config.load();
+
+        std.testing.expect(std.mem.eql(u8, read_config.map.get("test0_key0") orelse "", "key 0 value"));
+        std.testing.expect(std.mem.eql(u8, read_config.map.get("test1_key1") orelse "", "key 1 value"));
     }
 }

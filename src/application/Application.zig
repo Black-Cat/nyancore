@@ -21,8 +21,12 @@ pub const Application = struct {
     }
 
     pub fn start(self: *Application) void {
-        config.init(self.alocator, self.name);
-        config.loadConfig(self.name + ".conf");
+        config.init(self.alocator, self.name, self.name + ".conf");
+        defer config.deinit();
+
+        config.loadConfig();
+
+        config.flushConfig();
     }
 
     fn glfwErrorCallback(errorCode: i32, description: []const u8) void {}
