@@ -1,4 +1,4 @@
-usingnamespace @import("Config.zig");
+usingnamespace @import("config.zig");
 
 const imgui_mouse_button_count = 5;
 
