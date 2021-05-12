@@ -2,9 +2,7 @@
 [submodule "third_party/vulkan-zig"]
 	path = third_party/vulkan-zig
 	url = https://github.com/Snektron/vulkan-zig.git
-[submodule "third_party/glfw-zig"]
-	path = third_party/glfw-zig
-	url = git@github.com:ziglang-contrib/glfw.git
 [submodule "third_party/cimgui"]
 	path = third_party/cimgui
 	url = git@github.com:cimgui/cimgui.git
+

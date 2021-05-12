@@ -10,13 +10,11 @@ pub const Config = struct {
     config_file: []const u8,
     map: BufMap,
 
-    pub fn init(allocator: *Allocator, appname: []const u8, config_file: []const u8) Config {
-        return Config{
-            .allocator = allocator,
-            .appname = appname,
-            .config_file = config_file,
-            .map = BufMap.init(allocator),
-        };
+    pub fn init(self: *Config, allocator: *Allocator, appname: []const u8, config_file: []const u8) void {
+        self.allocator = allocator;
+        self.appname = appname;
+        self.config_file = config_file;
+        self.map = BufMap.init(allocator);
     }
 
     pub fn deinit(self: *Config) void {
@@ -119,7 +117,8 @@ pub const Config = struct {
 test "write and load config" {
     // Write
     {
-        var write_config: Config = Config.init(std.testing.allocator, "nyancore", "test.conf");
+        var write_config: Config = undefined;
+        write_config.init(std.testing.allocator, "nyancore", "test.conf");
         defer write_config.deinit();
 
         try write_config.map.set("test0_key0", "key 0 value");
@@ -130,7 +129,8 @@ test "write and load config" {
 
     // Read
     {
-        var read_config: Config = Config.init(std.testing.allocator, "nyancore", "test.conf");
+        var read_config: Config = undefined;
+        read_config.init(std.testing.allocator, "nyancore", "test.conf");
         defer read_config.deinit();
 
         try read_config.load();

@@ -1,5 +1,6 @@
 const std = @import("std");
 const vkgen = @import("third_party/vulkan-zig/generator/index.zig");
+const builtin = @import("builtin");
 
 const Builder = std.build.Builder;
 const Step = std.build.Step;
@@ -76,13 +77,34 @@ pub fn build(b: *Builder) void {
 
     const nyancoreLib = b.addStaticLibrary("nyancore", "src/main.zig");
     nyancoreLib.setBuildMode(mode);
-    nyancoreLib.linkLibC();
-    nyancoreLib.install();
+
+    var test_app = b.addExecutable("test_app", "src/test_app.zig");
+    test_app.setBuildMode(mode);
+    test_app.linkLibrary(nyancoreLib);
+    test_app.linkSystemLibrary("c");
+    test_app.linkSystemLibrary("glfw");
+    test_app.step.dependOn(&nyancoreLib.step);
+    test_app.install();
+
+    const use_vulkan_sdk = b.option(bool, "use_vulkan_sdk", "Use vulkan SDK") orelse true;
+    nyancoreLib.addBuildOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
 
     // Vulkan
     const gen = vkgen.VkGenerateStep.init(b, "resources/vk.xml", "vk.zig");
     nyancoreLib.step.dependOn(&gen.step);
     nyancoreLib.addPackage(gen.package);
+    if (use_vulkan_sdk) {
+        const vulkan_sdk_path = std.os.getenv("VULKAN_SDK") orelse {
+            std.debug.print("[ERR] Can't get VULKAN_SDK environment variable", .{});
+            return;
+        };
+
+        const vulkan_sdk_include_path = std.fs.path.join(b.allocator, &[_][]const u8{ vulkan_sdk_path, "include" }) catch unreachable;
+        defer b.allocator.free(vulkan_sdk_include_path);
+
+        nyancoreLib.addIncludeDir(vulkan_sdk_include_path);
+        test_app.addIncludeDir(vulkan_sdk_include_path);
+    }
 
     const res = ResourceGenStep.init(b, "resources.zig");
     //res.addShader("ui_vert", "resources/shaders/ui.vert");
@@ -91,16 +113,32 @@ pub fn build(b: *Builder) void {
     nyancoreLib.addPackage(res.package);
 
     // GLFW
+    nyancoreLib.linkSystemLibrary("c");
     nyancoreLib.linkSystemLibrary("glfw");
-    nyancoreLib.addPackagePath("glfw", "third_party/glfw-zig/glfw.zig");
 
     // Dear ImGui
+    const imguiFlags = &[_][]const u8{};
     const imguiLib = b.addStaticLibrary("imgui", null);
-    imguiLib.linkLibC();
+    imguiLib.linkSystemLibrary("c");
+    imguiLib.linkSystemLibrary("c++");
     imguiLib.addIncludeDir("third_party/cimgui/");
     imguiLib.addIncludeDir("third_party/cimgui/imgui");
-    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui.cpp", &[_][]const u8{});
-    imguiLib.addCSourceFile("third_party/cimgui/cimgui.cpp", &[_][]const u8{});
+    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui.cpp", imguiFlags);
+    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_demo.cpp", imguiFlags);
+    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_draw.cpp", imguiFlags);
+    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_tables.cpp", imguiFlags);
+    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_widgets.cpp", imguiFlags);
+    imguiLib.addCSourceFile("third_party/cimgui/cimgui.cpp", imguiFlags);
+
     nyancoreLib.step.dependOn(&imguiLib.step);
     nyancoreLib.linkLibrary(imguiLib);
+    test_app.addIncludeDir("third_party/cimgui/");
+    test_app.linkLibrary(imguiLib);
+
+    nyancoreLib.install();
+
+    const run_target = b.step("run", "Run test app");
+    const run = test_app.run();
+    run.step.dependOn(b.getInstallStep());
+    run_target.dependOn(&run.step);
 }

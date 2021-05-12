@@ -1,3 +1,1 @@
-usingnamespace @import("c.zig");
-
-usingnamespace @import("application/Application.zig");
+pub usingnamespace @import("application/application.zig");
