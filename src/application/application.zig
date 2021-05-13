@@ -1,28 +1,17 @@
 const builtin = @import("builtin");
-const c = @import("c.zig");
+const c = @import("../c.zig");
 const std = @import("std");
 
 const Allocator = std.mem.Allocator;
 const Config = @import("config.zig").Config;
-pub const System = @import("system.zig").System;
+pub const System = @import("../system/system.zig").System;
+const printError = @import("print_error.zig").printError;
 
 const imgui_mouse_button_count: usize = 5;
 
-pub fn printError(comptime module: []const u8, error_message: []const u8) void {
-    @setCold(true);
-
-    const stdout = std.io.getStdOut().writer();
-    stdout.print("\x1b[1;31m{} ERROR:\x1b[0m {}\n", .{ module, error_message }) catch unreachable;
-
-    if (builtin.mode == .Debug) {
-        @panic(error_message);
-    }
-}
-
 const ApplicationError = error{
-    GLFW_FAIL_TO_INIT,
-    GLFW_FAIL_TO_CREATE_WINDOW,
-    GLFW_VULKAN_NOT_SUPPORTED,
+    GLFW_FAILED_TO_INIT,
+    GLFW_FAILED_TO_CREATE_WINDOW,
 };
 
 pub const Application = struct {
@@ -30,10 +19,10 @@ pub const Application = struct {
     config_file: []const u8,
     name: []const u8,
     mouse_just_pressed: [imgui_mouse_button_count]bool,
-    systems: []System,
+    systems: []*System,
     window: *c.GLFWwindow,
 
-    pub fn init(self: *Application, comptime name: []const u8, allocator: *Allocator, systems: []System) void {
+    pub fn init(self: *Application, comptime name: []const u8, allocator: *Allocator, systems: []*System) void {
         self.allocator = allocator;
         self.config_file = name ++ ".conf";
         self.mouse_just_pressed = [_]bool{false} ** imgui_mouse_button_count;
@@ -53,7 +42,7 @@ pub const Application = struct {
 
         if (c.glfwInit() == c.GLFW_FALSE) {
             printError("GLFW", "Couldn't initialize GLFW");
-            return error.GLFW_FAIL_TO_INIT;
+            return error.GLFW_FAILED_TO_INIT;
         }
         defer c.glfwTerminate();
 
@@ -63,7 +52,7 @@ pub const Application = struct {
         c.glfwWindowHint(c.GLFW_MAXIMIZED, c.GLFW_TRUE);
         self.window = c.glfwCreateWindow(640, 480, @ptrCast([*c]const u8, self.name), null, null) orelse {
             printError("GLFW", "Couldn't create window");
-            return error.GLFW_FAIL_TO_CREATE_WINDOW;
+            return error.GLFW_FAILED_TO_CREATE_WINDOW;
         };
         defer c.glfwDestroyWindow(self.window);
 
@@ -79,10 +68,10 @@ pub const Application = struct {
         }
 
         for (self.systems) |system| {
-            system.init(self.allocator);
+            system.init(system);
         }
         defer for (self.systems) |system| {
-            system.deinit();
+            system.deinit(system);
         };
         // TODO: Initialize Renderer
         // TODO: Initialize Vulkan Resources
@@ -93,7 +82,7 @@ pub const Application = struct {
 
         var prev_time: f64 = c.glfwGetTime();
 
-        while (c.glfwWindowShouldClose(self.window) == c.GL_FALSE) {
+        while (c.glfwWindowShouldClose(self.window) == c.GLFW_FALSE) {
             c.glfwPollEvents();
 
             self.updateMousePosAndButtons();
@@ -103,7 +92,7 @@ pub const Application = struct {
             prev_time = now_time;
 
             for (self.systems) |system| {
-                system.update(elapsed);
+                system.update(system, elapsed);
             }
         }
 

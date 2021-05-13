@@ -2,6 +2,8 @@
 [submodule "third_party/vulkan-zig"]
 	path = third_party/vulkan-zig
 	url = https://github.com/Snektron/vulkan-zig.git
+        branch = zig-0.7.1-compat
+
 [submodule "third_party/cimgui"]
 	path = third_party/cimgui
 	url = git@github.com:cimgui/cimgui.git

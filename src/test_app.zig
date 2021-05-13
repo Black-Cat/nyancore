@@ -2,15 +2,18 @@ pub usingnamespace @import("main.zig");
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const DefaultRenderer = @import("renderer/default_renderer.zig").DefaultRenderer;
 
 fn test_init(allocator: *Allocator) void {}
 fn test_deinit() void {}
 fn test_update(elapsed_time: f64) void {}
 
 pub fn main() !void {
-    const systems: []System = &[_]System{
-        System.create("Test System", test_init, test_deinit, test_update),
-        System.create("Test System", test_init, test_deinit, test_update),
+    var renderer: DefaultRenderer = undefined;
+    renderer.init("Test Renderer", std.testing.allocator);
+
+    const systems: []*System = &[_]*System{
+        &renderer.system,
     };
 
     var application: Application = undefined;

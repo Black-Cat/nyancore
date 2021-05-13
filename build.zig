@@ -93,6 +93,7 @@ pub fn build(b: *Builder) void {
     const gen = vkgen.VkGenerateStep.init(b, "resources/vk.xml", "vk.zig");
     nyancoreLib.step.dependOn(&gen.step);
     nyancoreLib.addPackage(gen.package);
+    test_app.addPackage(gen.package);
     if (use_vulkan_sdk) {
         const vulkan_sdk_path = std.os.getenv("VULKAN_SDK") orelse {
             std.debug.print("[ERR] Can't get VULKAN_SDK environment variable", .{});
