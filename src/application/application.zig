@@ -17,12 +17,12 @@ const ApplicationError = error{
 pub const Application = struct {
     allocator: *Allocator,
     config_file: []const u8,
-    name: []const u8,
+    name: [:0]const u8,
     mouse_just_pressed: [imgui_mouse_button_count]bool,
     systems: []*System,
     window: *c.GLFWwindow,
 
-    pub fn init(self: *Application, comptime name: []const u8, allocator: *Allocator, systems: []*System) void {
+    pub fn init(self: *Application, comptime name: [:0]const u8, allocator: *Allocator, systems: []*System) void {
         self.allocator = allocator;
         self.config_file = name ++ ".conf";
         self.mouse_just_pressed = [_]bool{false} ** imgui_mouse_button_count;
@@ -68,7 +68,7 @@ pub const Application = struct {
         }
 
         for (self.systems) |system| {
-            system.init(system);
+            system.init(system, self);
         }
         defer for (self.systems) |system| {
             system.deinit(system);
