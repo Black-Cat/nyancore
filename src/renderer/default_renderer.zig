@@ -31,6 +31,8 @@ pub const DefaultRenderer = struct {
 
     fn system_deinit(system: *System) void {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
+
+        self.context.deinit();
     }
 
     fn system_update(system: *System, elapsed_time: f64) void {

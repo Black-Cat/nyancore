@@ -24,8 +24,12 @@ const BaseDispatch = struct {
 const InstanceDispatch = struct {
     vkCreateDebugUtilsMessengerEXT: vk.PfnCreateDebugUtilsMessengerEXT,
     vkCreateDevice: vk.PfnCreateDevice,
+    vkDestroyDebugUtilsMessengerEXT: vk.PfnDestroyDebugUtilsMessengerEXT,
+    vkDestroyInstance: vk.PfnDestroyInstance,
+    vkDestroySurfaceKHR: vk.PfnDestroySurfaceKHR,
     vkEnumerateDeviceExtensionProperties: vk.PfnEnumerateDeviceExtensionProperties,
     vkEnumeratePhysicalDevices: vk.PfnEnumeratePhysicalDevices,
+    vkGetDeviceProcAddr: vk.PfnGetDeviceProcAddr,
     vkGetPhysicalDeviceMemoryProperties: vk.PfnGetPhysicalDeviceMemoryProperties,
     vkGetPhysicalDeviceQueueFamilyProperties: vk.PfnGetPhysicalDeviceQueueFamilyProperties,
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR: vk.PfnGetPhysicalDeviceSurfaceCapabilitiesKHR,
@@ -36,6 +40,8 @@ const InstanceDispatch = struct {
 };
 
 const DeviceDispatch = struct {
+    vkDestroyDevice: vk.PfnDestroyDevice,
+    vkGetDeviceQueue: vk.PfnGetDeviceQueue,
     usingnamespace vk.DeviceWrapper(@This());
 };
 
@@ -117,6 +123,10 @@ pub const VulkanContext = struct {
     family_indices: QueueFamilyIndices,
     device: vk.Device,
 
+    graphics_queue: vk.Queue,
+    present_queue: vk.Queue,
+    compute_queue: vk.Queue,
+
     pub fn init(self: *VulkanContext, allocator: *Allocator, app: *Application) !void {
         self.allocator = allocator;
 
@@ -126,18 +136,21 @@ pub const VulkanContext = struct {
             printVulkanError("Error during instance creation", err, self.allocator);
             return err;
         };
+        errdefer self.vki.destroyInstance(self.instance, null);
         self.vki = try InstanceDispatch.load(self.instance, c.glfwGetInstanceProcAddress);
 
         self.createSurface(app.window) catch |err| {
             printVulkanError("Error during surface creation", err, self.allocator);
             return err;
         };
+        errdefer self.vki.destroySurfaceKHR(self.instance, self.surface, null);
 
         if (build_config.use_vulkan_sdk) {
             self.setupDebugMessenger() catch |err| {
                 printVulkanError("Error setting up debug messenger", err, self.allocator);
                 return err;
             };
+            errdefer self.vki.destroyDebugUtilsMessengerEXT(self.instance, self.debug_messenger, null);
         }
 
         self.pickPhysicalDevice() catch |err| {
@@ -148,6 +161,24 @@ pub const VulkanContext = struct {
             printVulkanError("Error creating logical device", err, self.allocator);
             return err;
         };
+
+        self.vkd = try DeviceDispatch.load(self.device, self.vki.vkGetDeviceProcAddr);
+        errdefer self.vkd.destroyDevice(self.device, null);
+
+        self.graphics_queue = self.vkd.getDeviceQueue(self.device, self.family_indices.graphics_family, 0);
+        self.present_queue = self.vkd.getDeviceQueue(self.device, self.family_indices.present_family, 0);
+        self.compute_queue = self.vkd.getDeviceQueue(self.device, self.family_indices.compute_family, 0);
+    }
+
+    pub fn deinit(self: *VulkanContext) void {
+        self.vkd.destroyDevice(self.device, null);
+
+        if (build_config.use_vulkan_sdk) {
+            self.vki.destroyDebugUtilsMessengerEXT(self.instance, self.debug_messenger, null);
+        }
+
+        self.vki.destroySurfaceKHR(self.instance, self.surface, null);
+        self.vki.destroyInstance(self.instance, null);
     }
 
     fn createInstance(self: *VulkanContext, app_name: [:0]const u8) !void {
