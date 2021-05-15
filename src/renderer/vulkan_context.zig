@@ -11,6 +11,10 @@ const required_device_extensions: [1][:0]const u8 = [_][:0]const u8{
     "VK_KHR_swapchain",
 };
 
+const validation_layers: [1][:0]const u8 = [_][:0]const u8{
+    "VK_LAYER_KHRONOS_validation",
+};
+
 const BaseDispatch = struct {
     vkCreateInstance: vk.PfnCreateInstance,
     vkEnumerateInstanceLayerProperties: vk.PfnEnumerateInstanceLayerProperties,
@@ -19,6 +23,7 @@ const BaseDispatch = struct {
 
 const InstanceDispatch = struct {
     vkCreateDebugUtilsMessengerEXT: vk.PfnCreateDebugUtilsMessengerEXT,
+    vkCreateDevice: vk.PfnCreateDevice,
     vkEnumerateDeviceExtensionProperties: vk.PfnEnumerateDeviceExtensionProperties,
     vkEnumeratePhysicalDevices: vk.PfnEnumeratePhysicalDevices,
     vkGetPhysicalDeviceMemoryProperties: vk.PfnGetPhysicalDeviceMemoryProperties,
@@ -32,19 +37,6 @@ const InstanceDispatch = struct {
 
 const DeviceDispatch = struct {
     usingnamespace vk.DeviceWrapper(@This());
-};
-
-const VulkanError = error{
-    ExtensionNotPresent,
-    HostAllocationError,
-    IncompatibleDriver,
-    InitializationFailed,
-    LayerNotPresent,
-    OutOfDeviceMemory,
-    OutOfHostMemory,
-    SurfaceLostKHR,
-    Unknown,
-    ValidationLayerNotSupported,
 };
 
 const SwapchainSupportDetails = struct {
@@ -69,11 +61,29 @@ const QueueFamilyIndices = struct {
     }
 };
 
+const VulkanError = error{
+    DeviceLost,
+    ExtensionNotPresent,
+    FeatureNotPresent,
+    HostAllocationError,
+    IncompatibleDriver,
+    InitializationFailed,
+    LayerNotPresent,
+    OutOfDeviceMemory,
+    OutOfHostMemory,
+    SurfaceLostKHR,
+    TooManyObjects,
+    Unknown,
+    ValidationLayerNotSupported,
+};
+
 pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allocator: *Allocator) void {
     @setCold(true);
 
     const vulkan_error_message: []const u8 = switch (err) {
+        error.DeviceLost => "Device lost",
         error.ExtensionNotPresent => "Extension not present",
+        error.FeatureNotPresent => "Feature not present",
         error.HostAllocationError => "Error during allocation on host",
         error.IncompatibleDriver => "Incompatible driver",
         error.InitializationFailed => "Initialization failed",
@@ -81,6 +91,7 @@ pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allo
         error.OutOfDeviceMemory => "Out of device memory",
         error.OutOfHostMemory => "Out of host memory",
         error.SurfaceLostKHR => "Surface lost",
+        error.TooManyObjects => "Too many objects",
         error.Unknown => "Unknown error",
         error.ValidationLayerNotSupported => "Validation layer not supported",
     };
@@ -103,22 +114,40 @@ pub const VulkanContext = struct {
     debug_messenger: vk.DebugUtilsMessengerEXT,
     physical_device: vk.PhysicalDevice,
     memory_properties: vk.PhysicalDeviceMemoryProperties,
+    family_indices: QueueFamilyIndices,
+    device: vk.Device,
 
     pub fn init(self: *VulkanContext, allocator: *Allocator, app: *Application) !void {
         self.allocator = allocator;
 
         self.vkb = try BaseDispatch.load(c.glfwGetInstanceProcAddress);
 
-        self.createInstance(app.name) catch |err| printVulkanError("Error during instance creation", err, self.allocator);
+        self.createInstance(app.name) catch |err| {
+            printVulkanError("Error during instance creation", err, self.allocator);
+            return err;
+        };
         self.vki = try InstanceDispatch.load(self.instance, c.glfwGetInstanceProcAddress);
 
-        self.createSurface(app.window) catch |err| printVulkanError("Error during surface creation", err, self.allocator);
+        self.createSurface(app.window) catch |err| {
+            printVulkanError("Error during surface creation", err, self.allocator);
+            return err;
+        };
 
         if (build_config.use_vulkan_sdk) {
-            self.setupDebugMessenger() catch |err| printVulkanError("Error setting up debug messenger", err, self.allocator);
+            self.setupDebugMessenger() catch |err| {
+                printVulkanError("Error setting up debug messenger", err, self.allocator);
+                return err;
+            };
         }
 
-        self.pickPhysicalDevice() catch |err| printVulkanError("Error picking physical device", err, self.allocator);
+        self.pickPhysicalDevice() catch |err| {
+            printVulkanError("Error picking physical device", err, self.allocator);
+            return err;
+        };
+        self.createLogicalDevice() catch |err| {
+            printVulkanError("Error creating logical device", err, self.allocator);
+            return err;
+        };
     }
 
     fn createInstance(self: *VulkanContext, app_name: [:0]const u8) !void {
@@ -156,7 +185,6 @@ pub const VulkanContext = struct {
             extensions[i] = glfw_extensions[i];
         }
 
-        const validation_layer: [*:0]const u8 = "VK_LAYER_KHRONOS_validation";
         if (build_config.use_vulkan_sdk) {
             extensions[i] = "VK_EXT_debug_utils";
         }
@@ -165,8 +193,8 @@ pub const VulkanContext = struct {
             .p_application_info = &app_info,
             .enabled_extension_count = extensions_count,
             .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, extensions),
-            .enabled_layer_count = if (build_config.use_vulkan_sdk) 1 else 0,
-            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layer) else null,
+            .enabled_layer_count = if (build_config.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
+            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else null,
             .flags = .{},
         };
 
@@ -198,7 +226,6 @@ pub const VulkanContext = struct {
         const create_info: vk.DebugUtilsMessengerCreateInfoEXT = .{
             .flags = .{},
             .message_severity = .{
-                //.verbose_bit_ext = true,
                 .warning_bit_ext = true,
                 .error_bit_ext = true,
             },
@@ -386,6 +413,7 @@ pub const VulkanContext = struct {
             if (self.isDeviceSuitable(&device)) {
                 self.physical_device = device;
                 self.memory_properties = self.vki.getPhysicalDeviceMemoryProperties(self.physical_device);
+                self.family_indices = self.findQueueFamilyIndices(&self.physical_device) catch unreachable;
                 return;
             } else |err| {
                 printVulkanError("Error checking physical device suitabilty", err, self.allocator);
@@ -397,6 +425,50 @@ pub const VulkanContext = struct {
         return error.Unknown;
     }
 
+    fn createLogicalDevice(self: *VulkanContext) !void {
+        var queue_indices: [3]u32 = [_]u32{
+            self.family_indices.present_family,
+            self.family_indices.graphics_family,
+            self.family_indices.compute_family,
+        };
+
+        std.sort.sort(u32, queue_indices[0..], {}, comptime std.sort.asc(u32));
+
+        var queue_create_info: [3]vk.DeviceQueueCreateInfo = [_]vk.DeviceQueueCreateInfo{ undefined, undefined, undefined };
+        var queue_create_info_count: usize = 0;
+        var i: usize = 0;
+        var last_family: u32 = undefined;
+        const queue_priority: f32 = 1.;
+        while (i < std.mem.len(queue_indices)) : (i += 1) {
+            if (queue_indices[i] != last_family) {
+                queue_create_info[queue_create_info_count] = .{
+                    .flags = .{},
+                    .queue_family_index = queue_indices[i],
+                    .queue_count = 1,
+                    .p_queue_priorities = @ptrCast([*]const f32, &queue_priority),
+                };
+                last_family = queue_indices[i];
+                queue_create_info_count += 1;
+            }
+        }
+
+        const create_info: vk.DeviceCreateInfo = .{
+            .flags = .{},
+            .p_queue_create_infos = @ptrCast([*]const vk.DeviceQueueCreateInfo, &queue_create_info),
+            .queue_create_info_count = @intCast(u32, queue_create_info_count),
+            .p_enabled_features = null,
+            .enabled_layer_count = if (build_config.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
+            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else null,
+            .enabled_extension_count = @intCast(u32, std.mem.len(required_device_extensions)),
+            .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, &required_device_extensions),
+        };
+
+        self.device = self.vki.createDevice(self.physical_device, create_info, null) catch |err| {
+            printVulkanError("Can't create device", err, self.allocator);
+            return err;
+        };
+    }
+
     fn checkValidationLayerSupport(self: *VulkanContext) !bool {
         var layerCount: u32 = undefined;
 
@@ -405,23 +477,29 @@ pub const VulkanContext = struct {
             return err;
         };
 
-        var availableLayers: []vk.LayerProperties = self.allocator.alloc(vk.LayerProperties, layerCount) catch {
+        var available_layers: []vk.LayerProperties = self.allocator.alloc(vk.LayerProperties, layerCount) catch {
             printError("Vulkan", "Can't allocate memory for available layers");
             return error.HostAllocationError;
         };
-        defer self.allocator.free(availableLayers);
+        defer self.allocator.free(available_layers);
 
-        _ = self.vkb.enumerateInstanceLayerProperties(&layerCount, @ptrCast([*]vk.LayerProperties, availableLayers)) catch |err| {
+        _ = self.vkb.enumerateInstanceLayerProperties(&layerCount, @ptrCast([*]vk.LayerProperties, available_layers)) catch |err| {
             printVulkanError("Can't enumerate instance layer properties for layer support", err, self.allocator);
             return err;
         };
 
-        for (availableLayers) |layer| {
-            if (std.mem.startsWith(u8, &layer.layer_name, "VK_LAYER_KHRONOS_validation")) {
-                return true;
+        for (validation_layers) |validation_layer| {
+            var exist: bool = for (available_layers) |layer| {
+                if (std.mem.startsWith(u8, layer.layer_name[0..], validation_layer[0..])) {
+                    break true;
+                }
+            } else false;
+
+            if (!exist) {
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 };
