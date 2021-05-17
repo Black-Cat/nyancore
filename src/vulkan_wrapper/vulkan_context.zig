@@ -40,12 +40,20 @@ const InstanceDispatch = struct {
 };
 
 const DeviceDispatch = struct {
+    vkCreateSwapchainKHR: vk.PfnCreateSwapchainKHR,
+    vkDestroyCommandPool: vk.PfnDestroyCommandPool,
     vkDestroyDevice: vk.PfnDestroyDevice,
+    vkDestroyFence: vk.PfnDestroyFence,
+    vkDestroySemaphore: vk.PfnDestroySemaphore,
     vkGetDeviceQueue: vk.PfnGetDeviceQueue,
+    vkGetSwapchainImagesKHR: vk.PfnGetSwapchainImagesKHR,
+    vkCreateCommandPool: vk.PfnCreateCommandPool,
+    vkCreateFence: vk.PfnCreateFence,
+    vkCreateSemaphore: vk.PfnCreateSemaphore,
     usingnamespace vk.DeviceWrapper(@This());
 };
 
-const SwapchainSupportDetails = struct {
+pub const SwapchainSupportDetails = struct {
     capabilities: vk.SurfaceCapabilitiesKHR,
     formats: []vk.SurfaceFormatKHR,
     format_count: u32,
@@ -74,6 +82,7 @@ const VulkanError = error{
     HostAllocationError,
     IncompatibleDriver,
     InitializationFailed,
+    NativeWindowInUseKHR,
     LayerNotPresent,
     OutOfDeviceMemory,
     OutOfHostMemory,
@@ -93,6 +102,7 @@ pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allo
         error.HostAllocationError => "Error during allocation on host",
         error.IncompatibleDriver => "Incompatible driver",
         error.InitializationFailed => "Initialization failed",
+        error.NativeWindowInUseKHR => "Native window in use",
         error.LayerNotPresent => "Layer not present",
         error.OutOfDeviceMemory => "Out of device memory",
         error.OutOfHostMemory => "Out of host memory",
@@ -308,7 +318,7 @@ pub const VulkanContext = struct {
         return true;
     }
 
-    fn getSwapchainSupport(self: *VulkanContext, device: *const vk.PhysicalDevice) !SwapchainSupportDetails {
+    pub fn getSwapchainSupport(self: *const VulkanContext, device: *const vk.PhysicalDevice) !SwapchainSupportDetails {
         var details: SwapchainSupportDetails = undefined;
 
         details.capabilities = self.vki.getPhysicalDeviceSurfaceCapabilitiesKHR(device.*, self.surface) catch |err| {

@@ -14,6 +14,14 @@ const ApplicationError = error{
     GLFW_FAILED_TO_CREATE_WINDOW,
 };
 
+var application_glfw_map: std.AutoHashMap(*c.GLFWwindow, *Application) = undefined;
+pub fn initGlobalData(allocator: *Allocator) void {
+    application_glfw_map = std.AutoHashMap(*c.GLFWwindow, *Application).init(allocator);
+}
+pub fn deinitGlobalData() void {
+    application_glfw_map.deinit();
+}
+
 pub const Application = struct {
     allocator: *Allocator,
     config_file: []const u8,
@@ -21,6 +29,7 @@ pub const Application = struct {
     mouse_just_pressed: [imgui_mouse_button_count]bool,
     systems: []*System,
     window: *c.GLFWwindow,
+    framebuffer_resized: bool,
 
     pub fn init(self: *Application, comptime name: [:0]const u8, allocator: *Allocator, systems: []*System) void {
         self.allocator = allocator;
@@ -29,6 +38,7 @@ pub const Application = struct {
         self.name = name;
         self.systems = systems;
         self.window = undefined;
+        self.framebuffer_resized = false;
     }
 
     pub fn deinit(self: *Application) void {}
@@ -56,6 +66,8 @@ pub const Application = struct {
         };
         defer c.glfwDestroyWindow(self.window);
 
+        try application_glfw_map.putNoClobber(self.window, self);
+
         c.glfwSetInputMode(self.window, c.GLFW_STICKY_KEYS, c.GLFW_TRUE);
 
         _ = c.glfwSetKeyCallback(self.window, glfwKeyCallback);
@@ -80,6 +92,7 @@ pub const Application = struct {
         // Uncomment after ui was initialized
         //glfwInitKeymap();
 
+        _ = c.glfwSetFramebufferSizeCallback(self.window, framebufferResizeCallback);
         var prev_time: f64 = c.glfwGetTime();
 
         while (c.glfwWindowShouldClose(self.window) == c.GLFW_FALSE) {
@@ -94,9 +107,18 @@ pub const Application = struct {
             for (self.systems) |system| {
                 system.update(system, elapsed);
             }
+
+            self.framebuffer_resized = false;
         }
 
         try config.flush();
+
+        application_glfw_map.removeAssertDiscard(self.window);
+    }
+
+    fn framebufferResizeCallback(window: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {
+        var self: *Application = application_glfw_map.get(window.?).?;
+        self.framebuffer_resized = true;
     }
 
     fn updateMousePosAndButtons(self: *Application) void {
