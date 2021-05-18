@@ -16,6 +16,7 @@ pub const DefaultRenderer = struct {
     allocator: *Allocator,
     name: []const u8,
     system: System,
+    app: *Application,
 
     context: VulkanContext,
 
@@ -26,6 +27,7 @@ pub const DefaultRenderer = struct {
     image_available_semaphores: [frames_in_flight]vk.Semaphore,
     render_finished_semaphores: [frames_in_flight]vk.Semaphore,
     in_flight_fences: [frames_in_flight]vk.Fence,
+    current_frame: usize,
 
     framebuffer_resized: bool,
 
@@ -33,12 +35,15 @@ pub const DefaultRenderer = struct {
         self.allocator = allocator;
         self.name = name;
         self.framebuffer_resized = false;
+        self.current_frame = 0;
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
     }
 
     fn systemInit(system: *System, app: *Application) void {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
+
+        self.app = app;
 
         self.context.init(self.allocator, app) catch @panic("Error during vulkan context initialization");
 
@@ -48,7 +53,7 @@ pub const DefaultRenderer = struct {
         var height: i32 = undefined;
         c.glfwGetFramebufferSize(app.window, &width, &height);
         self.swapchain = undefined;
-        self.swapchain.init(&self.context, @intCast(u32, width), @intCast(u32, height)) catch @panic("Error during swapchain creation");
+        self.swapchain.init(&self.context, @intCast(u32, width), @intCast(u32, height), self.command_pool) catch @panic("Error during swapchain creation");
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
     }
@@ -66,6 +71,8 @@ pub const DefaultRenderer = struct {
 
     fn systemUpdate(system: *System, elapsed_time: f64) void {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
+
+        self.render(elapsed_time) catch @panic("Error during rendering");
     }
 
     fn createCommandPools(self: *DefaultRenderer) !void {
@@ -127,6 +134,46 @@ pub const DefaultRenderer = struct {
             self.context.vkd.destroySemaphore(self.context.device, self.image_available_semaphores[i], null);
             self.context.vkd.destroySemaphore(self.context.device, self.render_finished_semaphores[i], null);
             self.context.vkd.destroyFence(self.context.device, self.in_flight_fences[i], null);
+        }
+    }
+
+    fn recreateSwapchain(self: *DefaultRenderer) !void {
+        var width: c_int = undefined;
+        var height: c_int = undefined;
+        while (width == 0 or height == 0) {
+            c.glfwGetFramebufferSize(self.app.window, &width, &height);
+            c.glfwWaitEvents();
+        }
+
+        self.context.vkd.deviceWaitIdle(self.context.device) catch |err| {
+            printVulkanError("Can't wait for device idle while recreating swapchain", err, self.allocator);
+            return err;
+        };
+        try self.swapchain.recreate(&self.context, @intCast(u32, width), @intCast(u32, height));
+    }
+
+    fn render(self: *DefaultRenderer, elapsed_time: f64) !void {
+        _ = self.context.vkd.waitForFences(self.context.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[self.current_frame]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
+            printVulkanError("Can't wait for a in flight fence", err, self.allocator);
+            return err;
+        };
+
+        var image_index: u32 = undefined;
+        const res: vk.Result = self.context.vkd.vkAcquireNextImageKHR(
+            self.context.device,
+            self.swapchain.swapchain,
+            std.math.maxInt(u64),
+            self.image_available_semaphores[self.current_frame],
+            .null_handle,
+            &image_index,
+        );
+
+        if (res == .error_out_of_date_khr) {
+            try self.recreateSwapchain();
+            return;
+        } else if (res != .success and res != .suboptimal_khr) {
+            printError("Renderer", "Error while getting swapchain image");
+            return error.Unknown;
         }
     }
 };

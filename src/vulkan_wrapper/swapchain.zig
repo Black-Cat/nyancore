@@ -17,9 +17,47 @@ pub const Swapchain = struct {
     render_pass: vk.RenderPass,
     framebuffers: []vk.Framebuffer,
 
+    command_pool: vk.CommandPool,
     command_buffers: []vk.CommandBuffer,
 
-    pub fn init(self: *Swapchain, context: *const VulkanContext, width: u32, height: u32) !void {
+    pub fn init(self: *Swapchain, context: *const VulkanContext, width: u32, height: u32, command_pool: vk.CommandPool) !void {
+        self.command_pool = command_pool;
+
+        try self.createSwapchain(context, width, height);
+        try self.createImageViews(context);
+        try self.createRenderPass(context);
+        try self.createSwapBuffers(context);
+        try self.createCommandBuffers(context);
+    }
+
+    pub fn deinit(self: *Swapchain, context: *const VulkanContext) void {
+        self.cleanup(context);
+    }
+
+    pub fn recreate(self: *Swapchain, context: *const VulkanContext, width: u32, height: u32) !void {
+        self.cleanup(context);
+        try self.init(context, width, height, self.command_pool);
+    }
+
+    fn cleanup(self: *Swapchain, context: *const VulkanContext) void {
+        for (self.image_views) |image_view| {
+            context.vkd.destroyImageView(context.device, image_view, null);
+        }
+
+        for (self.framebuffers) |framebuffer| {
+            context.vkd.destroyFramebuffer(context.device, framebuffer, null);
+        }
+
+        context.allocator.free(self.image_views);
+        context.allocator.free(self.framebuffers);
+
+        context.vkd.freeCommandBuffers(context.device, self.command_pool, self.image_count, self.command_buffers.ptr);
+
+        context.vkd.destroyRenderPass(context.device, self.render_pass, null);
+        context.vkd.destroySwapchainKHR(context.device, self.swapchain, null);
+    }
+
+    fn createSwapchain(self: *Swapchain, context: *const VulkanContext, width: u32, height: u32) !void {
         const swapchain_support: SwapchainSupportDetails = context.getSwapchainSupport(&context.physical_device) catch unreachable;
         defer context.allocator.free(swapchain_support.formats);
         defer context.allocator.free(swapchain_support.present_modes);
@@ -81,17 +119,143 @@ pub const Swapchain = struct {
             return err;
         };
         self.images = context.allocator.alloc(vk.Image, self.image_count) catch {
-            printError("Vulkan Resources", "Can't allocate images for swapchain on host");
+            printError("Vulkan Wrapper", "Can't allocate images for swapchain on host");
             return error.HostAllocationError;
         };
-        _ = context.vkd.getSwapchainImagesKHR(context.device, self.swapchain, &self.image_count, @ptrCast([*]vk.Image, &self.images)) catch |err| {
+        _ = context.vkd.getSwapchainImagesKHR(context.device, self.swapchain, &self.image_count, self.images.ptr) catch |err| {
             printVulkanError("Can't get images for swapchain", err, context.allocator);
             return err;
         };
     }
 
-    pub fn deinit(self: *Swapchain, context: *const VulkanContext) void {
-        context.allocator.free(self.images);
+    fn createImageViews(self: *Swapchain, context: *const VulkanContext) !void {
+        self.image_views = context.allocator.alloc(vk.ImageView, self.image_count) catch {
+            printError("Vulkan Wrapper", "Can't allocate image views for swapchain on host");
+            return error.HostAllocationError;
+        };
+
+        for (self.image_views) |*image_view, i| {
+            const create_info: vk.ImageViewCreateInfo = .{
+                .flags = .{},
+                .image = self.images[i],
+                .view_type = .@"2d",
+                .format = self.image_format,
+
+                .components = .{
+                    .r = .identity,
+                    .g = .identity,
+                    .b = .identity,
+                    .a = .identity,
+                },
+
+                .subresource_range = .{
+                    .aspect_mask = .{
+                        .color_bit = true,
+                    },
+                    .base_mip_level = 0,
+                    .level_count = 1,
+                    .base_array_layer = 0,
+                    .layer_count = 1,
+                },
+            };
+
+            image_view.* = context.vkd.createImageView(context.device, create_info, null) catch |err| {
+                printVulkanError("Can't create image view", err, context.allocator);
+                return err;
+            };
+        }
+    }
+
+    fn createRenderPass(self: *Swapchain, context: *const VulkanContext) !void {
+        const color_attachment: vk.AttachmentDescription = .{
+            .flags = .{},
+            .format = self.image_format,
+            .samples = .{
+                .@"1_bit" = true,
+            },
+            .load_op = .clear,
+            .store_op = .store,
+            .stencil_load_op = .dont_care,
+            .stencil_store_op = .dont_care,
+            .initial_layout = .@"undefined",
+            .final_layout = .present_src_khr,
+        };
+
+        const color_attachment_ref: vk.AttachmentReference = .{
+            .attachment = 0,
+            .layout = .color_attachment_optimal,
+        };
+
+        const subpass: vk.SubpassDescription = .{
+            .flags = .{},
+            .pipeline_bind_point = .graphics,
+            .color_attachment_count = 1,
+            .p_color_attachments = @ptrCast([*]const vk.AttachmentReference, &color_attachment_ref),
+
+            .input_attachment_count = 0,
+            .p_input_attachments = undefined,
+            .p_resolve_attachments = undefined,
+            .p_depth_stencil_attachment = undefined,
+            .preserve_attachment_count = 0,
+            .p_preserve_attachments = undefined,
+        };
+
+        const render_pass_create_info: vk.RenderPassCreateInfo = .{
+            .flags = .{},
+            .attachment_count = 1,
+            .p_attachments = @ptrCast([*]const vk.AttachmentDescription, &color_attachment),
+            .subpass_count = 1,
+            .p_subpasses = @ptrCast([*]const vk.SubpassDescription, &subpass),
+            .dependency_count = 0,
+            .p_dependencies = undefined,
+        };
+
+        self.render_pass = context.vkd.createRenderPass(context.device, render_pass_create_info, null) catch |err| {
+            printVulkanError("Can't create render pass for swapchain", err, context.allocator);
+            return err;
+        };
+    }
+
+    fn createSwapBuffers(self: *Swapchain, context: *const VulkanContext) !void {
+        self.framebuffers = context.allocator.alloc(vk.Framebuffer, self.image_count) catch {
+            printError("Vulkan Wrapper", "Can't allocate framebuffers for swapchain in host");
+            return error.HostAllocationError;
+        };
+
+        for (self.framebuffers) |*framebuffer, i| {
+            const create_info: vk.FramebufferCreateInfo = .{
+                .flags = .{},
+                .render_pass = self.render_pass,
+                .attachment_count = 1,
+                .p_attachments = @ptrCast([*]const vk.ImageView, &self.image_views[i]),
+                .width = self.image_extent.width,
+                .height = self.image_extent.height,
+                .layers = 1,
+            };
+
+            framebuffer.* = context.vkd.createFramebuffer(context.device, create_info, null) catch |err| {
+                printVulkanError("Can't create framebuffer for swapchain", err, context.allocator);
+                return err;
+            };
+        }
+    }
+
+    fn createCommandBuffers(self: *Swapchain, context: *const VulkanContext) !void {
+        self.command_buffers = context.allocator.alloc(vk.CommandBuffer, self.image_count) catch {
+            printError("Vulkan Wrapper", "Can't allocate command buffers for swapchain on host");
+            return error.HostAllocationError;
+        };
+
+        const alloc_info: vk.CommandBufferAllocateInfo = .{
+            .command_pool = self.command_pool,
+            .level = .primary,
+            .command_buffer_count = self.image_count,
+        };
+
+        context.vkd.allocateCommandBuffers(context.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &self.command_buffers)) catch |err| {
+            printVulkanError("Can't allocate command buffers for swapchain", err, context.allocator);
+            return err;
+        };
     }
 
     fn chooseSwapSurfaceFormat(available_formats: []vk.SurfaceFormatKHR) vk.SurfaceFormatKHR {

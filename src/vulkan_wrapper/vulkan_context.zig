@@ -40,16 +40,29 @@ const InstanceDispatch = struct {
 };
 
 const DeviceDispatch = struct {
+    vkAcquireNextImageKHR: vk.PfnAcquireNextImageKHR,
+    vkAllocateCommandBuffers: vk.PfnAllocateCommandBuffers,
+    vkCreateCommandPool: vk.PfnCreateCommandPool,
+    vkCreateFence: vk.PfnCreateFence,
+    vkCreateFramebuffer: vk.PfnCreateFramebuffer,
+    vkCreateImageView: vk.PfnCreateImageView,
+    vkCreateRenderPass: vk.PfnCreateRenderPass,
+    vkCreateSemaphore: vk.PfnCreateSemaphore,
     vkCreateSwapchainKHR: vk.PfnCreateSwapchainKHR,
     vkDestroyCommandPool: vk.PfnDestroyCommandPool,
     vkDestroyDevice: vk.PfnDestroyDevice,
     vkDestroyFence: vk.PfnDestroyFence,
+    vkDestroyFramebuffer: vk.PfnDestroyFramebuffer,
+    vkDestroyImageView: vk.PfnDestroyImageView,
+    vkDestroyRenderPass: vk.PfnDestroyRenderPass,
     vkDestroySemaphore: vk.PfnDestroySemaphore,
+    vkDestroySwapchainKHR: vk.PfnDestroySwapchainKHR,
+    vkDeviceWaitIdle: vk.PfnDeviceWaitIdle,
+    vkFreeCommandBuffers: vk.PfnFreeCommandBuffers,
     vkGetDeviceQueue: vk.PfnGetDeviceQueue,
     vkGetSwapchainImagesKHR: vk.PfnGetSwapchainImagesKHR,
-    vkCreateCommandPool: vk.PfnCreateCommandPool,
-    vkCreateFence: vk.PfnCreateFence,
-    vkCreateSemaphore: vk.PfnCreateSemaphore,
+    vkWaitForFences: vk.PfnWaitForFences,
+
     usingnamespace vk.DeviceWrapper(@This());
 };
 
