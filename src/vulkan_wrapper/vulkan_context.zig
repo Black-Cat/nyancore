@@ -61,6 +61,9 @@ const DeviceDispatch = struct {
     vkFreeCommandBuffers: vk.PfnFreeCommandBuffers,
     vkGetDeviceQueue: vk.PfnGetDeviceQueue,
     vkGetSwapchainImagesKHR: vk.PfnGetSwapchainImagesKHR,
+    vkQueuePresentKHR: vk.PfnQueuePresentKHR,
+    vkQueueSubmit: vk.PfnQueueSubmit,
+    vkResetFences: vk.PfnResetFences,
     vkWaitForFences: vk.PfnWaitForFences,
 
     usingnamespace vk.DeviceWrapper(@This());

@@ -159,7 +159,7 @@ pub const DefaultRenderer = struct {
         };
 
         var image_index: u32 = undefined;
-        const res: vk.Result = self.context.vkd.vkAcquireNextImageKHR(
+        const vkres_acquire: vk.Result = self.context.vkd.vkAcquireNextImageKHR(
             self.context.device,
             self.swapchain.swapchain,
             std.math.maxInt(u64),
@@ -168,12 +168,59 @@ pub const DefaultRenderer = struct {
             &image_index,
         );
 
-        if (res == .error_out_of_date_khr) {
+        if (vkres_acquire == .error_out_of_date_khr) {
             try self.recreateSwapchain();
             return;
-        } else if (res != .success and res != .suboptimal_khr) {
+        } else if (vkres_acquire != .success and vkres_acquire != .suboptimal_khr) {
             printError("Renderer", "Error while getting swapchain image");
             return error.Unknown;
         }
+
+        const wait_stage: vk.PipelineStageFlags = .{
+            .color_attachment_output_bit = true,
+        };
+
+        const submit_info: vk.SubmitInfo = .{
+            .wait_semaphore_count = 1,
+            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.image_available_semaphores[self.current_frame]),
+            .p_wait_dst_stage_mask = @ptrCast([*]const vk.PipelineStageFlags, &wait_stage),
+
+            .command_buffer_count = 1,
+            .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &self.swapchain.command_buffers[image_index]),
+
+            .signal_semaphore_count = 1,
+            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[image_index]),
+        };
+
+        self.context.vkd.resetFences(self.context.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[self.current_frame])) catch |err| {
+            printVulkanError("Can't reset in flight fence", err, self.allocator);
+            return err;
+        };
+
+        self.context.vkd.queueSubmit(self.context.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[self.current_frame]) catch |err| {
+            printVulkanError("Can't submit to graphics queue", err, self.allocator);
+            return err;
+        };
+
+        const present_info: vk.PresentInfoKHR = .{
+            .wait_semaphore_count = 1,
+            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[self.current_frame]),
+
+            .swapchain_count = 1,
+            .p_swapchains = @ptrCast([*]vk.SwapchainKHR, &self.swapchain.swapchain),
+            .p_image_indices = @ptrCast([*]const u32, &image_index),
+
+            .p_results = null,
+        };
+
+        const vkres_present = self.context.vkd.vkQueuePresentKHR(self.context.present_queue, &present_info);
+        if (vkres_present == .error_out_of_date_khr or vkres_present == .suboptimal_khr) {
+            try self.recreateSwapchain();
+        } else if (vkres_present != .success) {
+            printError("Vulkan Wrapper", "Can't queue present");
+            return error.Unknown;
+        }
+
+        self.current_frame = (self.current_frame + 1) % frames_in_flight;
     }
 };
