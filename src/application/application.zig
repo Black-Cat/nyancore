@@ -3,7 +3,7 @@ const c = @import("../c.zig");
 const std = @import("std");
 
 const Allocator = std.mem.Allocator;
-const Config = @import("config.zig").Config;
+usingnamespace @import("config.zig");
 pub const System = @import("../system/system.zig").System;
 const printError = @import("print_error.zig").printError;
 
@@ -21,6 +21,8 @@ pub fn initGlobalData(allocator: *Allocator) void {
 pub fn deinitGlobalData() void {
     application_glfw_map.deinit();
 }
+
+pub var app: Application = undefined;
 
 pub const Application = struct {
     allocator: *Allocator,
@@ -44,11 +46,10 @@ pub const Application = struct {
     pub fn deinit(self: *Application) void {}
 
     pub fn start(self: *Application) !void {
-        var config: Config = undefined;
-        config.init(self.allocator, self.name, self.config_file);
-        defer config.deinit();
+        global_config.init(self.allocator, self.name, self.config_file);
+        defer global_config.deinit();
 
-        try config.load();
+        try global_config.load();
 
         if (c.glfwInit() == c.GLFW_FALSE) {
             printError("GLFW", "Couldn't initialize GLFW");
@@ -111,7 +112,7 @@ pub const Application = struct {
             self.framebuffer_resized = false;
         }
 
-        try config.flush();
+        try global_config.flush();
 
         application_glfw_map.removeAssertDiscard(self.window);
     }

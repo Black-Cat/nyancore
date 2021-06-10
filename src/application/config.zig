@@ -4,6 +4,8 @@ const std = @import("std");
 const BufMap = std.BufMap;
 const Entry = std.StringHashMap([]const u8).Entry;
 
+pub var global_config: Config = undefined;
+
 pub const Config = struct {
     allocator: *Allocator,
     appname: []const u8,

@@ -18,8 +18,6 @@ pub const DefaultRenderer = struct {
     system: System,
     app: *Application,
 
-    context: VulkanContext,
-
     command_pool: vk.CommandPool,
     command_pool_compute: vk.CommandPool,
     swapchain: Swapchain,
@@ -45,7 +43,7 @@ pub const DefaultRenderer = struct {
 
         self.app = app;
 
-        self.context.init(self.allocator, app) catch @panic("Error during vulkan context initialization");
+        vulkan_context.init(self.allocator, app) catch @panic("Error during vulkan context initialization");
 
         self.createCommandPools() catch @panic("Error during command pools creation");
 
@@ -53,7 +51,7 @@ pub const DefaultRenderer = struct {
         var height: i32 = undefined;
         c.glfwGetFramebufferSize(app.window, &width, &height);
         self.swapchain = undefined;
-        self.swapchain.init(&self.context, @intCast(u32, width), @intCast(u32, height), self.command_pool) catch @panic("Error during swapchain creation");
+        self.swapchain.init(@intCast(u32, width), @intCast(u32, height), self.command_pool) catch @panic("Error during swapchain creation");
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
     }
@@ -62,11 +60,11 @@ pub const DefaultRenderer = struct {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
 
         self.destroySyncObjects();
-        self.swapchain.deinit(&self.context);
+        self.swapchain.deinit();
 
         self.destroyCommandPools();
 
-        self.context.deinit();
+        vulkan_context.deinit();
     }
 
     fn systemUpdate(system: *System, elapsed_time: f64) void {
@@ -77,28 +75,28 @@ pub const DefaultRenderer = struct {
 
     fn createCommandPools(self: *DefaultRenderer) !void {
         var pool_info: vk.CommandPoolCreateInfo = .{
-            .queue_family_index = self.context.family_indices.graphics_family,
+            .queue_family_index = vulkan_context.family_indices.graphics_family,
             .flags = .{
                 .reset_command_buffer_bit = true,
             },
         };
 
-        self.command_pool = self.context.vkd.createCommandPool(self.context.device, pool_info, null) catch |err| {
+        self.command_pool = vkd.createCommandPool(vulkan_context.device, pool_info, null) catch |err| {
             printVulkanError("Can't create command pool for graphics", err, self.allocator);
             return err;
         };
 
-        pool_info.queue_family_index = self.context.family_indices.compute_family;
+        pool_info.queue_family_index = vulkan_context.family_indices.compute_family;
 
-        self.command_pool_compute = self.context.vkd.createCommandPool(self.context.device, pool_info, null) catch |err| {
+        self.command_pool_compute = vkd.createCommandPool(vulkan_context.device, pool_info, null) catch |err| {
             printVulkanError("Can't create command pool for compute", err, self.allocator);
             return err;
         };
     }
 
     fn destroyCommandPools(self: *DefaultRenderer) void {
-        self.context.vkd.destroyCommandPool(self.context.device, self.command_pool, null);
-        self.context.vkd.destroyCommandPool(self.context.device, self.command_pool_compute, null);
+        vkd.destroyCommandPool(vulkan_context.device, self.command_pool, null);
+        vkd.destroyCommandPool(vulkan_context.device, self.command_pool_compute, null);
     }
 
     fn createSyncObjects(self: *DefaultRenderer) !void {
@@ -113,15 +111,15 @@ pub const DefaultRenderer = struct {
 
         var i: usize = 0;
         while (i < frames_in_flight) : (i += 1) {
-            self.image_available_semaphores[i] = self.context.vkd.createSemaphore(self.context.device, semaphore_info, null) catch |err| {
+            self.image_available_semaphores[i] = vkd.createSemaphore(vulkan_context.device, semaphore_info, null) catch |err| {
                 printVulkanError("Can't create semaphore", err, self.allocator);
                 return err;
             };
-            self.render_finished_semaphores[i] = self.context.vkd.createSemaphore(self.context.device, semaphore_info, null) catch |err| {
+            self.render_finished_semaphores[i] = vkd.createSemaphore(vulkan_context.device, semaphore_info, null) catch |err| {
                 printVulkanError("Can't create semaphore", err, self.allocator);
                 return err;
             };
-            self.in_flight_fences[i] = self.context.vkd.createFence(self.context.device, fence_info, null) catch |err| {
+            self.in_flight_fences[i] = vkd.createFence(vulkan_context.device, fence_info, null) catch |err| {
                 printVulkanError("Can't create fence", err, self.allocator);
                 return err;
             };
@@ -131,9 +129,9 @@ pub const DefaultRenderer = struct {
     fn destroySyncObjects(self: *DefaultRenderer) void {
         var i: usize = 0;
         while (i < frames_in_flight) : (i += 1) {
-            self.context.vkd.destroySemaphore(self.context.device, self.image_available_semaphores[i], null);
-            self.context.vkd.destroySemaphore(self.context.device, self.render_finished_semaphores[i], null);
-            self.context.vkd.destroyFence(self.context.device, self.in_flight_fences[i], null);
+            vkd.destroySemaphore(vulkan_context.device, self.image_available_semaphores[i], null);
+            vkd.destroySemaphore(vulkan_context.device, self.render_finished_semaphores[i], null);
+            vkd.destroyFence(vulkan_context.device, self.in_flight_fences[i], null);
         }
     }
 
@@ -145,22 +143,22 @@ pub const DefaultRenderer = struct {
             c.glfwWaitEvents();
         }
 
-        self.context.vkd.deviceWaitIdle(self.context.device) catch |err| {
+        vkd.deviceWaitIdle(vulkan_context.device) catch |err| {
             printVulkanError("Can't wait for device idle while recreating swapchain", err, self.allocator);
             return err;
         };
-        try self.swapchain.recreate(&self.context, @intCast(u32, width), @intCast(u32, height));
+        try self.swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
     }
 
     fn render(self: *DefaultRenderer, elapsed_time: f64) !void {
-        _ = self.context.vkd.waitForFences(self.context.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[self.current_frame]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
+        _ = vkd.waitForFences(vulkan_context.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[self.current_frame]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
             printVulkanError("Can't wait for a in flight fence", err, self.allocator);
             return err;
         };
 
         var image_index: u32 = undefined;
-        const vkres_acquire: vk.Result = self.context.vkd.vkAcquireNextImageKHR(
-            self.context.device,
+        const vkres_acquire: vk.Result = vkd.vkAcquireNextImageKHR(
+            vulkan_context.device,
             self.swapchain.swapchain,
             std.math.maxInt(u64),
             self.image_available_semaphores[self.current_frame],
@@ -192,12 +190,12 @@ pub const DefaultRenderer = struct {
             .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[image_index]),
         };
 
-        self.context.vkd.resetFences(self.context.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[self.current_frame])) catch |err| {
+        vkd.resetFences(vulkan_context.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[self.current_frame])) catch |err| {
             printVulkanError("Can't reset in flight fence", err, self.allocator);
             return err;
         };
 
-        self.context.vkd.queueSubmit(self.context.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[self.current_frame]) catch |err| {
+        vkd.queueSubmit(vulkan_context.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[self.current_frame]) catch |err| {
             printVulkanError("Can't submit to graphics queue", err, self.allocator);
             return err;
         };
@@ -213,7 +211,7 @@ pub const DefaultRenderer = struct {
             .p_results = null,
         };
 
-        const vkres_present = self.context.vkd.vkQueuePresentKHR(self.context.present_queue, &present_info);
+        const vkres_present = vkd.vkQueuePresentKHR(vulkan_context.present_queue, &present_info);
         if (vkres_present == .error_out_of_date_khr or vkres_present == .suboptimal_khr) {
             try self.recreateSwapchain();
         } else if (vkres_present != .success) {

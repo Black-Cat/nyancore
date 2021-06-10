@@ -19,9 +19,8 @@ pub fn main() !void {
     initGlobalData(std.testing.allocator);
     defer deinitGlobalData();
 
-    var application: Application = undefined;
-    application.init("test_app", std.testing.allocator, systems);
-    defer application.deinit();
+    app.init("test_app", std.testing.allocator, systems);
+    defer app.deinit();
 
-    try application.start();
+    try app.start();
 }
