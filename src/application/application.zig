@@ -114,7 +114,7 @@ pub const Application = struct {
 
         try global_config.flush();
 
-        application_glfw_map.removeAssertDiscard(self.window);
+        _ = application_glfw_map.remove(self.window);
     }
 
     fn framebufferResizeCallback(window: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {

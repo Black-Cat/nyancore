@@ -75,12 +75,12 @@ pub const Config = struct {
             const value: []const u8 = it.rest();
             std.mem.copy(u8, groupBuffer[groupLen..], name);
 
-            try self.map.set(groupBuffer[0..(groupLen + name.len)], value);
+            try self.map.put(groupBuffer[0..(groupLen + name.len)], value);
         }
     }
 
     fn compareEntries(context: void, left: Entry, right: Entry) bool {
-        return std.mem.lessThan(u8, left.key, right.key);
+        return std.mem.lessThan(u8, left.key_ptr.*, right.key_ptr.*);
     }
 
     fn write(self: *Config, config_file: std.fs.File) !void {
@@ -92,7 +92,7 @@ pub const Config = struct {
         var ind: usize = 0;
         var it = self.map.iterator();
         while (it.next()) |entry| {
-            buffer[ind] = entry.*;
+            buffer[ind] = entry;
             ind += 1;
         }
 
@@ -101,16 +101,16 @@ pub const Config = struct {
         var current_group: []const u8 = undefined;
         var current_group_len: usize = 0;
         for (buffer) |entry| {
-            const group_end: usize = std.mem.indexOf(u8, entry.key, "_") orelse 0;
-            if ((group_end != current_group_len) or !std.mem.eql(u8, current_group, entry.key[0..group_end])) {
+            const group_end: usize = std.mem.indexOf(u8, entry.key_ptr.*, "_") orelse 0;
+            if ((group_end != current_group_len) or !std.mem.eql(u8, current_group, entry.key_ptr.*[0..group_end])) {
                 current_group_len = group_end;
-                current_group = entry.key[0..group_end];
-                try writer.print("[{}]\n", .{current_group});
+                current_group = entry.key_ptr.*[0..group_end];
+                try writer.print("[{s}]\n", .{current_group});
             }
 
-            try writer.print("{}={}\n", .{
-                entry.key[(group_end + 1)..],
-                entry.value,
+            try writer.print("{s}={s}\n", .{
+                entry.key_ptr.*[(group_end + 1)..],
+                entry.value_ptr.*,
             });
         }
     }
@@ -123,8 +123,8 @@ test "write and load config" {
         write_config.init(std.testing.allocator, "nyancore", "test.conf");
         defer write_config.deinit();
 
-        try write_config.map.set("test0_key0", "key 0 value");
-        try write_config.map.set("test1_key1", "key 1 value");
+        try write_config.map.put("test0_key0", "key 0 value");
+        try write_config.map.put("test1_key1", "key 1 value");
 
         try write_config.flush();
     }

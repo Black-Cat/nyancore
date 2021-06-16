@@ -5,7 +5,7 @@ pub fn printError(comptime module: []const u8, error_message: []const u8) void {
     @setCold(true);
 
     const stdout = std.io.getStdOut().writer();
-    stdout.print("\x1b[1;31m{} ERROR:\x1b[0m {}\n", .{ module, error_message }) catch unreachable;
+    stdout.print("\x1b[1;31m{s} ERROR:\x1b[0m {s}\n", .{ module, error_message }) catch unreachable;
 
     if (builtin.mode == .Debug) {
         @panic(error_message);
