@@ -22,4 +22,4 @@
 
 # Zig cache
 zig-cache/
-
+zig-out/
