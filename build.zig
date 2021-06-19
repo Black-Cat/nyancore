@@ -72,39 +72,30 @@ pub const ResourceGenStep = struct {
     }
 };
 
-pub fn build(b: *Builder) void {
+pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime path: []const u8, use_vulkan_sdk: bool) *std.build.LibExeObjStep {
     const mode = b.standardReleaseOptions();
 
-    const nyancoreLib = b.addStaticLibrary("nyancore", "src/main.zig");
+    const nyancoreLib = b.addStaticLibrary("nyancore", path ++ "src/main.zig");
     nyancoreLib.setBuildMode(mode);
 
-    var test_app = b.addExecutable("test_app", "src/test_app.zig");
-    test_app.setBuildMode(mode);
-    test_app.linkLibrary(nyancoreLib);
-    test_app.linkSystemLibrary("c");
-    test_app.linkSystemLibrary("glfw");
-    test_app.step.dependOn(&nyancoreLib.step);
-    test_app.install();
-
-    const use_vulkan_sdk = b.option(bool, "use_vulkan_sdk", "Use vulkan SDK") orelse true;
     nyancoreLib.addBuildOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
 
     // Vulkan
-    const gen = vkgen.VkGenerateStep.init(b, "resources/vk.xml", "vk.zig");
+    const gen = vkgen.VkGenerateStep.init(b, path ++ "resources/vk.xml", "vk.zig");
     nyancoreLib.step.dependOn(&gen.step);
     nyancoreLib.addPackage(gen.package);
-    test_app.addPackage(gen.package);
+    app.addPackage(gen.package);
     if (use_vulkan_sdk) {
         const vulkan_sdk_path = std.os.getenv("VULKAN_SDK") orelse {
             std.debug.print("[ERR] Can't get VULKAN_SDK environment variable", .{});
-            return;
+            return nyancoreLib;
         };
 
         const vulkan_sdk_include_path = std.fs.path.join(b.allocator, &[_][]const u8{ vulkan_sdk_path, "include" }) catch unreachable;
         defer b.allocator.free(vulkan_sdk_include_path);
 
         nyancoreLib.addIncludeDir(vulkan_sdk_include_path);
-        test_app.addIncludeDir(vulkan_sdk_include_path);
+        app.addIncludeDir(vulkan_sdk_include_path);
     }
 
     const res = ResourceGenStep.init(b, "resources.zig");
@@ -118,25 +109,42 @@ pub fn build(b: *Builder) void {
     nyancoreLib.linkSystemLibrary("glfw");
 
     // Dear ImGui
+    comptime const cimgui_path: []const u8 = path ++ "third_party/cimgui/";
     const imguiFlags = &[_][]const u8{};
     const imguiLib = b.addStaticLibrary("imgui", null);
     imguiLib.linkSystemLibrary("c");
     imguiLib.linkSystemLibrary("c++");
-    imguiLib.addIncludeDir("third_party/cimgui/");
-    imguiLib.addIncludeDir("third_party/cimgui/imgui");
-    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui.cpp", imguiFlags);
-    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_demo.cpp", imguiFlags);
-    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_draw.cpp", imguiFlags);
-    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_tables.cpp", imguiFlags);
-    imguiLib.addCSourceFile("third_party/cimgui/imgui/imgui_widgets.cpp", imguiFlags);
-    imguiLib.addCSourceFile("third_party/cimgui/cimgui.cpp", imguiFlags);
+    imguiLib.addIncludeDir(cimgui_path ++ "");
+    imguiLib.addIncludeDir(cimgui_path ++ "imgui");
+    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui.cpp", imguiFlags);
+    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_demo.cpp", imguiFlags);
+    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_draw.cpp", imguiFlags);
+    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_tables.cpp", imguiFlags);
+    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_widgets.cpp", imguiFlags);
+    imguiLib.addCSourceFile(cimgui_path ++ "cimgui.cpp", imguiFlags);
 
     nyancoreLib.step.dependOn(&imguiLib.step);
     nyancoreLib.linkLibrary(imguiLib);
-    test_app.addIncludeDir("third_party/cimgui/");
-    test_app.linkLibrary(imguiLib);
+    app.addIncludeDir(cimgui_path);
+    app.linkLibrary(imguiLib);
 
     nyancoreLib.install();
+
+    return nyancoreLib;
+}
+
+pub fn build(b: *Builder) void {
+    var test_app = b.addExecutable("test_app", "src/test_app.zig");
+
+    var nyancoreLib = addStaticLibrary(b, test_app, "", true);
+
+    const mode = b.standardReleaseOptions();
+    test_app.setBuildMode(mode);
+    test_app.linkLibrary(nyancoreLib);
+    test_app.linkSystemLibrary("c");
+    test_app.linkSystemLibrary("glfw");
+    test_app.step.dependOn(&nyancoreLib.step);
+    test_app.install();
 
     const run_target = b.step("run", "Run test app");
     const run = test_app.run();
