@@ -3,9 +3,6 @@ pub usingnamespace @import("main.zig");
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const DefaultRenderer = @import("renderer/default_renderer.zig").DefaultRenderer;
-const UI = @import("ui/ui.zig").UI;
-
 fn test_init(allocator: *Allocator) void {}
 fn test_deinit() void {}
 fn test_update(elapsed_time: f64) void {}
