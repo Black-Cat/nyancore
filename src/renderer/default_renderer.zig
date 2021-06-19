@@ -70,7 +70,7 @@ pub const DefaultRenderer = struct {
     fn systemUpdate(system: *System, elapsed_time: f64) void {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
 
-        self.render(elapsed_time) catch @panic("Error during rendering");
+        //self.render(elapsed_time) catch @panic("Error during rendering");
     }
 
     fn createCommandPools(self: *DefaultRenderer) !void {

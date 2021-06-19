@@ -7,6 +7,10 @@ const Allocator = std.mem.Allocator;
 const Application = @import("../application/application.zig").Application;
 const printError = @import("../application/print_error.zig").printError;
 
+usingnamespace @import("memory/buffer.zig");
+usingnamespace @import("memory/chunk.zig");
+usingnamespace @import("memory/image.zig");
+
 const required_device_extensions: [1][:0]const u8 = [_][:0]const u8{
     "VK_KHR_swapchain",
 };

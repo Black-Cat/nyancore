@@ -2,7 +2,9 @@ pub usingnamespace @import("main.zig");
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+
 const DefaultRenderer = @import("renderer/default_renderer.zig").DefaultRenderer;
+const UI = @import("ui/ui.zig").UI;
 
 fn test_init(allocator: *Allocator) void {}
 fn test_deinit() void {}
@@ -12,8 +14,12 @@ pub fn main() !void {
     var renderer: DefaultRenderer = undefined;
     renderer.init("Test Renderer", std.testing.allocator);
 
+    var ui: UI = undefined;
+    ui.init("Test UI");
+
     const systems: []*System = &[_]*System{
         &renderer.system,
+        &ui.system,
     };
 
     initGlobalData(std.testing.allocator);
