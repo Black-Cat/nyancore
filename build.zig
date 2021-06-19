@@ -81,10 +81,14 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
     nyancoreLib.addBuildOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
 
     // Vulkan
-    const gen = vkgen.VkGenerateStep.init(b, path ++ "resources/vk.xml", "vk.zig");
-    nyancoreLib.step.dependOn(&gen.step);
-    nyancoreLib.addPackage(gen.package);
-    app.addPackage(gen.package);
+    const vulkanPackage: std.build.Pkg = .{
+        .name = "vulkan",
+        .path = path ++ "src/vk.zig",
+    };
+
+    nyancoreLib.addPackage(vulkanPackage);
+    app.addPackage(vulkanPackage);
+
     if (use_vulkan_sdk) {
         const vulkan_sdk_path = std.os.getenv("VULKAN_SDK") orelse {
             std.debug.print("[ERR] Can't get VULKAN_SDK environment variable", .{});

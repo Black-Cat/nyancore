@@ -12,7 +12,7 @@ pub usingnamespace @cImport({
     @cInclude("cimgui.h");
 });
 
-const vk = @import("vulkan");
+const vk = @import("vk.zig");
 
 pub extern fn glfwGetInstanceProcAddress(instance: vk.Instance, procname: [*:0]const u8) vk.PfnVoidFunction;
 pub extern fn glfwCreateWindowSurface(instance: vk.Instance, window: *GLFWwindow, alocation_callback: ?*const vk.AllocationCallbacks, surface: *vk.SurfaceKHR) vk.Result;

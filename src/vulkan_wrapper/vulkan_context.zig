@@ -1,7 +1,7 @@
 const build_config = @import("../build_config.zig");
 const c = @import("../c.zig");
 const std = @import("std");
-const vk = @import("vulkan");
+const vk = @import("../vk.zig");
 
 const Allocator = std.mem.Allocator;
 const Application = @import("../application/application.zig").Application;

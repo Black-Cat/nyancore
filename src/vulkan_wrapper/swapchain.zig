@@ -1,4 +1,4 @@
-const vk = @import("vulkan");
+const vk = @import("../vk.zig");
 const std = @import("std");
 
 usingnamespace @import("vulkan_wrapper.zig");
