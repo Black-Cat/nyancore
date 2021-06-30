@@ -120,6 +120,7 @@ const Texture = struct {
 pub const UIVulkanContext = struct {
     parent: *UI,
     font_texture: Texture,
+    command_pool: vk.CommandPool,
 
     pub fn init(self: *UIVulkanContext, parent: *UI) void {
         self.parent = parent;
@@ -145,6 +146,84 @@ pub const UIVulkanContext = struct {
         //.push_constant_range_count = 1,
         //.p_push_constant_ranges = &push_constant_range,
         //};
+    }
+
+    fn beginSingleTimeCommands(self: *UIVulkanContext) vk.CommandBuffer {
+        const alloc_info : vk.CommandBufferAllocateInfo = .{
+            .level = .primary,
+            .command_pool = self.command_pool,
+            .command_buffer_count = 1,
+        };
+
+        var command_buffer : vk.CommandBuffer = vkd.allocateCommandBuffers(vkc.device, alloc_info) catch |err| {
+            printVulkanError("Can't allocate command buffer for ui", err, vkc.allcator);
+        };
+
+        const begin_info : vk.CommandBufferBeginInfo = .{
+            .flags = .{
+                .usage_one_time_submit_bit = true,
+            },
+        };
+
+        vkd.beginCommandBuffer(command_buffer, begin_info);
+
+        return command_buffer;
+    }
+
+    fn endSingleTimeCommands(self: *UIVulkanContext, command_buffer: vk.CommandBuffer) void {
+        vkd.endCommandBuffer(command_buffer);
+
+        const submit_info : vk.SubmitInfo = .{
+            .command_buffer_count = 1,
+            .p_command_buffers = &command_buffer,
+        };
+
+        vkd.queueSubmit(vkc.graphics_queue, self.command_pool, 1, &command_buffer);
+        vkd.queueWaitIdle(vkc.graphics_queue);
+
+        vkd.freeCommandBuffers(vkc.device, self.command_pool, 1, &command_buffer);
+    }
+
+    fn transitionImageLayout(self: *UIVulkanContext, command_buffer: *vk.CommandBuffer, image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) void {
+        var barrier : vk.ImageMemoryBarrier = .{
+            .old_layout = old_layout,
+            .new_layout = new_layout,
+
+            .src_queue_family_index = .ignored,
+            .dst_queue_family_index = .ignored,
+
+            .image = image,
+            .subresource_range = .{
+                .aspect_mask = .{
+                    .color_bit = true,
+                },
+                .base_mip_level = 0,
+                .level_count = 1,
+                .base_array_layer = 0,
+                .layer_count = 1,
+            },
+
+            .src_access_mask = undefined,
+            .dst_access_mask = undefined,
+        };
+
+        var source_stage : vk.PipelineStageFlags = undefined;
+        var destination_stage : vk.PipelineStageFlags = undefined;
+
+        if (old_layout == .undefined && new_layout == .transfer_dst_optimal) {
+            barrier.src_access_mask = .{};
+            barrier.dst_access_mask = .{ .transfer_write_bit = true };
+
+            source_stage = .{ .top_of_pipe_bit = true };
+            destination_stage = .{ .transfer_bit = true };
+        } else if (old_layout == .transfer_dst_optimal && new_layout == .shader_read_only_optimal) {
+            barrier.src_access_mask = .{ .transfer_write_bit = true };
+            barrier.dst_access_mask = .{ .shader_read_bit = true };
+        } else {
+            printError("UI Vulkan", "Not supported image layouts for transfer");
+        }
+
+        vkd.cmdPipelineBarrier(command_buffer, source_stage, destination_stage, 0, 0, null, 0, null, 1, barrier);
     }
 
     fn initFonts(self: *UIVulkanContext) void {
@@ -203,9 +282,51 @@ pub const UIVulkanContext = struct {
         vkd.unmapMemory(vkc.device, staging_buffer_memory);
 
         self.font_texture.create(@intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]));
+        defer self.font_texture.destroy();
+
+        var command_buffer: vk.CommandBuffer = self.createSingleTimeCommands();
+
+        self.transitionImageLayout(command_buffer, font_texture.image, .r8g8b8a8_unorm, .@"undefined", .transfer_dst_optimal);
+
+        const region : vk.BufferImageCopy = .{
+            .buffer_offset = 0,
+            .buffer_row_length = 0,
+            .buffer_image_height = 0,
+
+            .image_subresource = {
+                .aspect_mask = .{ color_bit = true },
+                .mip_level = 0,
+                .base_array_layer = 0,
+                .layer_count = 1,
+            },
+
+            .imageOffset = {.x = 0, .y = 0, .z = 0 },
+            .imageExtent = .{
+                .width = tex_dim[0],
+                .height = tex_dim[1],
+                .depth = 1,
+            }
+        };
+
+        vkd.cmdCopyBufferToImage(command_buffer, staging_buffer_memory, font_texture.image, .transfer_dst_optimal, 1, region);
+
+        self.transitionImageLayout(command_buffer, font_texture.image, .r8g8b8a8_unorm, .transfer_dst_optimal, .shader_read_only_optimal);
+
+        self.endSingleTimeCommadns(command_buffer);
     }
 
     fn initResources(self: *UIVulkanContext) void {
+        const pool_info : vk.CommandPool = .{
+            .queue_family_index = vkc.family_indices.graphics_family,
+            .flags = .{
+                .reset_command_buffer_bit = true,
+            },
+        };
+
+        self.command_pool = vkd.createCommandPool(vkc.device, pool_info, null) catch |err| {
+            printVulkanError("Can't create command pool for ui", err, vkc.allocator);
+        };
+
         self.initFonts();
     }
 };
