@@ -48,28 +48,41 @@ pub var vki: InstanceDispatch = undefined;
 const DeviceDispatch = struct {
     vkAcquireNextImageKHR: vk.PfnAcquireNextImageKHR,
     vkAllocateCommandBuffers: vk.PfnAllocateCommandBuffers,
+    vkAllocateMemory: vk.PfnAllocateMemory,
+    vkBindBufferMemory: vk.PfnBindBufferMemory,
+    vkBindImageMemory: vk.PfnBindImageMemory,
+    vkCreateBuffer: vk.PfnCreateBuffer,
     vkCreateCommandPool: vk.PfnCreateCommandPool,
     vkCreateFence: vk.PfnCreateFence,
     vkCreateFramebuffer: vk.PfnCreateFramebuffer,
+    vkCreateImage: vk.PfnCreateImage,
     vkCreateImageView: vk.PfnCreateImageView,
     vkCreateRenderPass: vk.PfnCreateRenderPass,
     vkCreateSemaphore: vk.PfnCreateSemaphore,
     vkCreateSwapchainKHR: vk.PfnCreateSwapchainKHR,
+    vkDestroyBuffer: vk.PfnDestroyBuffer,
     vkDestroyCommandPool: vk.PfnDestroyCommandPool,
     vkDestroyDevice: vk.PfnDestroyDevice,
     vkDestroyFence: vk.PfnDestroyFence,
     vkDestroyFramebuffer: vk.PfnDestroyFramebuffer,
+    vkDestroyImage: vk.PfnDestroyImage,
     vkDestroyImageView: vk.PfnDestroyImageView,
     vkDestroyRenderPass: vk.PfnDestroyRenderPass,
+    vkDestroySampler: vk.PfnDestroySampler,
     vkDestroySemaphore: vk.PfnDestroySemaphore,
     vkDestroySwapchainKHR: vk.PfnDestroySwapchainKHR,
     vkDeviceWaitIdle: vk.PfnDeviceWaitIdle,
     vkFreeCommandBuffers: vk.PfnFreeCommandBuffers,
+    vkFreeMemory: vk.PfnFreeMemory,
+    vkGetBufferMemoryRequirements: vk.PfnGetBufferMemoryRequirements,
     vkGetDeviceQueue: vk.PfnGetDeviceQueue,
+    vkGetImageMemoryRequirements: vk.PfnGetImageMemoryRequirements,
     vkGetSwapchainImagesKHR: vk.PfnGetSwapchainImagesKHR,
+    vkMapMemory: vk.PfnMapMemory,
     vkQueuePresentKHR: vk.PfnQueuePresentKHR,
     vkQueueSubmit: vk.PfnQueueSubmit,
     vkResetFences: vk.PfnResetFences,
+    vkUnmapMemory: vk.PfnUnmapMemory,
     vkWaitForFences: vk.PfnWaitForFences,
 
     usingnamespace vk.DeviceWrapper(@This());
@@ -105,6 +118,9 @@ const VulkanError = error{
     HostAllocationError,
     IncompatibleDriver,
     InitializationFailed,
+    InvalidExternalHandle,
+    InvalidOpaqueCaptureAddressKHR,
+    MemoryMapFailed,
     NativeWindowInUseKHR,
     LayerNotPresent,
     OutOfDeviceMemory,
@@ -125,6 +141,9 @@ pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allo
         error.HostAllocationError => "Error during allocation on host",
         error.IncompatibleDriver => "Incompatible driver",
         error.InitializationFailed => "Initialization failed",
+        error.InvalidExternalHandle => "Invalid external handle",
+        error.InvalidOpaqueCaptureAddressKHR => "Invalid opaque capture address KHR",
+        error.MemoryMapFailed => "Memory map failed",
         error.NativeWindowInUseKHR => "Native window in use",
         error.LayerNotPresent => "Layer not present",
         error.OutOfDeviceMemory => "Out of device memory",
@@ -141,7 +160,7 @@ pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allo
     printError("Vulkan", message);
 }
 
-pub var vulkan_context: VulkanContext = undefined;
+pub var vkc: VulkanContext = undefined;
 
 pub const VulkanContext = struct {
     allocator: *Allocator,
@@ -210,6 +229,17 @@ pub const VulkanContext = struct {
 
         vki.destroySurfaceKHR(self.instance, self.surface, null);
         vki.destroyInstance(self.instance, null);
+    }
+
+    pub fn getMemoryType(self: *VulkanContext, type_bits: u32, properties: vk.MemoryPropertyFlags) u32 {
+        var temp: u32 = type_bits;
+        for (self.memory_properties.memory_types) |mem_type, ind| {
+            if ((temp & 1) == 1)
+                if ((mem_type.property_flags.toInt() & properties.toInt()) == properties.toInt())
+                    return @intCast(u32, ind);
+            temp >>= 1;
+        }
+        @panic("Can't get memory type");
     }
 
     fn createInstance(self: *VulkanContext, app_name: [:0]const u8) !void {

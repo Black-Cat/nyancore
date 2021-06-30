@@ -59,6 +59,9 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
     app.addIncludeDir(cimgui_path);
     app.linkLibrary(imguiLib);
 
+    nyancoreLib.addIncludeDir(path ++ "third_party/fonts/");
+    app.addIncludeDir(path ++ "third_party/fonts/");
+
     nyancoreLib.install();
 
     return nyancoreLib;

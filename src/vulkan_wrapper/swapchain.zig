@@ -41,26 +41,26 @@ pub const Swapchain = struct {
 
     fn cleanup(self: *Swapchain) void {
         for (self.image_views) |image_view| {
-            vkd.destroyImageView(vulkan_context.device, image_view, null);
+            vkd.destroyImageView(vkc.device, image_view, null);
         }
 
         for (self.framebuffers) |framebuffer| {
-            vkd.destroyFramebuffer(vulkan_context.device, framebuffer, null);
+            vkd.destroyFramebuffer(vkc.device, framebuffer, null);
         }
 
-        vulkan_context.allocator.free(self.image_views);
-        vulkan_context.allocator.free(self.framebuffers);
+        vkc.allocator.free(self.image_views);
+        vkc.allocator.free(self.framebuffers);
 
-        vkd.freeCommandBuffers(vulkan_context.device, self.command_pool, self.image_count, self.command_buffers.ptr);
+        vkd.freeCommandBuffers(vkc.device, self.command_pool, self.image_count, self.command_buffers.ptr);
 
-        vkd.destroyRenderPass(vulkan_context.device, self.render_pass, null);
-        vkd.destroySwapchainKHR(vulkan_context.device, self.swapchain, null);
+        vkd.destroyRenderPass(vkc.device, self.render_pass, null);
+        vkd.destroySwapchainKHR(vkc.device, self.swapchain, null);
     }
 
     fn createSwapchain(self: *Swapchain, width: u32, height: u32) !void {
-        const swapchain_support: SwapchainSupportDetails = vulkan_context.getSwapchainSupport(&vulkan_context.physical_device) catch unreachable;
-        defer vulkan_context.allocator.free(swapchain_support.formats);
-        defer vulkan_context.allocator.free(swapchain_support.present_modes);
+        const swapchain_support: SwapchainSupportDetails = vkc.getSwapchainSupport(&vkc.physical_device) catch unreachable;
+        defer vkc.allocator.free(swapchain_support.formats);
+        defer vkc.allocator.free(swapchain_support.present_modes);
 
         const surface_format: vk.SurfaceFormatKHR = chooseSwapSurfaceFormat(swapchain_support.formats);
         const present_mode: vk.PresentModeKHR = chooseSwapPresentMode(swapchain_support.present_modes);
@@ -75,14 +75,14 @@ pub const Swapchain = struct {
         self.image_count = image_count;
 
         const queue_family_indices: [2]u32 = [_]u32{
-            vulkan_context.family_indices.graphics_family,
-            vulkan_context.family_indices.present_family,
+            vkc.family_indices.graphics_family,
+            vkc.family_indices.present_family,
         };
         const queue_concurrent: bool = queue_family_indices[0] != queue_family_indices[1];
 
         const create_info: vk.SwapchainCreateInfoKHR = .{
             .flags = .{},
-            .surface = vulkan_context.surface,
+            .surface = vkc.surface,
 
             .min_image_count = image_count,
             .image_format = surface_format.format,
@@ -106,30 +106,30 @@ pub const Swapchain = struct {
             .p_queue_family_indices = @ptrCast([*]const u32, &queue_family_indices),
         };
 
-        self.swapchain = vkd.createSwapchainKHR(vulkan_context.device, create_info, null) catch |err| {
-            printVulkanError("Can't create swapchain", err, vulkan_context.allocator);
+        self.swapchain = vkd.createSwapchainKHR(vkc.device, create_info, null) catch |err| {
+            printVulkanError("Can't create swapchain", err, vkc.allocator);
             return err;
         };
 
         self.image_format = surface_format.format;
         self.image_extent = extent;
 
-        _ = vkd.getSwapchainImagesKHR(vulkan_context.device, self.swapchain, &self.image_count, null) catch |err| {
-            printVulkanError("Can't get image count for swapchain", err, vulkan_context.allocator);
+        _ = vkd.getSwapchainImagesKHR(vkc.device, self.swapchain, &self.image_count, null) catch |err| {
+            printVulkanError("Can't get image count for swapchain", err, vkc.allocator);
             return err;
         };
-        self.images = vulkan_context.allocator.alloc(vk.Image, self.image_count) catch {
+        self.images = vkc.allocator.alloc(vk.Image, self.image_count) catch {
             printError("Vulkan Wrapper", "Can't allocate images for swapchain on host");
             return error.HostAllocationError;
         };
-        _ = vkd.getSwapchainImagesKHR(vulkan_context.device, self.swapchain, &self.image_count, self.images.ptr) catch |err| {
-            printVulkanError("Can't get images for swapchain", err, vulkan_context.allocator);
+        _ = vkd.getSwapchainImagesKHR(vkc.device, self.swapchain, &self.image_count, self.images.ptr) catch |err| {
+            printVulkanError("Can't get images for swapchain", err, vkc.allocator);
             return err;
         };
     }
 
     fn createImageViews(self: *Swapchain) !void {
-        self.image_views = vulkan_context.allocator.alloc(vk.ImageView, self.image_count) catch {
+        self.image_views = vkc.allocator.alloc(vk.ImageView, self.image_count) catch {
             printError("Vulkan Wrapper", "Can't allocate image views for swapchain on host");
             return error.HostAllocationError;
         };
@@ -159,8 +159,8 @@ pub const Swapchain = struct {
                 },
             };
 
-            image_view.* = vkd.createImageView(vulkan_context.device, create_info, null) catch |err| {
-                printVulkanError("Can't create image view", err, vulkan_context.allocator);
+            image_view.* = vkd.createImageView(vkc.device, create_info, null) catch |err| {
+                printVulkanError("Can't create image view", err, vkc.allocator);
                 return err;
             };
         }
@@ -210,14 +210,14 @@ pub const Swapchain = struct {
             .p_dependencies = undefined,
         };
 
-        self.render_pass = vkd.createRenderPass(vulkan_context.device, render_pass_create_info, null) catch |err| {
-            printVulkanError("Can't create render pass for swapchain", err, vulkan_context.allocator);
+        self.render_pass = vkd.createRenderPass(vkc.device, render_pass_create_info, null) catch |err| {
+            printVulkanError("Can't create render pass for swapchain", err, vkc.allocator);
             return err;
         };
     }
 
     fn createSwapBuffers(self: *Swapchain) !void {
-        self.framebuffers = vulkan_context.allocator.alloc(vk.Framebuffer, self.image_count) catch {
+        self.framebuffers = vkc.allocator.alloc(vk.Framebuffer, self.image_count) catch {
             printError("Vulkan Wrapper", "Can't allocate framebuffers for swapchain in host");
             return error.HostAllocationError;
         };
@@ -233,15 +233,15 @@ pub const Swapchain = struct {
                 .layers = 1,
             };
 
-            framebuffer.* = vkd.createFramebuffer(vulkan_context.device, create_info, null) catch |err| {
-                printVulkanError("Can't create framebuffer for swapchain", err, vulkan_context.allocator);
+            framebuffer.* = vkd.createFramebuffer(vkc.device, create_info, null) catch |err| {
+                printVulkanError("Can't create framebuffer for swapchain", err, vkc.allocator);
                 return err;
             };
         }
     }
 
     fn createCommandBuffers(self: *Swapchain) !void {
-        self.command_buffers = vulkan_context.allocator.alloc(vk.CommandBuffer, self.image_count) catch {
+        self.command_buffers = vkc.allocator.alloc(vk.CommandBuffer, self.image_count) catch {
             printError("Vulkan Wrapper", "Can't allocate command buffers for swapchain on host");
             return error.HostAllocationError;
         };
@@ -252,8 +252,8 @@ pub const Swapchain = struct {
             .command_buffer_count = self.image_count,
         };
 
-        vkd.allocateCommandBuffers(vulkan_context.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &self.command_buffers)) catch |err| {
-            printVulkanError("Can't allocate command buffers for swapchain", err, vulkan_context.allocator);
+        vkd.allocateCommandBuffers(vkc.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &self.command_buffers)) catch |err| {
+            printVulkanError("Can't allocate command buffers for swapchain", err, vkc.allocator);
             return err;
         };
     }

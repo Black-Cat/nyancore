@@ -43,7 +43,7 @@ pub const DefaultRenderer = struct {
 
         self.app = app;
 
-        vulkan_context.init(self.allocator, app) catch @panic("Error during vulkan context initialization");
+        vkc.init(self.allocator, app) catch @panic("Error during vulkan context initialization");
 
         self.createCommandPools() catch @panic("Error during command pools creation");
 
@@ -64,7 +64,7 @@ pub const DefaultRenderer = struct {
 
         self.destroyCommandPools();
 
-        vulkan_context.deinit();
+        vkc.deinit();
     }
 
     fn systemUpdate(system: *System, elapsed_time: f64) void {
@@ -75,28 +75,28 @@ pub const DefaultRenderer = struct {
 
     fn createCommandPools(self: *DefaultRenderer) !void {
         var pool_info: vk.CommandPoolCreateInfo = .{
-            .queue_family_index = vulkan_context.family_indices.graphics_family,
+            .queue_family_index = vkc.family_indices.graphics_family,
             .flags = .{
                 .reset_command_buffer_bit = true,
             },
         };
 
-        self.command_pool = vkd.createCommandPool(vulkan_context.device, pool_info, null) catch |err| {
+        self.command_pool = vkd.createCommandPool(vkc.device, pool_info, null) catch |err| {
             printVulkanError("Can't create command pool for graphics", err, self.allocator);
             return err;
         };
 
-        pool_info.queue_family_index = vulkan_context.family_indices.compute_family;
+        pool_info.queue_family_index = vkc.family_indices.compute_family;
 
-        self.command_pool_compute = vkd.createCommandPool(vulkan_context.device, pool_info, null) catch |err| {
+        self.command_pool_compute = vkd.createCommandPool(vkc.device, pool_info, null) catch |err| {
             printVulkanError("Can't create command pool for compute", err, self.allocator);
             return err;
         };
     }
 
     fn destroyCommandPools(self: *DefaultRenderer) void {
-        vkd.destroyCommandPool(vulkan_context.device, self.command_pool, null);
-        vkd.destroyCommandPool(vulkan_context.device, self.command_pool_compute, null);
+        vkd.destroyCommandPool(vkc.device, self.command_pool, null);
+        vkd.destroyCommandPool(vkc.device, self.command_pool_compute, null);
     }
 
     fn createSyncObjects(self: *DefaultRenderer) !void {
@@ -111,15 +111,15 @@ pub const DefaultRenderer = struct {
 
         var i: usize = 0;
         while (i < frames_in_flight) : (i += 1) {
-            self.image_available_semaphores[i] = vkd.createSemaphore(vulkan_context.device, semaphore_info, null) catch |err| {
+            self.image_available_semaphores[i] = vkd.createSemaphore(vkc.device, semaphore_info, null) catch |err| {
                 printVulkanError("Can't create semaphore", err, self.allocator);
                 return err;
             };
-            self.render_finished_semaphores[i] = vkd.createSemaphore(vulkan_context.device, semaphore_info, null) catch |err| {
+            self.render_finished_semaphores[i] = vkd.createSemaphore(vkc.device, semaphore_info, null) catch |err| {
                 printVulkanError("Can't create semaphore", err, self.allocator);
                 return err;
             };
-            self.in_flight_fences[i] = vkd.createFence(vulkan_context.device, fence_info, null) catch |err| {
+            self.in_flight_fences[i] = vkd.createFence(vkc.device, fence_info, null) catch |err| {
                 printVulkanError("Can't create fence", err, self.allocator);
                 return err;
             };
@@ -129,9 +129,9 @@ pub const DefaultRenderer = struct {
     fn destroySyncObjects(self: *DefaultRenderer) void {
         var i: usize = 0;
         while (i < frames_in_flight) : (i += 1) {
-            vkd.destroySemaphore(vulkan_context.device, self.image_available_semaphores[i], null);
-            vkd.destroySemaphore(vulkan_context.device, self.render_finished_semaphores[i], null);
-            vkd.destroyFence(vulkan_context.device, self.in_flight_fences[i], null);
+            vkd.destroySemaphore(vkc.device, self.image_available_semaphores[i], null);
+            vkd.destroySemaphore(vkc.device, self.render_finished_semaphores[i], null);
+            vkd.destroyFence(vkc.device, self.in_flight_fences[i], null);
         }
     }
 
@@ -143,7 +143,7 @@ pub const DefaultRenderer = struct {
             c.glfwWaitEvents();
         }
 
-        vkd.deviceWaitIdle(vulkan_context.device) catch |err| {
+        vkd.deviceWaitIdle(vkc.device) catch |err| {
             printVulkanError("Can't wait for device idle while recreating swapchain", err, self.allocator);
             return err;
         };
@@ -151,14 +151,14 @@ pub const DefaultRenderer = struct {
     }
 
     fn render(self: *DefaultRenderer, elapsed_time: f64) !void {
-        _ = vkd.waitForFences(vulkan_context.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[self.current_frame]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
+        _ = vkd.waitForFences(vkc.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[self.current_frame]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
             printVulkanError("Can't wait for a in flight fence", err, self.allocator);
             return err;
         };
 
         var image_index: u32 = undefined;
         const vkres_acquire: vk.Result = vkd.vkAcquireNextImageKHR(
-            vulkan_context.device,
+            vkc.device,
             self.swapchain.swapchain,
             std.math.maxInt(u64),
             self.image_available_semaphores[self.current_frame],
@@ -190,12 +190,12 @@ pub const DefaultRenderer = struct {
             .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[image_index]),
         };
 
-        vkd.resetFences(vulkan_context.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[self.current_frame])) catch |err| {
+        vkd.resetFences(vkc.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[self.current_frame])) catch |err| {
             printVulkanError("Can't reset in flight fence", err, self.allocator);
             return err;
         };
 
-        vkd.queueSubmit(vulkan_context.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[self.current_frame]) catch |err| {
+        vkd.queueSubmit(vkc.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[self.current_frame]) catch |err| {
             printVulkanError("Can't submit to graphics queue", err, self.allocator);
             return err;
         };
@@ -211,7 +211,7 @@ pub const DefaultRenderer = struct {
             .p_results = null,
         };
 
-        const vkres_present = vkd.vkQueuePresentKHR(vulkan_context.present_queue, &present_info);
+        const vkres_present = vkd.vkQueuePresentKHR(vkc.present_queue, &present_info);
         if (vkres_present == .error_out_of_date_khr or vkres_present == .suboptimal_khr) {
             try self.recreateSwapchain();
         } else if (vkres_present != .success) {

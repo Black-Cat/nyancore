@@ -2,6 +2,7 @@ const c = @import("../c.zig");
 
 const Application = @import("../application/application.zig").Application;
 const System = @import("../system/system.zig").System;
+const UIVulkanContext = @import("ui_vulkan.zig").UIVulkanContext;
 
 pub const paletteValues = [_]c_int{
     c.ImGuiCol_Text,
@@ -63,6 +64,7 @@ pub const UI = struct {
     app: *Application,
     name: []const u8,
     system: System,
+    vulkan_context: UIVulkanContext,
 
     paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
 
@@ -109,15 +111,19 @@ pub const UI = struct {
 
         var io: c.ImGuiIO = c.igGetIO().*;
         io.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
+
+        self.vulkan_context.init(self);
     }
 
     fn systemDeinit(system: *System) void {
         const self: *UI = @fieldParentPtr(UI, "system", system);
 
         c.igDestroyContext(self.context);
+        self.vulkan_context.deinit();
     }
 
     fn systemUpdate(system: *System, elapsed_time: f64) void {
         const self: *UI = @fieldParentPtr(UI, "system", system);
+        self.vulkan_context.render();
     }
 };
