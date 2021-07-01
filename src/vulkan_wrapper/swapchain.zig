@@ -17,17 +17,11 @@ pub const Swapchain = struct {
     render_pass: vk.RenderPass,
     framebuffers: []vk.Framebuffer,
 
-    command_pool: vk.CommandPool,
-    command_buffers: []vk.CommandBuffer,
-
-    pub fn init(self: *Swapchain, width: u32, height: u32, command_pool: vk.CommandPool) !void {
-        self.command_pool = command_pool;
-
+    pub fn init(self: *Swapchain, width: u32, height: u32) !void {
         try self.createSwapchain(width, height);
         try self.createImageViews();
         try self.createRenderPass();
         try self.createSwapBuffers();
-        try self.createCommandBuffers();
     }
 
     pub fn deinit(self: *Swapchain) void {
@@ -36,7 +30,7 @@ pub const Swapchain = struct {
 
     pub fn recreate(self: *Swapchain, width: u32, height: u32) !void {
         self.cleanup();
-        try self.init(width, height, self.command_pool);
+        try self.init(width, height);
     }
 
     fn cleanup(self: *Swapchain) void {
@@ -50,8 +44,6 @@ pub const Swapchain = struct {
 
         vkc.allocator.free(self.image_views);
         vkc.allocator.free(self.framebuffers);
-
-        vkd.freeCommandBuffers(vkc.device, self.command_pool, self.image_count, self.command_buffers.ptr);
 
         vkd.destroyRenderPass(vkc.device, self.render_pass, null);
         vkd.destroySwapchainKHR(vkc.device, self.swapchain, null);
@@ -238,24 +230,6 @@ pub const Swapchain = struct {
                 return err;
             };
         }
-    }
-
-    fn createCommandBuffers(self: *Swapchain) !void {
-        self.command_buffers = vkc.allocator.alloc(vk.CommandBuffer, self.image_count) catch {
-            printError("Vulkan Wrapper", "Can't allocate command buffers for swapchain on host");
-            return error.HostAllocationError;
-        };
-
-        const alloc_info: vk.CommandBufferAllocateInfo = .{
-            .command_pool = self.command_pool,
-            .level = .primary,
-            .command_buffer_count = self.image_count,
-        };
-
-        vkd.allocateCommandBuffers(vkc.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &self.command_buffers)) catch |err| {
-            printVulkanError("Can't allocate command buffers for swapchain", err, vkc.allocator);
-            return err;
-        };
     }
 
     fn chooseSwapSurfaceFormat(available_formats: []vk.SurfaceFormatKHR) vk.SurfaceFormatKHR {

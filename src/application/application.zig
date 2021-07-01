@@ -83,15 +83,6 @@ pub const Application = struct {
         for (self.systems) |system| {
             system.init(system, self);
         }
-        defer for (self.systems) |system| {
-            system.deinit(system);
-        };
-        // TODO: Initialize Renderer
-        // TODO: Initialize Vulkan Resources
-        // TODO: Initialize UI
-
-        // Uncomment after ui was initialized
-        //glfwInitKeymap();
 
         _ = c.glfwSetFramebufferSizeCallback(self.window, framebufferResizeCallback);
         var prev_time: f64 = c.glfwGetTime();
@@ -110,6 +101,11 @@ pub const Application = struct {
             }
 
             self.framebuffer_resized = false;
+        }
+
+        var i: usize = self.systems.len - 1;
+        while (i > 0) : (i -= 1) {
+            self.systems[i].deinit(self.systems[i]);
         }
 
         try global_config.flush();

@@ -18,8 +18,6 @@ pub const DefaultRenderer = struct {
     system: System,
     app: *Application,
 
-    command_pool: vk.CommandPool,
-    command_pool_compute: vk.CommandPool,
     swapchain: Swapchain,
 
     image_available_semaphores: [frames_in_flight]vk.Semaphore,
@@ -45,13 +43,11 @@ pub const DefaultRenderer = struct {
 
         vkc.init(self.allocator, app) catch @panic("Error during vulkan context initialization");
 
-        self.createCommandPools() catch @panic("Error during command pools creation");
-
         var width: i32 = undefined;
         var height: i32 = undefined;
         c.glfwGetFramebufferSize(app.window, &width, &height);
         self.swapchain = undefined;
-        self.swapchain.init(@intCast(u32, width), @intCast(u32, height), self.command_pool) catch @panic("Error during swapchain creation");
+        self.swapchain.init(@intCast(u32, width), @intCast(u32, height)) catch @panic("Error during swapchain creation");
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
     }
@@ -62,8 +58,6 @@ pub const DefaultRenderer = struct {
         self.destroySyncObjects();
         self.swapchain.deinit();
 
-        self.destroyCommandPools();
-
         vkc.deinit();
     }
 
@@ -71,32 +65,6 @@ pub const DefaultRenderer = struct {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
 
         //self.render(elapsed_time) catch @panic("Error during rendering");
-    }
-
-    fn createCommandPools(self: *DefaultRenderer) !void {
-        var pool_info: vk.CommandPoolCreateInfo = .{
-            .queue_family_index = vkc.family_indices.graphics_family,
-            .flags = .{
-                .reset_command_buffer_bit = true,
-            },
-        };
-
-        self.command_pool = vkd.createCommandPool(vkc.device, pool_info, null) catch |err| {
-            printVulkanError("Can't create command pool for graphics", err, self.allocator);
-            return err;
-        };
-
-        pool_info.queue_family_index = vkc.family_indices.compute_family;
-
-        self.command_pool_compute = vkd.createCommandPool(vkc.device, pool_info, null) catch |err| {
-            printVulkanError("Can't create command pool for compute", err, self.allocator);
-            return err;
-        };
-    }
-
-    fn destroyCommandPools(self: *DefaultRenderer) void {
-        vkd.destroyCommandPool(vkc.device, self.command_pool, null);
-        vkd.destroyCommandPool(vkc.device, self.command_pool_compute, null);
     }
 
     fn createSyncObjects(self: *DefaultRenderer) !void {
