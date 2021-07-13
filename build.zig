@@ -41,24 +41,42 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
 
     // Dear ImGui
     comptime const cimgui_path: []const u8 = path ++ "third_party/cimgui/";
-    const imguiFlags = &[_][]const u8{};
-    const imguiLib = b.addStaticLibrary("imgui", null);
-    imguiLib.linkSystemLibrary("c");
-    imguiLib.linkSystemLibrary("c++");
-    imguiLib.addIncludeDir(cimgui_path ++ "");
-    imguiLib.addIncludeDir(cimgui_path ++ "imgui");
-    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui.cpp", imguiFlags);
-    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_demo.cpp", imguiFlags);
-    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_draw.cpp", imguiFlags);
-    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_tables.cpp", imguiFlags);
-    imguiLib.addCSourceFile(cimgui_path ++ "imgui/imgui_widgets.cpp", imguiFlags);
-    imguiLib.addCSourceFile(cimgui_path ++ "cimgui.cpp", imguiFlags);
+    const imgui_flags = &[_][]const u8{};
+    const imgui_lib = b.addStaticLibrary("imgui", null);
+    imgui_lib.linkSystemLibrary("c");
+    imgui_lib.linkSystemLibrary("c++");
+    imgui_lib.addIncludeDir(cimgui_path ++ "");
+    imgui_lib.addIncludeDir(cimgui_path ++ "imgui");
+    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui.cpp", imgui_flags);
+    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_demo.cpp", imgui_flags);
+    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_draw.cpp", imgui_flags);
+    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_tables.cpp", imgui_flags);
+    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_widgets.cpp", imgui_flags);
+    imgui_lib.addCSourceFile(cimgui_path ++ "cimgui.cpp", imgui_flags);
 
-    nyancoreLib.step.dependOn(&imguiLib.step);
-    nyancoreLib.linkLibrary(imguiLib);
+    nyancoreLib.step.dependOn(&imgui_lib.step);
+    nyancoreLib.linkLibrary(imgui_lib);
     app.addIncludeDir(cimgui_path);
-    app.linkLibrary(imguiLib);
+    app.linkLibrary(imgui_lib);
 
+    // glslang
+
+    comptime const glslang_path: []const u8 = path ++ "third_party/glslang/glslang/";
+    const glslang_flags = &[_][]const u8{};
+    const glslang_lib = b.addStaticLibrary("glslang", null);
+    glslang_lib.linkSystemLibrary("c");
+    glslang_lib.linkSystemLibrary("c++");
+    glslang_lib.addIncludeDir(path ++ "third_party/glslang/");
+    glslang_lib.addCSourceFile(glslang_path ++ "CInterface/glslang_c_interface.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "GenericCodeGen/CodeGen.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "GenericCodeGen/Link.cpp", glslang_flags);
+
+    nyancoreLib.step.dependOn(&glslang_lib.step);
+    nyancoreLib.linkLibrary(glslang_lib);
+    app.addIncludeDir(glslang_path ++ "Include");
+    app.linkLibrary(glslang_lib);
+
+    // Fonts
     nyancoreLib.addIncludeDir(path ++ "third_party/fonts/");
     app.addIncludeDir(path ++ "third_party/fonts/");
 

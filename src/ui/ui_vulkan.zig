@@ -1,5 +1,6 @@
 const c = @import("../c.zig");
 const vk = @import("../vk.zig");
+const shader_util = @import("../shaders/shader_util.zig");
 
 usingnamespace @cImport({
     @cInclude("fira_sans_regular.h");
@@ -8,6 +9,8 @@ usingnamespace @cImport({
 usingnamespace @import("../vulkan_wrapper/vulkan_wrapper.zig");
 
 const UI = @import("ui.zig").UI;
+
+const printError = @import("../application/print_error.zig").printError;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -128,6 +131,15 @@ pub const UIVulkanContext = struct {
     font_texture: Texture,
     command_pool: vk.CommandPool,
 
+    descriptor_pool: vk.DescriptorPool,
+    descriptor_set_layout: vk.DescriptorSetLayout,
+    descriptor_set: vk.DescriptorSet,
+
+    pipeline_cache: vk.PipelineCache,
+
+    frag_shader: vk.ShaderModule,
+    vert_shader: vk.ShaderModule,
+
     pub fn init(self: *UIVulkanContext, parent: *UI) void {
         self.parent = parent;
 
@@ -135,6 +147,14 @@ pub const UIVulkanContext = struct {
         //self.createGraphicsPipeline();
     }
     pub fn deinit(self: *UIVulkanContext) void {
+        vkd.destroyShaderModule(vkc.device, self.vert_shader, null);
+        vkd.destroyShaderModule(vkc.device, self.frag_shader, null);
+
+        vkd.destroyPipelineCache(vkc.device, self.pipeline_cache, null);
+
+        vkd.destroyDescriptorSetLayout(vkc.device, self.descriptor_set_layout, null);
+        vkd.destroyDescriptorPool(vkc.device, self.descriptor_pool, null);
+
         vkd.destroyCommandPool(vkc.device, self.command_pool, null);
         self.font_texture.destroy();
     }
@@ -252,6 +272,23 @@ pub const UIVulkanContext = struct {
         vkd.cmdPipelineBarrier(command_buffer.*, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast([*]const vk.ImageMemoryBarrier, &barrier));
     }
 
+    fn loadShader(self: *UIVulkanContext, shader_code: [*:0]const u8, stage: shader_util.ShaderStage) vk.ShaderModule {
+        const shader: shader_util.CompiledShader = shader_util.compileShader(shader_code, stage);
+
+        const module_create_info: vk.ShaderModuleCreateInfo = .{
+            .code_size = shader.size,
+            .p_code = shader.pcode,
+            .flags = .{},
+        };
+
+        var shader_module: vk.ShaderModule = vkd.createShaderModule(vkc.device, module_create_info, null) catch |err| {
+            printVulkanError("Can't create shader module for ui", err, vkc.allocator);
+            @panic("Can't create shader module for ui");
+        };
+
+        return shader_module;
+    }
+
     fn initFonts(self: *UIVulkanContext) void {
         var io: c.ImGuiIO = c.igGetIO().*;
 
@@ -336,6 +373,89 @@ pub const UIVulkanContext = struct {
         self.transitionImageLayout(&command_buffer, self.font_texture.image, .r8g8b8a8_unorm, .transfer_dst_optimal, .shader_read_only_optimal);
 
         self.endSingleTimeCommands(command_buffer);
+
+        const pool_size: vk.DescriptorPoolSize = .{
+            .type = .combined_image_sampler,
+            .descriptor_count = 1,
+        };
+
+        const descriptor_pool_info: vk.DescriptorPoolCreateInfo = .{
+            .pool_size_count = 1,
+            .p_pool_sizes = @ptrCast([*]const vk.DescriptorPoolSize, &pool_size),
+            .max_sets = 2,
+            .flags = .{},
+        };
+
+        self.descriptor_pool = vkd.createDescriptorPool(vkc.device, descriptor_pool_info, null) catch |err| {
+            printVulkanError("Can't create descriptor pool for ui", err, vkc.allocator);
+            return;
+        };
+
+        const set_layout_bindings: vk.DescriptorSetLayoutBinding = .{
+            .stage_flags = .{ .fragment_bit = true },
+            .binding = 0,
+            .descriptor_count = 1,
+            .descriptor_type = .combined_image_sampler,
+            .p_immutable_samplers = undefined,
+        };
+
+        const set_layout_create_info: vk.DescriptorSetLayoutCreateInfo = .{
+            .binding_count = 1,
+            .p_bindings = @ptrCast([*]const vk.DescriptorSetLayoutBinding, &set_layout_bindings),
+            .flags = .{},
+        };
+
+        self.descriptor_set_layout = vkd.createDescriptorSetLayout(vkc.device, set_layout_create_info, null) catch |err| {
+            printVulkanError("Can't create descriptor set layout for ui", err, vkc.allocator);
+            return;
+        };
+
+        const descriptor_set_allocate_info: vk.DescriptorSetAllocateInfo = .{
+            .descriptor_pool = self.descriptor_pool,
+            .p_set_layouts = @ptrCast([*]const vk.DescriptorSetLayout, &self.descriptor_set_layout),
+            .descriptor_set_count = 1,
+        };
+
+        vkd.allocateDescriptorSets(vkc.device, descriptor_set_allocate_info, @ptrCast([*]vk.DescriptorSet, &self.descriptor_set)) catch |err| {
+            printVulkanError("Can't allocate descriptor set for ui", err, vkc.allocator);
+            return;
+        };
+
+        const font_descriptor_image_info: vk.DescriptorImageInfo = .{
+            .sampler = self.font_texture.sampler,
+            .image_view = self.font_texture.view,
+            .image_layout = .shader_read_only_optimal,
+        };
+
+        const write_descriptor_set: vk.WriteDescriptorSet = .{
+            .dst_set = self.descriptor_set,
+            .descriptor_type = .combined_image_sampler,
+            .dst_binding = 0,
+            .p_image_info = @ptrCast([*]const vk.DescriptorImageInfo, &font_descriptor_image_info),
+            .descriptor_count = 1,
+            .dst_array_element = 0,
+            .p_buffer_info = undefined,
+            .p_texel_buffer_view = undefined,
+        };
+
+        vkd.updateDescriptorSets(vkc.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
+
+        const pipeline_cache_create_info: vk.PipelineCacheCreateInfo = .{
+            .flags = .{},
+            .initial_data_size = 0,
+            .p_initial_data = undefined,
+        };
+
+        self.pipeline_cache = vkd.createPipelineCache(vkc.device, pipeline_cache_create_info, null) catch |err| {
+            printVulkanError("Can't create pipeline cache", err, vkc.allocator);
+            return;
+        };
+
+        const ui_vert = @embedFile("ui.vert");
+        const ui_frag = @embedFile("ui.frag");
+        var testa: [*:0]const u8 = ui_vert;
+        self.vert_shader = self.loadShader(testa, .vertex);
+        self.frag_shader = self.loadShader(ui_frag, .fragment);
     }
 
     fn initResources(self: *UIVulkanContext) void {

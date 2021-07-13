@@ -4,3 +4,6 @@
 	url = git@github.com:cimgui/cimgui.git
 	branch = docking_inter
 
+[submodule "third_party/glslang"]
+	path = third_party/glslang
+	url = git@github.com:Black-Cat/glslang.git
