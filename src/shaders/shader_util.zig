@@ -154,14 +154,16 @@ pub const CompiledShader = struct {
     pcode: [*]c_uint,
 };
 
+pub fn initShaderCompilation() void {
+    _ = c.glslang_initialize_process();
+}
+
 pub fn compileShader(code: [*:0]const u8, stage: ShaderStage) CompiledShader {
     input.code = code;
     input.stage = switch (stage) {
         .vertex => .GLSLANG_STAGE_VERTEX,
         .fragment => .GLSLANG_STAGE_FRAGMENT,
     };
-
-    _ = c.glslang_initialize_process();
 
     var shader: *c.glslang_shader_t = c.glslang_shader_create(&input) orelse unreachable;
 
@@ -186,7 +188,7 @@ pub fn compileShader(code: [*:0]const u8, stage: ShaderStage) CompiledShader {
     c.glslang_shader_delete(shader);
 
     var compiledShader: CompiledShader = undefined;
-    compiledShader.size = c.glslang_program_SPIRV_get_size(program);
+    compiledShader.size = c.glslang_program_SPIRV_get_size(program) * @sizeOf(c_uint);
     compiledShader.pcode = c.glslang_program_SPIRV_get_ptr(program);
 
     return compiledShader;

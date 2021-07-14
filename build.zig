@@ -60,20 +60,56 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
     app.linkLibrary(imgui_lib);
 
     // glslang
-
-    comptime const glslang_path: []const u8 = path ++ "third_party/glslang/glslang/";
+    comptime const glslang_path: []const u8 = path ++ "third_party/glslang/";
+    const glslang_machine_dependent_path: []const u8 = glslang_path ++ "glslang/OSDependent/" ++ (if (builtin.os.tag == .windows) "Windows/" else "Unix/");
     const glslang_flags = &[_][]const u8{};
     const glslang_lib = b.addStaticLibrary("glslang", null);
     glslang_lib.linkSystemLibrary("c");
     glslang_lib.linkSystemLibrary("c++");
-    glslang_lib.addIncludeDir(path ++ "third_party/glslang/");
-    glslang_lib.addCSourceFile(glslang_path ++ "CInterface/glslang_c_interface.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "GenericCodeGen/CodeGen.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "GenericCodeGen/Link.cpp", glslang_flags);
+    glslang_lib.addIncludeDir(glslang_path);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/CInterface/glslang_c_interface.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/GenericCodeGen/CodeGen.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/GenericCodeGen/Link.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/attribute.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Constant.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Initialize.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/InfoSink.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Intermediate.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/intermOut.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/IntermTraverse.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/iomapper.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/glslang_tab.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/linkValidate.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/limits.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/parseConst.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/ParseContextBase.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/Pp.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpAtom.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpContext.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpScanner.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpTokens.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/propagateNoContraction.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/reflection.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/RemoveTree.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Scan.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/ShaderLang.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/SpirvIntrinsics.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/SymbolTable.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/ParseHelper.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/PoolAlloc.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Versions.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "OGLCompilersDLL/InitializeDll.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/CInterface/spirv_c_interface.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/GlslangToSpv.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/InReadableOrder.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/Logger.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/SpvBuilder.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/SpvPostProcess.cpp", glslang_flags);
+    glslang_lib.addCSourceFile(glslang_machine_dependent_path ++ "ossource.cpp", glslang_flags);
 
     nyancoreLib.step.dependOn(&glslang_lib.step);
     nyancoreLib.linkLibrary(glslang_lib);
-    app.addIncludeDir(glslang_path ++ "Include");
+    app.addIncludeDir(glslang_path ++ "glslang/Include");
     app.linkLibrary(glslang_lib);
 
     // Fonts

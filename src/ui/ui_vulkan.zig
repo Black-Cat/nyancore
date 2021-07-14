@@ -143,6 +143,8 @@ pub const UIVulkanContext = struct {
     pub fn init(self: *UIVulkanContext, parent: *UI) void {
         self.parent = parent;
 
+        shader_util.initShaderCompilation();
+
         self.initResources();
         //self.createGraphicsPipeline();
     }
