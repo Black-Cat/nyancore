@@ -90,7 +90,7 @@ pub const UI = struct {
         var height: c_int = undefined;
         c.glfwGetWindowSize(app.window, &width, &height);
 
-        var io: c.ImGuiIO = c.igGetIO().*;
+        var io: *c.ImGuiIO = c.igGetIO() orelse unreachable;
         io.DisplaySize = .{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
         io.DisplayFramebufferScale = .{ .x = 1.0, .y = 1.0 };
 
@@ -124,6 +124,33 @@ pub const UI = struct {
 
     fn systemUpdate(system: *System, elapsed_time: f64) void {
         const self: *UI = @fieldParentPtr(UI, "system", system);
+
+        self.checkFramebufferResized();
+
+        self.renderDemo();
+
         self.vulkan_context.render();
+    }
+
+    fn checkFramebufferResized(self: *UI) void {
+        if (!self.app.framebuffer_resized)
+            return;
+
+        var width: c_int = undefined;
+        var height: c_int = undefined;
+        c.glfwGetWindowSize(self.app.window, &width, &height);
+
+        var io: *c.ImGuiIO = c.igGetIO() orelse unreachable;
+        io.DisplaySize = .{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
+        io.DisplayFramebufferScale = .{ .x = 1.0, .y = 1.0 };
+    }
+
+    fn renderDemo(self: *UI) void {
+        c.igNewFrame();
+        var open: bool = true;
+        _ = c.igBegin("Necr Window", &open, 0);
+        c.igText("Hi Chat!");
+        c.igEnd();
+        c.igRender();
     }
 };

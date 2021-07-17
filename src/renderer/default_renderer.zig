@@ -48,6 +48,8 @@ pub const DefaultRenderer = struct {
         c.glfwGetFramebufferSize(app.window, &width, &height);
         self.swapchain = undefined;
         self.swapchain.init(@intCast(u32, width), @intCast(u32, height)) catch @panic("Error during swapchain creation");
+        vkc.global_swapchain = &self.swapchain;
+        vkc.frame_index = &self.current_frame;
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
     }

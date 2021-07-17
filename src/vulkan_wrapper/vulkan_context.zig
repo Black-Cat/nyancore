@@ -6,6 +6,8 @@ const vk = @import("../vk.zig");
 const Allocator = std.mem.Allocator;
 const Application = @import("../application/application.zig").Application;
 const printError = @import("../application/print_error.zig").printError;
+const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
+const Swapchain = @import("swapchain.zig").Swapchain;
 
 usingnamespace @import("memory/buffer.zig");
 usingnamespace @import("memory/chunk.zig");
@@ -53,17 +55,29 @@ const DeviceDispatch = struct {
     vkBeginCommandBuffer: vk.PfnBeginCommandBuffer,
     vkBindBufferMemory: vk.PfnBindBufferMemory,
     vkBindImageMemory: vk.PfnBindImageMemory,
+    vkCmdBeginRenderPass: vk.PfnCmdBeginRenderPass,
+    vkCmdBindDescriptorSets: vk.PfnCmdBindDescriptorSets,
+    vkCmdBindIndexBuffer: vk.PfnCmdBindIndexBuffer,
+    vkCmdBindPipeline: vk.PfnCmdBindPipeline,
+    vkCmdBindVertexBuffers: vk.PfnCmdBindVertexBuffers,
     vkCmdCopyBufferToImage: vk.PfnCmdCopyBufferToImage,
+    vkCmdDrawIndexed: vk.PfnCmdDrawIndexed,
+    vkCmdEndRenderPass: vk.PfnCmdEndRenderPass,
     vkCmdPipelineBarrier: vk.PfnCmdPipelineBarrier,
+    vkCmdPushConstants: vk.PfnCmdPushConstants,
+    vkCmdSetScissor: vk.PfnCmdSetScissor,
+    vkCmdSetViewport: vk.PfnCmdSetViewport,
     vkCreateBuffer: vk.PfnCreateBuffer,
     vkCreateCommandPool: vk.PfnCreateCommandPool,
     vkCreateDescriptorPool: vk.PfnCreateDescriptorPool,
     vkCreateDescriptorSetLayout: vk.PfnCreateDescriptorSetLayout,
     vkCreateFence: vk.PfnCreateFence,
     vkCreateFramebuffer: vk.PfnCreateFramebuffer,
+    vkCreateGraphicsPipelines: vk.PfnCreateGraphicsPipelines,
     vkCreateImage: vk.PfnCreateImage,
     vkCreateImageView: vk.PfnCreateImageView,
     vkCreatePipelineCache: vk.PfnCreatePipelineCache,
+    vkCreatePipelineLayout: vk.PfnCreatePipelineLayout,
     vkCreateRenderPass: vk.PfnCreateRenderPass,
     vkCreateSampler: vk.PfnCreateSampler,
     vkCreateSemaphore: vk.PfnCreateSemaphore,
@@ -78,7 +92,9 @@ const DeviceDispatch = struct {
     vkDestroyFramebuffer: vk.PfnDestroyFramebuffer,
     vkDestroyImage: vk.PfnDestroyImage,
     vkDestroyImageView: vk.PfnDestroyImageView,
+    vkDestroyPipeline: vk.PfnDestroyPipeline,
     vkDestroyPipelineCache: vk.PfnDestroyPipelineCache,
+    vkDestroyPipelineLayout: vk.PfnDestroyPipelineLayout,
     vkDestroyRenderPass: vk.PfnDestroyRenderPass,
     vkDestroySampler: vk.PfnDestroySampler,
     vkDestroySemaphore: vk.PfnDestroySemaphore,
@@ -86,6 +102,7 @@ const DeviceDispatch = struct {
     vkDestroySwapchainKHR: vk.PfnDestroySwapchainKHR,
     vkDeviceWaitIdle: vk.PfnDeviceWaitIdle,
     vkEndCommandBuffer: vk.PfnEndCommandBuffer,
+    vkFlushMappedMemoryRanges: vk.PfnFlushMappedMemoryRanges,
     vkFreeCommandBuffers: vk.PfnFreeCommandBuffers,
     vkFreeMemory: vk.PfnFreeMemory,
     vkGetBufferMemoryRequirements: vk.PfnGetBufferMemoryRequirements,
@@ -200,6 +217,9 @@ pub const VulkanContext = struct {
     graphics_queue: vk.Queue,
     present_queue: vk.Queue,
     compute_queue: vk.Queue,
+
+    global_swapchain: *Swapchain,
+    frame_index: *usize,
 
     pub fn init(self: *VulkanContext, allocator: *Allocator, app: *Application) !void {
         self.allocator = allocator;
@@ -334,7 +354,7 @@ pub const VulkanContext = struct {
         p_callback_data: *const vk.DebugUtilsMessengerCallbackDataEXT,
         p_user_data: *c_void,
     ) callconv(vk.vulkan_call_conv) vk.Bool32 {
-        printError("Vulkan Validation Layer", std.mem.span(p_callback_data.p_message));
+        printErrorNoPanic("Vulkan Validation Layer", std.mem.span(p_callback_data.p_message));
         return 1;
     }
 
