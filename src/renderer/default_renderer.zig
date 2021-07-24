@@ -24,14 +24,21 @@ pub const DefaultRenderer = struct {
     render_finished_semaphores: [frames_in_flight]vk.Semaphore,
     in_flight_fences: [frames_in_flight]vk.Fence,
     current_frame: usize,
+    image_index: u32,
 
     framebuffer_resized: bool,
+
+    renderCtx: std.ArrayList(*System),
+    renderFns: std.ArrayList(fn (system: *System, image_index: u32) vk.CommandBuffer),
 
     pub fn init(self: *DefaultRenderer, comptime name: []const u8, allocator: *Allocator) void {
         self.allocator = allocator;
         self.name = name;
         self.framebuffer_resized = false;
         self.current_frame = 0;
+        self.image_index = 0;
+        self.renderCtx = std.ArrayList(*System).init(allocator);
+        self.renderFns = std.ArrayList(fn (system: *System, image_index: u32) vk.CommandBuffer).init(allocator);
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
     }
@@ -66,7 +73,7 @@ pub const DefaultRenderer = struct {
     fn systemUpdate(system: *System, elapsed_time: f64) void {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
 
-        //self.render(elapsed_time) catch @panic("Error during rendering");
+        self.render(elapsed_time) catch @panic("Error during rendering");
     }
 
     fn createSyncObjects(self: *DefaultRenderer) !void {
@@ -144,20 +151,19 @@ pub const DefaultRenderer = struct {
             return error.Unknown;
         }
 
-        const wait_stage: vk.PipelineStageFlags = .{
-            .color_attachment_output_bit = true,
-        };
+        var command_buffer: vk.CommandBuffer = self.renderFns.items[0](self.renderCtx.items[0], image_index);
 
+        const wait_stage: vk.PipelineStageFlags = .{ .color_attachment_output_bit = true };
         const submit_info: vk.SubmitInfo = .{
             .wait_semaphore_count = 1,
             .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.image_available_semaphores[self.current_frame]),
             .p_wait_dst_stage_mask = @ptrCast([*]const vk.PipelineStageFlags, &wait_stage),
 
             .command_buffer_count = 1,
-            .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &self.swapchain.command_buffers[image_index]),
+            .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &command_buffer),
 
             .signal_semaphore_count = 1,
-            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[image_index]),
+            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[self.current_frame]),
         };
 
         vkd.resetFences(vkc.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[self.current_frame])) catch |err| {
@@ -166,8 +172,7 @@ pub const DefaultRenderer = struct {
         };
 
         vkd.queueSubmit(vkc.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[self.current_frame]) catch |err| {
-            printVulkanError("Can't submit to graphics queue", err, self.allocator);
-            return err;
+            printVulkanError("Can't submit render queue", err, vkc.allocator);
         };
 
         const present_info: vk.PresentInfoKHR = .{

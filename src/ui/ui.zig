@@ -3,6 +3,7 @@ const c = @import("../c.zig");
 const Application = @import("../application/application.zig").Application;
 const System = @import("../system/system.zig").System;
 const UIVulkanContext = @import("ui_vulkan.zig").UIVulkanContext;
+const vk = @import("../vk.zig");
 
 pub const paletteValues = [_]c_int{
     c.ImGuiCol_Text,
@@ -128,8 +129,11 @@ pub const UI = struct {
         self.checkFramebufferResized();
 
         self.renderDemo();
+    }
 
-        self.vulkan_context.render();
+    pub fn render(system: *System, image_index: u32) vk.CommandBuffer {
+        const self: *UI = @fieldParentPtr(UI, "system", system);
+        return self.vulkan_context.render(image_index);
     }
 
     fn checkFramebufferResized(self: *UI) void {
@@ -148,7 +152,7 @@ pub const UI = struct {
     fn renderDemo(self: *UI) void {
         c.igNewFrame();
         var open: bool = true;
-        _ = c.igBegin("Necr Window", &open, 0);
+        _ = c.igBegin("Necr Window", &open, c.ImGuiWindowFlags_None);
         c.igText("Hi Chat!");
         c.igEnd();
         c.igRender();

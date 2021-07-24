@@ -107,6 +107,7 @@ const DeviceDispatch = struct {
     vkFreeMemory: vk.PfnFreeMemory,
     vkGetBufferMemoryRequirements: vk.PfnGetBufferMemoryRequirements,
     vkGetDeviceQueue: vk.PfnGetDeviceQueue,
+    vkGetFenceStatus: vk.PfnGetFenceStatus,
     vkGetImageMemoryRequirements: vk.PfnGetImageMemoryRequirements,
     vkGetSwapchainImagesKHR: vk.PfnGetSwapchainImagesKHR,
     vkMapMemory: vk.PfnMapMemory,

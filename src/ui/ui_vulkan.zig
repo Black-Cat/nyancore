@@ -222,6 +222,7 @@ pub const UIVulkanContext = struct {
         self.initResources();
     }
     pub fn deinit(self: *UIVulkanContext) void {
+        vkd.deviceWaitIdle(vkc.device) catch return;
         for (self.vertex_buffers) |*buffer|
             if (buffer.buffer != .null_handle)
                 buffer.destroy();
@@ -249,21 +250,20 @@ pub const UIVulkanContext = struct {
         vkd.destroyCommandPool(vkc.device, self.command_pool, null);
         self.font_texture.destroy();
     }
-    pub fn render(self: *UIVulkanContext) void {
-        self.updateBuffers();
+    pub fn render(self: *UIVulkanContext, image_index: u32) vk.CommandBuffer {
+        self.updateBuffers(image_index);
 
         const io: *c.ImGuiIO = c.igGetIO();
-        const frame_index: usize = vkc.frame_index.*;
-
-        const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return;
 
         const command_buffer: vk.CommandBuffer = self.beginSingleTimeCommands();
-        defer self.endSingleTimeCommands(command_buffer);
+        defer vkd.endCommandBuffer(command_buffer) catch |err| {
+            printVulkanError("Can't end command buffer for ui", err, vkc.allocator);
+        };
 
-        const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.3, 0.3, 0.6, 1.0 } } };
+        const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } };
         const render_pass_info: vk.RenderPassBeginInfo = .{
             .render_pass = self.render_pass,
-            .framebuffer = vkc.global_swapchain.framebuffers[frame_index],
+            .framebuffer = vkc.global_swapchain.framebuffers[image_index],
             .render_area = .{
                 .offset = .{ .x = 0, .y = 0 },
                 .extent = vkc.global_swapchain.image_extent,
@@ -295,15 +295,17 @@ pub const UIVulkanContext = struct {
         vkd.cmdPushConstants(command_buffer, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(PushConstBlock), @ptrCast([*]const PushConstBlock, &push_const_block));
 
         // Render commands
+        const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return command_buffer;
 
         var vertex_offset: i32 = 0;
         var index_offset: u32 = 0;
 
         if (draw_data.CmdListsCount == 0)
-            return;
+            return command_buffer;
 
-        vkd.cmdBindVertexBuffers(command_buffer, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffers[frame_index].buffer), undefined);
-        vkd.cmdBindIndexBuffer(command_buffer, self.index_buffers[frame_index].buffer, 0, .uint16);
+        const offset: u64 = 0;
+        vkd.cmdBindVertexBuffers(command_buffer, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffers[image_index].buffer), @ptrCast([*]const u64, &offset));
+        vkd.cmdBindIndexBuffer(command_buffer, self.index_buffers[image_index].buffer, 0, .uint16);
 
         const clip_off: c.ImVec2 = draw_data.DisplayPos;
         const clip_scale: c.ImVec2 = draw_data.FramebufferScale;
@@ -348,11 +350,11 @@ pub const UIVulkanContext = struct {
             }
             vertex_offset += cmd_list.VtxBuffer.Size;
         }
+
+        return command_buffer;
     }
 
-    fn updateBuffers(self: *UIVulkanContext) void {
-        const frame_index: usize = vkc.frame_index.*;
-
+    fn updateBuffers(self: *UIVulkanContext, image_index: u32) void {
         const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return;
 
         const vertex_buffer_size: vk.DeviceSize = @intCast(u64, draw_data.TotalVtxCount) * @sizeOf(c.ImDrawVert);
@@ -362,32 +364,32 @@ pub const UIVulkanContext = struct {
             return;
 
         // Update only if vertex or index count has changed
-        if (self.vertex_buffers[frame_index].buffer == .null_handle or self.vertex_buffer_counts[frame_index] < draw_data.TotalVtxCount) {
-            if (self.vertex_buffers[frame_index].buffer != .null_handle) {
+        if (self.vertex_buffers[image_index].buffer == .null_handle or self.vertex_buffer_counts[image_index] < draw_data.TotalVtxCount) {
+            if (self.vertex_buffers[image_index].buffer != .null_handle) {
                 vkd.queueWaitIdle(vkc.present_queue) catch |err| {
                     printVulkanError("Can't wait present queue", err, vkc.allocator);
                 };
-                self.vertex_buffers[frame_index].destroy();
+                self.vertex_buffers[image_index].destroy();
             }
 
-            self.vertex_buffers[frame_index].init(vertex_buffer_size, .{ .vertex_buffer_bit = true }, .{ .host_visible_bit = true });
-            self.vertex_buffer_counts[frame_index] = @intCast(usize, draw_data.TotalVtxCount);
+            self.vertex_buffers[image_index].init(vertex_buffer_size, .{ .vertex_buffer_bit = true }, .{ .host_visible_bit = true });
+            self.vertex_buffer_counts[image_index] = @intCast(usize, draw_data.TotalVtxCount);
         }
 
-        if (self.index_buffers[frame_index].buffer == .null_handle or self.index_buffer_counts[frame_index] < draw_data.TotalIdxCount) {
-            if (self.index_buffers[frame_index].buffer != .null_handle) {
+        if (self.index_buffers[image_index].buffer == .null_handle or self.index_buffer_counts[image_index] < draw_data.TotalIdxCount) {
+            if (self.index_buffers[image_index].buffer != .null_handle) {
                 vkd.queueWaitIdle(vkc.present_queue) catch |err| {
                     printVulkanError("Can't wait present queue", err, vkc.allocator);
                 };
-                self.index_buffers[frame_index].destroy();
+                self.index_buffers[image_index].destroy();
             }
 
-            self.index_buffers[frame_index].init(index_buffer_size, .{ .index_buffer_bit = true }, .{ .host_visible_bit = true });
-            self.index_buffer_counts[frame_index] = @intCast(usize, draw_data.TotalIdxCount);
+            self.index_buffers[image_index].init(index_buffer_size, .{ .index_buffer_bit = true }, .{ .host_visible_bit = true });
+            self.index_buffer_counts[image_index] = @intCast(usize, draw_data.TotalIdxCount);
         }
 
-        var vtx_dst: [*]c.ImDrawVert = @ptrCast([*]c.ImDrawVert, @alignCast(@alignOf(c.ImDrawVert), self.vertex_buffers[frame_index].mapped_memory));
-        var idx_dst: [*]c.ImDrawIdx = @ptrCast([*]c.ImDrawIdx, @alignCast(@alignOf(c.ImDrawIdx), self.index_buffers[frame_index].mapped_memory));
+        var vtx_dst: [*]c.ImDrawVert = @ptrCast([*]c.ImDrawVert, @alignCast(@alignOf(c.ImDrawVert), self.vertex_buffers[image_index].mapped_memory));
+        var idx_dst: [*]c.ImDrawIdx = @ptrCast([*]c.ImDrawIdx, @alignCast(@alignOf(c.ImDrawIdx), self.index_buffers[image_index].mapped_memory));
 
         var n: usize = 0;
         while (n < draw_data.CmdListsCount) : (n += 1) {
@@ -406,8 +408,8 @@ pub const UIVulkanContext = struct {
             idx_dst += @intCast(usize, cmd_list.IdxBuffer.Size);
         }
 
-        self.vertex_buffers[frame_index].flush();
-        self.index_buffers[frame_index].flush();
+        self.vertex_buffers[image_index].flush();
+        self.index_buffers[image_index].flush();
     }
 
     fn createRenderPass(self: *UIVulkanContext) void {
@@ -504,9 +506,9 @@ pub const UIVulkanContext = struct {
 
             .rasterizer_discard_enable = vk.FALSE,
             .depth_bias_enable = vk.FALSE,
-            .depth_bias_constant_factor = undefined,
-            .depth_bias_clamp = undefined,
-            .depth_bias_slope_factor = undefined,
+            .depth_bias_constant_factor = 0,
+            .depth_bias_clamp = 0,
+            .depth_bias_slope_factor = 0,
         };
 
         const blend_attachment_state: vk.PipelineColorBlendAttachmentState = .{
@@ -527,7 +529,7 @@ pub const UIVulkanContext = struct {
             .flags = .{},
             .logic_op_enable = vk.FALSE,
             .logic_op = undefined,
-            .blend_constants = undefined,
+            .blend_constants = [4]f32{ 0.0, 0.0, 0.0, 0.0 },
         };
 
         const depth_stencil_state: vk.PipelineDepthStencilStateCreateInfo = .{
@@ -655,7 +657,7 @@ pub const UIVulkanContext = struct {
             .p_dynamic_state = &dynamic_state,
             .p_vertex_input_state = &vertex_input_state,
 
-            .stage_count = 1,
+            .stage_count = 2,
             .p_stages = @ptrCast([*]const vk.PipelineShaderStageCreateInfo, &shader_stages),
 
             .p_tessellation_state = null,
