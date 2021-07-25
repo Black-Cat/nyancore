@@ -74,6 +74,7 @@ pub const Application = struct {
         _ = c.glfwSetKeyCallback(self.window, glfwKeyCallback);
         _ = c.glfwSetCharCallback(self.window, glfwCharCallback);
         _ = c.glfwSetScrollCallback(self.window, glfwScrollCallback);
+        _ = c.glfwSetMouseButtonCallback(self.window, glfwMouseButtonCallback);
 
         if (c.glfwVulkanSupported() == c.GLFW_FALSE) {
             printError("GLFW", "Vulkan is not supported");
@@ -118,8 +119,14 @@ pub const Application = struct {
         self.framebuffer_resized = true;
     }
 
+    fn glfwMouseButtonCallback(window: ?*c.GLFWwindow, button: c_int, action: c_int, mods: c_int) callconv(.C) void {
+        var self: *Application = application_glfw_map.get(window.?).?;
+        if (action == c.GLFW_PRESS and button >= 0 and button < imgui_mouse_button_count)
+            self.mouse_just_pressed[@intCast(usize, button)] = true;
+    }
+
     fn updateMousePosAndButtons(self: *Application) void {
-        var io: c.ImGuiIO = c.igGetIO().*;
+        var io: *c.ImGuiIO = c.igGetIO().?;
 
         var i: usize = 0;
         while (i < imgui_mouse_button_count) : (i += 1) {
