@@ -43,7 +43,7 @@ pub const Config = struct {
         try self.write(file);
     }
 
-    fn getValidConfigFilePath(self: *Config) ![]const u8 {
+    pub fn getValidConfigPath(self: *Config, filename: []const u8) ![]const u8 {
         const dir_path: []const u8 = try std.fs.getAppDataDir(self.allocator, self.appname);
         defer self.allocator.free(dir_path);
 
@@ -52,8 +52,12 @@ pub const Config = struct {
             else => return err,
         };
 
-        const config_path: []const u8 = std.fs.path.join(self.allocator, &[_][]const u8{ dir_path, self.config_file }) catch unreachable;
+        const config_path: []const u8 = std.fs.path.join(self.allocator, &[_][]const u8{ dir_path, filename }) catch unreachable;
         return config_path;
+    }
+
+    fn getValidConfigFilePath(self: *Config) ![]const u8 {
+        return self.getValidConfigPath(self.config_file);
     }
 
     fn parse(self: *Config, config_file: std.fs.File) !void {

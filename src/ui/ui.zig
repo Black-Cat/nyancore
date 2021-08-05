@@ -1,9 +1,11 @@
 const c = @import("../c.zig");
 
 const Application = @import("../application/application.zig").Application;
+const Config = @import("../application/config.zig");
 const System = @import("../system/system.zig").System;
 const UIVulkanContext = @import("ui_vulkan.zig").UIVulkanContext;
 const vk = @import("../vk.zig");
+const DockSpace = @import("dockspace.zig").DockSpace;
 
 pub const paletteValues = [_]c_int{
     c.ImGuiCol_Text,
@@ -64,14 +66,18 @@ pub const paletteValues = [_]c_int{
 pub const UI = struct {
     app: *Application,
     name: []const u8,
+    imgui_config_path: [:0]const u8,
     system: System,
     vulkan_context: UIVulkanContext,
+    dockspace: ?*DockSpace,
 
     paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
 
     context: *c.ImGuiContext,
 
     pub fn init(self: *UI, comptime name: []const u8) void {
+        self.dockspace = null;
+
         self.name = name;
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
@@ -105,13 +111,18 @@ pub const UI = struct {
         const self: *UI = @fieldParentPtr(UI, "system", system);
 
         self.app = app;
+        const temp_path = Config.global_config.getValidConfigPath("imgui.ini") catch unreachable;
+        self.imgui_config_path = Config.global_config.allocator.dupeZ(u8, temp_path) catch unreachable;
+        Config.global_config.allocator.free(temp_path);
 
         self.context = c.igCreateContext(null);
+
+        var io: *c.ImGuiIO = c.igGetIO();
+        io.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
+        io.IniFilename = self.imgui_config_path.ptr;
+
         self.initPalette();
         self.initScaling(app);
-
-        var io: c.ImGuiIO = c.igGetIO().*;
-        io.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
 
         self.vulkan_context.init(self);
     }
@@ -121,6 +132,7 @@ pub const UI = struct {
 
         c.igDestroyContext(self.context);
         self.vulkan_context.deinit();
+        Config.global_config.allocator.free(self.imgui_config_path);
     }
 
     fn systemUpdate(system: *System, elapsed_time: f64) void {
@@ -128,7 +140,18 @@ pub const UI = struct {
 
         self.checkFramebufferResized();
 
+        c.igNewFrame();
+
+        if (self.dockspace) |d|
+            d.drawBegin();
+
         self.renderDemo();
+
+        if (self.dockspace) |d|
+            d.drawEnd();
+
+        c.igRender();
+        c.igEndFrame();
     }
 
     pub fn render(system: *System, image_index: u32) vk.CommandBuffer {
@@ -150,11 +173,9 @@ pub const UI = struct {
     }
 
     fn renderDemo(self: *UI) void {
-        c.igNewFrame();
         var open: bool = true;
         _ = c.igBegin("Necr Window", &open, c.ImGuiWindowFlags_None);
         c.igText("Hi Chat!");
         c.igEnd();
-        c.igRender();
     }
 };

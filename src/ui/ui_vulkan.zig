@@ -400,8 +400,8 @@ pub const UIVulkanContext = struct {
                 @intCast(usize, cmd_list.VtxBuffer.Size) * @sizeOf(c.ImDrawVert),
             );
             @memcpy(
-                @ptrCast([*]align(4) u8, @alignCast(4, idx_dst)),
-                @ptrCast([*]align(4) const u8, @alignCast(4, cmd_list.IdxBuffer.Data)),
+                @ptrCast([*]align(2) u8, @alignCast(2, idx_dst)),
+                @ptrCast([*]align(2) const u8, @alignCast(2, cmd_list.IdxBuffer.Data)),
                 @intCast(usize, cmd_list.IdxBuffer.Size) * @sizeOf(c.ImDrawIdx),
             );
             vtx_dst += @intCast(usize, cmd_list.VtxBuffer.Size);
