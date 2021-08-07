@@ -7,4 +7,5 @@ pub const UI = @import("ui/ui.zig").UI;
 
 pub const Widgets = struct {
     pub const DockSpace = @import("ui/dockspace.zig").DockSpace;
+    pub const DummyWindow = @import("ui/dummy_window.zig").DummyWindow;
 };

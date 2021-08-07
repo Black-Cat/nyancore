@@ -72,6 +72,7 @@ pub const UI = struct {
     dockspace: ?*DockSpace,
 
     paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
+    drawFn: fn (ui: *UI) void,
 
     context: *c.ImGuiContext,
 
@@ -145,7 +146,7 @@ pub const UI = struct {
         if (self.dockspace) |d|
             d.drawBegin();
 
-        self.renderDemo();
+        self.drawFn(self);
 
         if (self.dockspace) |d|
             d.drawEnd();
@@ -170,12 +171,5 @@ pub const UI = struct {
         var io: *c.ImGuiIO = c.igGetIO() orelse unreachable;
         io.DisplaySize = .{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
         io.DisplayFramebufferScale = .{ .x = 1.0, .y = 1.0 };
-    }
-
-    fn renderDemo(self: *UI) void {
-        var open: bool = true;
-        _ = c.igBegin("Necr Window", &open, c.ImGuiWindowFlags_None);
-        c.igText("Hi Chat!");
-        c.igEnd();
     }
 };
