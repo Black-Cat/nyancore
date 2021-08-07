@@ -7,7 +7,6 @@ const Window = @import("window.zig").Window;
 
 pub const DummyWindow = struct {
     window: Window,
-    name: [:0]const u8,
     allocator: *Allocator,
 
     pub fn init(self: *DummyWindow, name: []const u8, allocator: *Allocator) void {
@@ -19,13 +18,12 @@ pub const DummyWindow = struct {
                 .draw = windowDraw,
             },
             .open = true,
+            .strId = allocator.dupeZ(u8, name) catch unreachable,
         };
-
-        self.name = allocator.dupeZ(u8, name) catch unreachable;
     }
 
     pub fn deinit(self: *DummyWindow) void {
-        self.allocator.free(self.name);
+        self.allocator.free(self.window.strId);
     }
 
     pub fn draw(self: *DummyWindow) void {
@@ -38,8 +36,10 @@ pub const DummyWindow = struct {
         const window: *Window = @fieldParentPtr(Window, "widget", widget);
         const self: *DummyWindow = @fieldParentPtr(DummyWindow, "window", window);
 
-        _ = c.igBegin(self.name.ptr, &window.open, c.ImGuiWindowFlags_None);
-        c.igText("Test");
-        c.igEnd();
+        if (window.open) {
+            _ = c.igBegin(self.window.strId.ptr, &window.open, c.ImGuiWindowFlags_None);
+            c.igText("Test");
+            c.igEnd();
+        }
     }
 };
