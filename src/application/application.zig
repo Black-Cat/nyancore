@@ -26,6 +26,7 @@ pub var app: Application = undefined;
 
 pub const Application = struct {
     allocator: *Allocator,
+    config: *Config,
     config_file: []const u8,
     name: [:0]const u8,
     mouse_just_pressed: [imgui_mouse_button_count]bool,
@@ -41,6 +42,7 @@ pub const Application = struct {
         self.systems = systems;
         self.window = undefined;
         self.framebuffer_resized = false;
+        self.config = &global_config;
     }
 
     pub fn deinit(self: *Application) void {}
