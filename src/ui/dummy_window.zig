@@ -26,10 +26,6 @@ pub const DummyWindow = struct {
         self.allocator.free(self.window.strId);
     }
 
-    pub fn draw(self: *DummyWindow) void {
-        self.window.widget.draw(&self.window.widget);
-    }
-
     fn windowInit(widget: *Widget) void {}
     fn windowDeinit(widget: *Widget) void {}
     fn windowDraw(widget: *Widget) void {
