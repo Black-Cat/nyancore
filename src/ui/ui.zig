@@ -72,8 +72,6 @@ pub const UI = struct {
     dockspace: ?*DockSpace,
 
     paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
-    initFn: ?fn (ui: *UI) void,
-    deinitFn: ?fn (ui: *UI) void,
     drawFn: fn (ui: *UI) void,
 
     context: *c.ImGuiContext,
@@ -84,9 +82,6 @@ pub const UI = struct {
         self.name = name;
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
-
-        self.initFn = null;
-        self.deinitFn = null;
     }
 
     fn initPalette(self: *UI) void {
@@ -131,16 +126,10 @@ pub const UI = struct {
         self.initScaling(app);
 
         self.vulkan_context.init(self);
-
-        if (self.initFn) |initFn|
-            initFn(self);
     }
 
     fn systemDeinit(system: *System) void {
         const self: *UI = @fieldParentPtr(UI, "system", system);
-
-        if (self.deinitFn) |deinitFn|
-            deinitFn(self);
 
         c.igDestroyContext(self.context);
         self.vulkan_context.deinit();
