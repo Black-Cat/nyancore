@@ -115,7 +115,7 @@ pub const DefaultRenderer = struct {
     fn recreateSwapchain(self: *DefaultRenderer) !void {
         var width: c_int = undefined;
         var height: c_int = undefined;
-        while (width == 0 or height == 0) {
+        while (width <= 0 or height <= 0) {
             c.glfwGetFramebufferSize(self.app.window, &width, &height);
             c.glfwWaitEvents();
         }
@@ -124,6 +124,7 @@ pub const DefaultRenderer = struct {
             printVulkanError("Can't wait for device idle while recreating swapchain", err, self.allocator);
             return err;
         };
+        std.debug.print("Width: {}, Height: {}\n", .{ width, height });
         try self.swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
     }
 

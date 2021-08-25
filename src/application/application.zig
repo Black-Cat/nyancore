@@ -87,6 +87,8 @@ pub const Application = struct {
             system.init(system, self);
         }
 
+        glfwInitKeymap();
+
         _ = c.glfwSetFramebufferSizeCallback(self.window, framebufferResizeCallback);
         var prev_time: f64 = c.glfwGetTime();
 
@@ -128,7 +130,7 @@ pub const Application = struct {
     }
 
     fn updateMousePosAndButtons(self: *Application) void {
-        var io: *c.ImGuiIO = c.igGetIO().?;
+        var io: *c.ImGuiIO = c.igGetIO();
 
         var i: usize = 0;
         while (i < imgui_mouse_button_count) : (i += 1) {
@@ -159,7 +161,7 @@ pub const Application = struct {
     }
 
     fn glfwInitKeymap() void {
-        var io: c.ImGuiIO = c.igGetIO().*;
+        var io: *c.ImGuiIO = c.igGetIO();
 
         io.KeyMap[c.ImGuiKey_Tab] = c.GLFW_KEY_TAB;
         io.KeyMap[c.ImGuiKey_LeftArrow] = c.GLFW_KEY_LEFT;
@@ -190,7 +192,7 @@ pub const Application = struct {
     }
 
     fn glfwKeyCallback(win: ?*c.GLFWwindow, key: c_int, scancode: c_int, action: c_int, mods: c_int) callconv(.C) void {
-        var io: c.ImGuiIO = c.igGetIO().*;
+        var io: *c.ImGuiIO = c.igGetIO();
 
         if (action == c.GLFW_PRESS)
             io.KeysDown[@intCast(c_uint, key)] = true;
@@ -214,7 +216,7 @@ pub const Application = struct {
     }
 
     fn glfwScrollCallback(win: ?*c.GLFWwindow, xoffset: f64, yoffset: f64) callconv(.C) void {
-        var io: c.ImGuiIO = c.igGetIO().*;
+        var io: *c.ImGuiIO = c.igGetIO();
         io.MouseWheelH += @floatCast(f32, xoffset);
         io.MouseWheel += @floatCast(f32, yoffset);
     }
