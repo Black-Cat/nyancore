@@ -1,3 +1,4 @@
+const std = @import("std");
 const c = @import("../c.zig");
 
 const Application = @import("../application/application.zig").Application;
@@ -6,6 +7,9 @@ const System = @import("../system/system.zig").System;
 const UIVulkanContext = @import("ui_vulkan.zig").UIVulkanContext;
 const vk = @import("../vk.zig");
 const DockSpace = @import("dockspace.zig").DockSpace;
+
+const RGPass = @import("../renderer/render_graph/render_graph_pass.zig").RGPass;
+const RenderGraph = @import("../renderer/render_graph/render_graph.zig").RenderGraph;
 
 pub const paletteValues = [_]c_int{
     c.ImGuiCol_Text,
@@ -70,18 +74,22 @@ pub const UI = struct {
     system: System,
     vulkan_context: UIVulkanContext,
     dockspace: ?*DockSpace,
+    render_pass: RGPass,
+    global_render_graph: *RenderGraph,
 
     paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
     drawFn: fn (ui: *UI) void,
 
     context: *c.ImGuiContext,
 
-    pub fn init(self: *UI, comptime name: []const u8) void {
+    pub fn init(self: *UI, comptime name: []const u8, allocator: *std.mem.Allocator) void {
         self.dockspace = null;
 
         self.name = name;
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
+
+        self.render_pass.init("UI Render Pass", allocator, renderPassInit, renderPassDeinit);
     }
 
     fn initPalette(self: *UI) void {
@@ -108,6 +116,17 @@ pub const UI = struct {
         c.ImGuiStyle_ScaleAllSizes(style, scale[1]);
     }
 
+    fn renderPassInit(render_pass: *RGPass, render_graph: *RenderGraph) void {
+        const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
+        self.render_pass.appendWriteResource(&render_graph.final_swapchain.rg_resource);
+        self.global_render_graph = render_graph;
+    }
+
+    fn renderPassDeinit(render_pass: *RGPass, render_graph: *RenderGraph) void {
+        const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
+        self.render_pass.removeWriteResource(&render_graph.final_swapchain.rg_resource);
+    }
+
     fn systemInit(system: *System, app: *Application) void {
         const self: *UI = @fieldParentPtr(UI, "system", system);
 
@@ -118,14 +137,14 @@ pub const UI = struct {
 
         self.context = c.igCreateContext(null);
 
+        self.vulkan_context.init(self);
+
         var io: *c.ImGuiIO = c.igGetIO();
         io.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
         io.IniFilename = self.imgui_config_path.ptr;
 
         self.initPalette();
         self.initScaling(app);
-
-        self.vulkan_context.init(self);
     }
 
     fn systemDeinit(system: *System) void {
@@ -133,6 +152,7 @@ pub const UI = struct {
 
         c.igDestroyContext(self.context);
         self.vulkan_context.deinit();
+
         Config.global_config.allocator.free(self.imgui_config_path);
     }
 
@@ -155,9 +175,9 @@ pub const UI = struct {
         c.igEndFrame();
     }
 
-    pub fn render(system: *System, image_index: u32) vk.CommandBuffer {
+    pub fn render(system: *System, index: u32, render_graph: *RenderGraph) vk.CommandBuffer {
         const self: *UI = @fieldParentPtr(UI, "system", system);
-        return self.vulkan_context.render(image_index);
+        return self.vulkan_context.render(index, render_graph);
     }
 
     fn checkFramebufferResized(self: *UI) void {

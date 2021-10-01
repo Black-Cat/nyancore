@@ -12,6 +12,7 @@ usingnamespace @import("../vulkan_wrapper/vulkan_wrapper.zig");
 const UI = @import("ui.zig").UI;
 
 const printError = @import("../application/print_error.zig").printError;
+const RenderGraph = @import("../renderer/render_graph/render_graph.zig").RenderGraph;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -219,7 +220,7 @@ pub const UIVulkanContext = struct {
 
         shader_util.initShaderCompilation();
 
-        self.initResources();
+        self.initResources(parent.global_render_graph);
     }
     pub fn deinit(self: *UIVulkanContext) void {
         vkd.deviceWaitIdle(vkc.device) catch return;
@@ -250,7 +251,7 @@ pub const UIVulkanContext = struct {
         vkd.destroyCommandPool(vkc.device, self.command_pool, null);
         self.font_texture.destroy();
     }
-    pub fn render(self: *UIVulkanContext, image_index: u32) vk.CommandBuffer {
+    pub fn render(self: *UIVulkanContext, image_index: u32, render_graph: *RenderGraph) vk.CommandBuffer {
         self.updateBuffers(image_index);
 
         const io: *c.ImGuiIO = c.igGetIO();
@@ -263,10 +264,10 @@ pub const UIVulkanContext = struct {
         const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } };
         const render_pass_info: vk.RenderPassBeginInfo = .{
             .render_pass = self.render_pass,
-            .framebuffer = vkc.global_swapchain.framebuffers[image_index],
+            .framebuffer = render_graph.final_swapchain.framebuffers[image_index],
             .render_area = .{
                 .offset = .{ .x = 0, .y = 0 },
-                .extent = vkc.global_swapchain.image_extent,
+                .extent = render_graph.final_swapchain.image_extent,
             },
             .clear_value_count = 1,
             .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
@@ -412,9 +413,9 @@ pub const UIVulkanContext = struct {
         self.index_buffers[image_index].flush();
     }
 
-    fn createRenderPass(self: *UIVulkanContext) void {
+    fn createRenderPass(self: *UIVulkanContext, render_graph: *RenderGraph) void {
         const color_attachment: vk.AttachmentDescription = .{
-            .format = vkc.global_swapchain.image_format,
+            .format = render_graph.final_swapchain.image_format,
             .samples = .{ .@"1_bit" = true },
             .load_op = .clear,
             .store_op = .store,
@@ -943,7 +944,7 @@ pub const UIVulkanContext = struct {
         vkd.updateDescriptorSets(vkc.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
     }
 
-    fn initResources(self: *UIVulkanContext) void {
+    fn initResources(self: *UIVulkanContext, render_graph: *RenderGraph) void {
         const pool_info: vk.CommandPoolCreateInfo = .{
             .queue_family_index = vkc.family_indices.graphics_family,
             .flags = .{
@@ -974,10 +975,10 @@ pub const UIVulkanContext = struct {
         self.vert_shader = self.loadShader(ui_vert, .vertex);
         self.frag_shader = self.loadShader(ui_frag, .fragment);
 
-        self.createRenderPass();
+        self.createRenderPass(render_graph);
         self.createGraphicsPipeline();
 
-        const buffer_count: u32 = vkc.global_swapchain.image_count;
+        const buffer_count: u32 = render_graph.final_swapchain.image_count;
 
         self.vertex_buffers = vkc.allocator.alloc(Buffer, buffer_count) catch unreachable;
         self.index_buffers = vkc.allocator.alloc(Buffer, buffer_count) catch unreachable;

@@ -1,11 +1,14 @@
-const vk = @import("../vk.zig");
+const vk = @import("../../../vk.zig");
 const std = @import("std");
 
-usingnamespace @import("vulkan_wrapper.zig");
+usingnamespace @import("../../../vulkan_wrapper/vulkan_wrapper.zig");
 
-const printError = @import("../application/print_error.zig").printError;
+const printError = @import("../../../application/print_error.zig").printError;
+const RGResource = @import("../render_graph_resource.zig").RGResource;
 
 pub const Swapchain = struct {
+    rg_resource: RGResource,
+
     swapchain: vk.SwapchainKHR,
 
     image_format: vk.Format,

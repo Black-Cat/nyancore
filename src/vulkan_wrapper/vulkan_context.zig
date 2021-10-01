@@ -7,7 +7,6 @@ const Allocator = std.mem.Allocator;
 const Application = @import("../application/application.zig").Application;
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
-const Swapchain = @import("swapchain.zig").Swapchain;
 
 usingnamespace @import("memory/buffer.zig");
 usingnamespace @import("memory/chunk.zig");
@@ -218,9 +217,6 @@ pub const VulkanContext = struct {
     graphics_queue: vk.Queue,
     present_queue: vk.Queue,
     compute_queue: vk.Queue,
-
-    global_swapchain: *Swapchain,
-    frame_index: *usize,
 
     pub fn init(self: *VulkanContext, allocator: *Allocator, app: *Application) !void {
         self.allocator = allocator;

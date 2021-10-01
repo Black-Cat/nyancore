@@ -1,0 +1,19 @@
+const std = @import("std");
+
+const RGPass = @import("render_graph_pass.zig").RGPass;
+
+const PassList = std.ArrayList(*RGPass);
+
+pub const RGResource = struct {
+    name: []const u8,
+
+    writers: PassList,
+    readers: PassList,
+
+    pub fn init(self: *RGResource, name: []const u8, allocator: *std.mem.Allocator) void {
+        self.name = name;
+
+        self.writers = PassList.init(allocator);
+        self.readers = PassList.init(allocator);
+    }
+};
