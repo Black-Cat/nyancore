@@ -7,6 +7,8 @@ const PassList = std.ArrayList(*RGPass);
 const RGResource = @import("render_graph_resource.zig").RGResource;
 const ResourceList = std.ArrayList(*RGResource);
 
+pub var global_render_graph: RenderGraph = undefined;
+
 pub const RenderGraph = struct {
     final_swapchain: Swapchain,
     frame_index: u32,

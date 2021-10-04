@@ -9,7 +9,8 @@ const vk = @import("../vk.zig");
 const DockSpace = @import("dockspace.zig").DockSpace;
 
 const RGPass = @import("../renderer/render_graph/render_graph_pass.zig").RGPass;
-const RenderGraph = @import("../renderer/render_graph/render_graph.zig").RenderGraph;
+const rg = @import("../renderer/render_graph/render_graph.zig");
+const RenderGraph = rg.RenderGraph;
 
 pub const paletteValues = [_]c_int{
     c.ImGuiCol_Text,
@@ -75,7 +76,6 @@ pub const UI = struct {
     vulkan_context: UIVulkanContext,
     dockspace: ?*DockSpace,
     render_pass: RGPass,
-    global_render_graph: *RenderGraph,
 
     paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
     drawFn: fn (ui: *UI) void,
@@ -116,15 +116,14 @@ pub const UI = struct {
         c.ImGuiStyle_ScaleAllSizes(style, scale[1]);
     }
 
-    fn renderPassInit(render_pass: *RGPass, render_graph: *RenderGraph) void {
+    fn renderPassInit(render_pass: *RGPass) void {
         const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
-        self.render_pass.appendWriteResource(&render_graph.final_swapchain.rg_resource);
-        self.global_render_graph = render_graph;
+        self.render_pass.appendWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
     }
 
-    fn renderPassDeinit(render_pass: *RGPass, render_graph: *RenderGraph) void {
+    fn renderPassDeinit(render_pass: *RGPass) void {
         const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
-        self.render_pass.removeWriteResource(&render_graph.final_swapchain.rg_resource);
+        self.render_pass.removeWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
     }
 
     fn systemInit(system: *System, app: *Application) void {
@@ -175,9 +174,9 @@ pub const UI = struct {
         c.igEndFrame();
     }
 
-    pub fn render(system: *System, index: u32, render_graph: *RenderGraph) vk.CommandBuffer {
+    pub fn render(system: *System, index: u32) vk.CommandBuffer {
         const self: *UI = @fieldParentPtr(UI, "system", system);
-        return self.vulkan_context.render(index, render_graph);
+        return self.vulkan_context.render(index);
     }
 
     fn checkFramebufferResized(self: *UI) void {

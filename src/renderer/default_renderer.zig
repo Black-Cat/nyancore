@@ -8,7 +8,8 @@ const Allocator = std.mem.Allocator;
 const Application = @import("../application/application.zig").Application;
 pub const System = @import("../system/system.zig").System;
 
-const RenderGraph = @import("render_graph/render_graph.zig").RenderGraph;
+const rg = @import("render_graph/render_graph.zig");
+const RenderGraph = rg.RenderGraph;
 const RGPass = @import("render_graph/render_graph_pass.zig").RGPass;
 const RGResource = @import("render_graph/render_graph_resource.zig").RGResource;
 
@@ -22,8 +23,6 @@ pub const DefaultRenderer = struct {
     system: System,
     app: *Application,
 
-    render_graph: RenderGraph,
-
     image_available_semaphores: [frames_in_flight]vk.Semaphore,
     render_finished_semaphores: [frames_in_flight]vk.Semaphore,
     in_flight_fences: [frames_in_flight]vk.Fence,
@@ -32,7 +31,7 @@ pub const DefaultRenderer = struct {
     framebuffer_resized: bool,
 
     renderCtx: std.ArrayList(*System),
-    renderFns: std.ArrayList(fn (system: *System, index: u32, render_graph: *RenderGraph) vk.CommandBuffer),
+    renderFns: std.ArrayList(fn (system: *System, index: u32) vk.CommandBuffer),
 
     pub fn init(self: *DefaultRenderer, comptime name: []const u8, allocator: *Allocator) void {
         self.allocator = allocator;
@@ -40,14 +39,13 @@ pub const DefaultRenderer = struct {
         self.framebuffer_resized = false;
         self.image_index = 0;
         self.renderCtx = std.ArrayList(*System).init(allocator);
-        self.renderFns = std.ArrayList(fn (system: *System, index: u32, render_graph: *RenderGraph) vk.CommandBuffer).init(allocator);
+        self.renderFns = std.ArrayList(fn (system: *System, index: u32) vk.CommandBuffer).init(allocator);
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
 
-        self.render_graph = undefined;
-        self.render_graph.passes = std.ArrayList(*RGPass).init(self.allocator);
-        self.render_graph.resources = std.ArrayList(*RGResource).init(self.allocator);
-        self.render_graph.frame_index = 0;
+        rg.global_render_graph.passes = std.ArrayList(*RGPass).init(self.allocator);
+        rg.global_render_graph.resources = std.ArrayList(*RGResource).init(self.allocator);
+        rg.global_render_graph.frame_index = 0;
     }
 
     fn systemInit(system: *System, app: *Application) void {
@@ -61,23 +59,23 @@ pub const DefaultRenderer = struct {
         var height: i32 = undefined;
         c.glfwGetFramebufferSize(app.window, &width, &height);
 
-        self.render_graph.final_swapchain.rg_resource.init("Final Swapchain", app.allocator);
-        self.render_graph.final_swapchain.init(@intCast(u32, width), @intCast(u32, height)) catch @panic("Error during swapchain creation");
+        rg.global_render_graph.final_swapchain.rg_resource.init("Final Swapchain", app.allocator);
+        rg.global_render_graph.final_swapchain.init(@intCast(u32, width), @intCast(u32, height)) catch @panic("Error during swapchain creation");
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
 
-        for (self.render_graph.passes.items) |pass|
-            pass.initFn(pass, &self.render_graph);
+        for (rg.global_render_graph.passes.items) |pass|
+            pass.initFn(pass);
     }
 
     fn systemDeinit(system: *System) void {
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
 
-        for (self.render_graph.passes.items) |pass|
-            pass.deinitFn(pass, &self.render_graph);
+        for (rg.global_render_graph.passes.items) |pass|
+            pass.deinitFn(pass);
 
         self.destroySyncObjects();
-        self.render_graph.final_swapchain.deinit();
+        rg.global_render_graph.final_swapchain.deinit();
 
         vkc.deinit();
     }
@@ -136,11 +134,11 @@ pub const DefaultRenderer = struct {
             printVulkanError("Can't wait for device idle while recreating swapchain", err, self.allocator);
             return err;
         };
-        try self.render_graph.final_swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
+        try rg.global_render_graph.final_swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
     }
 
     fn render(self: *DefaultRenderer, elapsed_time: f64) !void {
-        _ = vkd.waitForFences(vkc.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[self.render_graph.frame_index]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
+        _ = vkd.waitForFences(vkc.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[rg.global_render_graph.frame_index]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
             printVulkanError("Can't wait for a in flight fence", err, self.allocator);
             return err;
         };
@@ -148,9 +146,9 @@ pub const DefaultRenderer = struct {
         var image_index: u32 = undefined;
         const vkres_acquire: vk.Result = vkd.vkAcquireNextImageKHR(
             vkc.device,
-            self.render_graph.final_swapchain.swapchain,
+            rg.global_render_graph.final_swapchain.swapchain,
             std.math.maxInt(u64),
-            self.image_available_semaphores[self.render_graph.frame_index],
+            self.image_available_semaphores[rg.global_render_graph.frame_index],
             .null_handle,
             &image_index,
         );
@@ -163,36 +161,36 @@ pub const DefaultRenderer = struct {
             return error.Unknown;
         }
 
-        var command_buffer: vk.CommandBuffer = self.renderFns.items[0](self.renderCtx.items[0], image_index, &self.render_graph);
+        var command_buffer: vk.CommandBuffer = self.renderFns.items[0](self.renderCtx.items[0], image_index);
 
         const wait_stage: vk.PipelineStageFlags = .{ .color_attachment_output_bit = true };
         const submit_info: vk.SubmitInfo = .{
             .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.image_available_semaphores[self.render_graph.frame_index]),
+            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.image_available_semaphores[rg.global_render_graph.frame_index]),
             .p_wait_dst_stage_mask = @ptrCast([*]const vk.PipelineStageFlags, &wait_stage),
 
             .command_buffer_count = 1,
             .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &command_buffer),
 
             .signal_semaphore_count = 1,
-            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[self.render_graph.frame_index]),
+            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[rg.global_render_graph.frame_index]),
         };
 
-        vkd.resetFences(vkc.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[self.render_graph.frame_index])) catch |err| {
+        vkd.resetFences(vkc.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[rg.global_render_graph.frame_index])) catch |err| {
             printVulkanError("Can't reset in flight fence", err, self.allocator);
             return err;
         };
 
-        vkd.queueSubmit(vkc.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[self.render_graph.frame_index]) catch |err| {
+        vkd.queueSubmit(vkc.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[rg.global_render_graph.frame_index]) catch |err| {
             printVulkanError("Can't submit render queue", err, vkc.allocator);
         };
 
         const present_info: vk.PresentInfoKHR = .{
             .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[self.render_graph.frame_index]),
+            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[rg.global_render_graph.frame_index]),
 
             .swapchain_count = 1,
-            .p_swapchains = @ptrCast([*]vk.SwapchainKHR, &self.render_graph.final_swapchain.swapchain),
+            .p_swapchains = @ptrCast([*]vk.SwapchainKHR, &rg.global_render_graph.final_swapchain.swapchain),
             .p_image_indices = @ptrCast([*]const u32, &image_index),
 
             .p_results = null,
@@ -206,6 +204,6 @@ pub const DefaultRenderer = struct {
             return error.Unknown;
         }
 
-        self.render_graph.frame_index = (self.render_graph.frame_index + 1) % frames_in_flight;
+        rg.global_render_graph.frame_index = (rg.global_render_graph.frame_index + 1) % frames_in_flight;
     }
 };

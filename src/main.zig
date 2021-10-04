@@ -1,5 +1,6 @@
 pub usingnamespace @import("application/application.zig");
 pub usingnamespace @import("application/print_error.zig");
+pub usingnamespace @import("renderer/render_graph/render_graph.zig");
 
 pub const c = @import("c.zig");
 

@@ -6,7 +6,7 @@ const RenderGraph = @import("render_graph.zig").RenderGraph;
 const ResourceList = std.ArrayList(*RGResource);
 
 pub const RGPass = struct {
-    const PassFunction = fn (render_pass: *RGPass, render_graph: *RenderGraph) void;
+    const PassFunction = fn (render_pass: *RGPass) void;
 
     name: []const u8,
 
