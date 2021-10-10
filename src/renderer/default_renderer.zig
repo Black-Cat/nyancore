@@ -43,9 +43,7 @@ pub const DefaultRenderer = struct {
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
 
-        rg.global_render_graph.passes = std.ArrayList(*RGPass).init(self.allocator);
-        rg.global_render_graph.resources = std.ArrayList(*RGResource).init(self.allocator);
-        rg.global_render_graph.frame_index = 0;
+        rg.global_render_graph.init(frames_in_flight, self.allocator);
     }
 
     fn systemInit(system: *System, app: *Application) void {
@@ -76,6 +74,7 @@ pub const DefaultRenderer = struct {
 
         self.destroySyncObjects();
         rg.global_render_graph.final_swapchain.deinit();
+        rg.global_render_graph.deinit();
 
         vkc.deinit();
     }
@@ -205,5 +204,7 @@ pub const DefaultRenderer = struct {
         }
 
         rg.global_render_graph.frame_index = (rg.global_render_graph.frame_index + 1) % frames_in_flight;
+
+        rg.global_render_graph.executeResourceChanges();
     }
 };

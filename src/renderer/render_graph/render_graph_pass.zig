@@ -4,6 +4,7 @@ const RGResource = @import("render_graph_resource.zig").RGResource;
 const RenderGraph = @import("render_graph.zig").RenderGraph;
 
 const ResourceList = std.ArrayList(*RGResource);
+const PassList = std.ArrayList(*RGPass);
 
 pub const RGPass = struct {
     const PassFunction = fn (render_pass: *RGPass) void;
@@ -25,24 +26,40 @@ pub const RGPass = struct {
         self.reads_from = ResourceList.init(allocator);
     }
 
+    fn appendResource(self: *RGPass, list: *ResourceList, res_list: *PassList, res: *RGResource) void {
+        list.append(res) catch unreachable;
+        res_list.append(self) catch unreachable;
+    }
+
     pub fn appendWriteResource(self: *RGPass, res: *RGResource) void {
-        self.writes_to.append(res) catch unreachable;
-        res.writers.append(self) catch unreachable;
+        self.appendResource(&self.writes_to, &res.writers, res);
+    }
+
+    pub fn appendReadResource(self: *RGPass, res: *RGResource) void {
+        self.appendResource(&self.reads_from, &res.readers, res);
+    }
+
+    fn removeResource(self: *RGPass, list: *ResourceList, res_list: *PassList, res: *RGResource) void {
+        for (list.items) |r, ind| {
+            if (r == res) {
+                _ = list.swapRemove(ind);
+                break;
+            }
+        }
+
+        for (res_list.items) |p, ind| {
+            if (p == self) {
+                _ = res_list.swapRemove(ind);
+                break;
+            }
+        }
     }
 
     pub fn removeWriteResource(self: *RGPass, res: *RGResource) void {
-        for (self.writes_to.items) |w, ind| {
-            if (w == res) {
-                _ = self.writes_to.swapRemove(ind);
-                break;
-            }
-        }
+        self.removeResource(&self.writes_to, &res.writers, res);
+    }
 
-        for (res.writers.items) |w, ind| {
-            if (w == self) {
-                _ = res.writers.swapRemove(ind);
-                break;
-            }
-        }
+    pub fn removeReadResource(self: *RGPass, res: *RGResource) void {
+        self.removeResource(&self.reads_from, &res.readers, res);
     }
 };
