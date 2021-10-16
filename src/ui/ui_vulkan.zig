@@ -229,16 +229,18 @@ pub const UIVulkanContext = struct {
                 };
                 vkd.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
 
-                if (pcmd.TextureId != null) {
-                    // Get VkDescriptorSet with texture
-                    // vkd.cmdBindDescriptorSets
+                // Bind descriptor that user specified with igImage
+                if (false and pcmd.TextureId != null) {
+                    const alignment: u26 = @alignOf([*]const vk.DescriptorSet);
+                    const descriptor_set: [*]const vk.DescriptorSet = @ptrCast([*]const vk.DescriptorSet, @alignCast(alignment, pcmd.TextureId.?));
+                    vkd.cmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, descriptor_set, 0, undefined);
                 }
 
                 vkd.cmdDrawIndexed(command_buffer, pcmd.ElemCount, 1, index_offset, vertex_offset, 0);
                 index_offset += pcmd.ElemCount;
 
-                if (pcmd.TextureId != null)
-                    // Return font descriptor
+                // Return font descriptor
+                if (false and pcmd.TextureId != null)
                     vkd.cmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
             }
             vertex_offset += cmd_list.VtxBuffer.Size;

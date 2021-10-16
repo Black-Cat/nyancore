@@ -206,5 +206,7 @@ pub const DefaultRenderer = struct {
         rg.global_render_graph.frame_index = (rg.global_render_graph.frame_index + 1) % frames_in_flight;
 
         rg.global_render_graph.executeResourceChanges();
+        if (rg.global_render_graph.needs_rebuilding)
+            rg.global_render_graph.build();
     }
 };
