@@ -496,7 +496,7 @@ pub const UIVulkanContext = struct {
             .{
                 .binding = 0,
                 .location = 2,
-                .format = .b8g8r8a8_unorm,
+                .format = .r8g8b8a8_unorm,
                 .offset = @byteOffsetOf(c.ImDrawVert, "col"),
             },
         };
@@ -563,51 +563,6 @@ pub const UIVulkanContext = struct {
         };
     }
 
-    fn transitionImageLayout(self: *UIVulkanContext, command_buffer: vk.CommandBuffer, image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) void {
-        var barrier: vk.ImageMemoryBarrier = .{
-            .old_layout = old_layout,
-            .new_layout = new_layout,
-
-            .src_queue_family_index = vk.QUEUE_FAMILY_IGNORED,
-            .dst_queue_family_index = vk.QUEUE_FAMILY_IGNORED,
-
-            .image = image,
-            .subresource_range = .{
-                .aspect_mask = .{
-                    .color_bit = true,
-                },
-                .base_mip_level = 0,
-                .level_count = 1,
-                .base_array_layer = 0,
-                .layer_count = 1,
-            },
-
-            .src_access_mask = undefined,
-            .dst_access_mask = undefined,
-        };
-
-        var source_stage: vk.PipelineStageFlags = undefined;
-        var destination_stage: vk.PipelineStageFlags = undefined;
-
-        if (old_layout == .@"undefined" and new_layout == .transfer_dst_optimal) {
-            barrier.src_access_mask = .{};
-            barrier.dst_access_mask = .{ .transfer_write_bit = true };
-
-            source_stage = .{ .top_of_pipe_bit = true };
-            destination_stage = .{ .transfer_bit = true };
-        } else if (old_layout == .transfer_dst_optimal and new_layout == .shader_read_only_optimal) {
-            barrier.src_access_mask = .{ .transfer_write_bit = true };
-            barrier.dst_access_mask = .{ .shader_read_bit = true };
-
-            source_stage = .{ .transfer_bit = true };
-            destination_stage = .{ .fragment_shader_bit = true };
-        } else {
-            @panic("Not supported image layouts for transfer");
-        }
-
-        vkd.cmdPipelineBarrier(command_buffer, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast([*]const vk.ImageMemoryBarrier, &barrier));
-    }
-
     fn initFonts(self: *UIVulkanContext) void {
         var io: c.ImGuiIO = c.igGetIO().*;
 
@@ -663,13 +618,13 @@ pub const UIVulkanContext = struct {
         @memcpy(@ptrCast([*]u8, mapped_memory), font_data, tex_size);
         vkd.unmapMemory(vkc.device, staging_buffer_memory);
 
-        self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .b8g8r8a8_unorm, vkc.allocator);
+        self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .r8g8b8a8_unorm, vkc.allocator);
         self.font_texture.alloc();
 
         const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
         rg.global_render_graph.beginSingleTimeCommands(command_buffer);
 
-        self.transitionImageLayout(command_buffer, self.font_texture.image, self.font_texture.image_format, .@"undefined", .transfer_dst_optimal);
+        self.font_texture.transitionImageLayout(command_buffer, .@"undefined", .transfer_dst_optimal);
 
         const region: vk.BufferImageCopy = .{
             .buffer_offset = 0,
@@ -691,7 +646,7 @@ pub const UIVulkanContext = struct {
 
         vkd.cmdCopyBufferToImage(command_buffer, staging_buffer, self.font_texture.image, .transfer_dst_optimal, 1, @ptrCast([*]const vk.BufferImageCopy, &region));
 
-        self.transitionImageLayout(command_buffer, self.font_texture.image, self.font_texture.image_format, .transfer_dst_optimal, .shader_read_only_optimal);
+        self.font_texture.transitionImageLayout(command_buffer, .transfer_dst_optimal, .shader_read_only_optimal);
 
         rg.global_render_graph.endSingleTimeCommands(command_buffer);
         rg.global_render_graph.submitCommandBuffer(command_buffer);

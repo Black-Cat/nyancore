@@ -1,5 +1,6 @@
 const vk = @import("../../../vk.zig");
 const std = @import("std");
+const rg = @import("../render_graph.zig");
 
 usingnamespace @import("../../../vulkan_wrapper/vulkan_wrapper.zig");
 
@@ -14,7 +15,7 @@ pub const Texture = struct {
     memory: vk.DeviceMemory,
     view: vk.ImageView,
     sampler: vk.Sampler,
-    image_format: vk.Format = .b8g8r8a8_unorm,
+    image_format: vk.Format = .r8g8b8a8_unorm,
 
     pub fn init(self: *Texture, name: []const u8, width: u32, height: u32, image_format: vk.Format, allocator: *std.mem.Allocator) void {
         self.rg_resource.init(name, allocator);
@@ -118,6 +119,12 @@ pub const Texture = struct {
             printVulkanError("Can't create sampler for ui texture", err, vkc.allocator);
             return;
         };
+
+        const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
+        rg.global_render_graph.beginSingleTimeCommands(command_buffer);
+        self.transitionImageLayout(command_buffer, .@"undefined", .shader_read_only_optimal);
+        rg.global_render_graph.endSingleTimeCommands(command_buffer);
+        rg.global_render_graph.submitCommandBuffer(command_buffer);
     }
 
     pub fn destroy(self: *Texture) void {
@@ -125,5 +132,56 @@ pub const Texture = struct {
         vkd.destroyImage(vkc.device, self.image, null);
         vkd.destroyImageView(vkc.device, self.view, null);
         vkd.freeMemory(vkc.device, self.memory, null);
+    }
+
+    pub fn transitionImageLayout(self: *Texture, command_buffer: vk.CommandBuffer, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) void {
+        var barrier: vk.ImageMemoryBarrier = .{
+            .old_layout = old_layout,
+            .new_layout = new_layout,
+
+            .src_queue_family_index = vk.QUEUE_FAMILY_IGNORED,
+            .dst_queue_family_index = vk.QUEUE_FAMILY_IGNORED,
+
+            .image = self.image,
+            .subresource_range = .{
+                .aspect_mask = .{
+                    .color_bit = true,
+                },
+                .base_mip_level = 0,
+                .level_count = 1,
+                .base_array_layer = 0,
+                .layer_count = 1,
+            },
+
+            .src_access_mask = undefined,
+            .dst_access_mask = undefined,
+        };
+
+        var source_stage: vk.PipelineStageFlags = undefined;
+        var destination_stage: vk.PipelineStageFlags = undefined;
+
+        if (old_layout == .@"undefined" and new_layout == .transfer_dst_optimal) {
+            barrier.src_access_mask = .{};
+            barrier.dst_access_mask = .{ .transfer_write_bit = true };
+
+            source_stage = .{ .top_of_pipe_bit = true };
+            destination_stage = .{ .transfer_bit = true };
+        } else if (old_layout == .transfer_dst_optimal and new_layout == .shader_read_only_optimal) {
+            barrier.src_access_mask = .{ .transfer_write_bit = true };
+            barrier.dst_access_mask = .{ .shader_read_bit = true };
+
+            source_stage = .{ .transfer_bit = true };
+            destination_stage = .{ .fragment_shader_bit = true };
+        } else if (old_layout == .@"undefined" and new_layout == .shader_read_only_optimal) {
+            barrier.src_access_mask = .{};
+            barrier.dst_access_mask = .{ .shader_read_bit = true };
+
+            source_stage = .{ .top_of_pipe_bit = true };
+            destination_stage = .{ .fragment_shader_bit = true };
+        } else {
+            @panic("Not supported image layouts for transfer");
+        }
+
+        vkd.cmdPipelineBarrier(command_buffer, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast([*]const vk.ImageMemoryBarrier, &barrier));
     }
 };

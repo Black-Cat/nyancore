@@ -93,10 +93,15 @@ pub const RenderGraph = struct {
         };
     }
 
-    pub fn deinit(self: *RenderGraph) void {
+    pub fn deinitCommandBuffers(self: *RenderGraph) void {
+        vkd.deviceWaitIdle(vkc.device) catch |err| {
+            printVulkanError("Can't wait for device idle while destruction of command buffers", err, self.allocator);
+        };
         vkd.freeCommandBuffers(vkc.device, self.command_pool, self.in_flight, self.command_buffers.ptr);
         vkd.destroyCommandPool(vkc.device, self.command_pool, null);
+    }
 
+    pub fn deinit(self: *RenderGraph) void {
         self.passes.deinit();
         self.resources.deinit();
 

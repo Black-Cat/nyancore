@@ -25,24 +25,18 @@ pub const ScreenRenderPass = struct {
     vert_shader: vk.ShaderModule,
     frag_shader: vk.ShaderModule,
 
-    descriptor_sets: *[]vk.DescriptorSet,
-    descriptor_set_layout: *vk.DescriptorSetLayout,
-
     pub fn init(
         self: *ScreenRenderPass,
         name: []const u8,
         allocator: *std.mem.Allocator,
         target: *ViewportTexture,
-        descriptor_sets: *[]vk.DescriptorSet,
-        descriptor_set_layout: *vk.DescriptorSetLayout,
     ) void {
         self.allocator = allocator;
-        self.descriptor_sets = descriptor_sets;
         self.target = target;
-        self.descriptor_set_layout = descriptor_set_layout;
 
         self.rg_pass.init(name, allocator, passInit, passDeinit, passRender);
         target.rg_resource.registerOnChangeCallback(&self.rg_pass, reinitFramebuffer);
+        self.rg_pass.appendWriteResource(&target.rg_resource);
 
         self.framebuffers = allocator.alloc(vk.Framebuffer, target.textures.len) catch unreachable;
     }
@@ -67,7 +61,7 @@ pub const ScreenRenderPass = struct {
             .stencil_load_op = .dont_care,
             .stencil_store_op = .dont_care,
             .initial_layout = .@"undefined",
-            .final_layout = .present_src_khr,
+            .final_layout = .shader_read_only_optimal,
             .flags = .{},
         };
 
@@ -156,8 +150,6 @@ pub const ScreenRenderPass = struct {
         vkd.cmdBeginRenderPass(command_buffer, render_pass_info, .@"inline");
         defer vkd.cmdEndRenderPass(command_buffer);
 
-        const descriptor_set: [*]const vk.DescriptorSet = @ptrCast([*]const vk.DescriptorSet, &self.descriptor_sets.*[image_index]);
-        vkd.vkCmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, descriptor_set, 0, undefined);
         vkd.cmdBindPipeline(command_buffer, .graphics, self.pipeline);
 
         const viewport_info: vk.Viewport = .{
@@ -248,8 +240,8 @@ pub const ScreenRenderPass = struct {
         };
 
         const pipeline_layout_create_info: vk.PipelineLayoutCreateInfo = .{
-            .set_layout_count = 1,
-            .p_set_layouts = @ptrCast([*]const vk.DescriptorSetLayout, self.descriptor_set_layout),
+            .set_layout_count = 0,
+            .p_set_layouts = undefined,
             .push_constant_range_count = 1,
             .p_push_constant_ranges = @ptrCast([*]const vk.PushConstantRange, &push_constant_range),
             .flags = .{},
@@ -284,12 +276,12 @@ pub const ScreenRenderPass = struct {
         };
 
         const blend_attachment_state: vk.PipelineColorBlendAttachmentState = .{
-            .blend_enable = vk.TRUE,
+            .blend_enable = vk.FALSE,
             .color_write_mask = .{ .r_bit = true, .g_bit = true, .b_bit = true, .a_bit = true },
             .src_color_blend_factor = .src_alpha,
             .dst_color_blend_factor = .one_minus_src_alpha,
             .color_blend_op = .add,
-            .src_alpha_blend_factor = .one_minus_src_alpha,
+            .src_alpha_blend_factor = .one,
             .dst_alpha_blend_factor = .zero,
             .alpha_blend_op = .add,
         };

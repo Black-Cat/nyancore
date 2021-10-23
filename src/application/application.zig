@@ -1,6 +1,7 @@
 const builtin = @import("builtin");
 const c = @import("../c.zig");
 const std = @import("std");
+const rg = @import("../renderer/render_graph/render_graph.zig");
 
 const Allocator = std.mem.Allocator;
 usingnamespace @import("config.zig");
@@ -107,6 +108,8 @@ pub const Application = struct {
 
             self.framebuffer_resized = false;
         }
+
+        rg.global_render_graph.deinitCommandBuffers();
 
         var i: usize = self.systems.len - 1;
         while (i > 0) : (i -= 1) {

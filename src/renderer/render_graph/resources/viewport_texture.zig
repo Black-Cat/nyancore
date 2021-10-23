@@ -17,6 +17,11 @@ pub const ViewportTexture = struct {
 
     width: u32,
     height: u32,
+
+    // Used for resizing
+    new_width: u32,
+    new_height: u32,
+
     image_format: vk.Format,
 
     pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, image_format: vk.Format, allocator: *std.mem.Allocator) void {
@@ -46,12 +51,17 @@ pub const ViewportTexture = struct {
             tex.destroy();
     }
 
-    pub fn resize(self: *ViewportTexture, rg: *RenderGraph) void {
+    pub fn resize(self: *ViewportTexture, rg: *RenderGraph, new_width: u32, new_height: u32) void {
+        self.new_width = new_width;
+        self.new_height = new_height;
         rg.changeResourceBetweenFrames(&self.rg_resource, resizeBetweenFrames);
     }
 
     fn resizeBetweenFrames(res: *RGResource) void {
         const self: *ViewportTexture = @fieldParentPtr(ViewportTexture, "rg_resource", res);
+
+        self.width = self.new_width;
+        self.height = self.new_height;
 
         self.destroy();
         self.alloc();

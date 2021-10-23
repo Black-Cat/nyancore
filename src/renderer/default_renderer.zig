@@ -29,8 +29,6 @@ pub const DefaultRenderer = struct {
 
     framebuffer_resized: bool,
 
-    command_pool: vk.CommandPool,
-
     pub fn init(self: *DefaultRenderer, comptime name: []const u8, allocator: *Allocator) void {
         self.allocator = allocator;
         self.name = name;
@@ -150,6 +148,7 @@ pub const DefaultRenderer = struct {
             .null_handle,
             &image_index,
         );
+        rg.global_render_graph.image_index = image_index;
 
         if (vkres_acquire == .error_out_of_date_khr) {
             try self.recreateSwapchain();
