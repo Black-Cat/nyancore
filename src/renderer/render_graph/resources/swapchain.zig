@@ -20,7 +20,8 @@ pub const Swapchain = struct {
     render_pass: vk.RenderPass,
     framebuffers: []vk.Framebuffer,
 
-    pub fn init(self: *Swapchain, width: u32, height: u32) !void {
+    pub fn init(self: *Swapchain, width: u32, height: u32, images_count: u32) !void {
+        self.image_count = images_count;
         try self.createSwapchain(width, height);
         try self.createImageViews();
         try self.createRenderPass();
@@ -33,7 +34,7 @@ pub const Swapchain = struct {
 
     pub fn recreate(self: *Swapchain, width: u32, height: u32) !void {
         self.cleanup();
-        try self.init(width, height);
+        try self.init(width, height, self.image_count);
     }
 
     fn cleanup(self: *Swapchain) void {
@@ -61,12 +62,11 @@ pub const Swapchain = struct {
         const present_mode: vk.PresentModeKHR = chooseSwapPresentMode(swapchain_support.present_modes);
         const extent: vk.Extent2D = chooseSwapExtent(&swapchain_support.capabilities, width, height);
 
-        var image_count: u32 = swapchain_support.capabilities.min_image_count + 1;
-
-        if (swapchain_support.capabilities.max_image_count > 0 and image_count > swapchain_support.capabilities.max_image_count) {
+        var image_count: u32 = self.image_count;
+        if (image_count < swapchain_support.capabilities.min_image_count)
+            image_count = swapchain_support.capabilities.min_image_count;
+        if (image_count < swapchain_support.capabilities.max_image_count)
             image_count = swapchain_support.capabilities.max_image_count;
-        }
-
         self.image_count = image_count;
 
         const queue_family_indices: [2]u32 = [_]u32{
@@ -79,7 +79,7 @@ pub const Swapchain = struct {
             .flags = .{},
             .surface = vkc.surface,
 
-            .min_image_count = image_count,
+            .min_image_count = self.image_count,
             .image_format = surface_format.format,
             .image_color_space = surface_format.color_space,
             .image_extent = extent,

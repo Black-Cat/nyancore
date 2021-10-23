@@ -1,4 +1,5 @@
 const std = @import("std");
+const vk = @import("../../vk.zig");
 
 usingnamespace @import("resources/resources.zig");
 usingnamespace @import("../../vulkan_wrapper/vulkan_wrapper.zig");
@@ -23,6 +24,9 @@ pub const RenderGraph = struct {
     final_swapchain: Swapchain,
     needs_rebuilding: bool,
 
+    command_pool: vk.CommandPool,
+    command_buffers: []vk.CommandBuffer,
+
     frame_index: u32,
     image_index: u32,
     in_flight: u32,
@@ -40,7 +44,7 @@ pub const RenderGraph = struct {
     textures: std.ArrayList(*Texture),
     viewport_textures: std.ArrayList(*ViewportTexture),
 
-    pub fn init(self: *RenderGraph, in_flight: u32, allocator: *std.mem.Allocator) void {
+    pub fn init(self: *RenderGraph, allocator: *std.mem.Allocator) void {
         self.allocator = allocator;
 
         self.passes = PassList.init(allocator);
@@ -58,11 +62,41 @@ pub const RenderGraph = struct {
 
         self.frame_index = 0;
         self.image_index = 0;
-        self.in_flight = in_flight;
         self.needs_rebuilding = false;
     }
 
+    pub fn initVulkan(self: *RenderGraph) void {
+        self.in_flight = self.final_swapchain.image_count;
+
+        const pool_info: vk.CommandPoolCreateInfo = .{
+            .queue_family_index = vkc.family_indices.graphics_family,
+            .flags = .{
+                .reset_command_buffer_bit = true,
+            },
+        };
+
+        self.command_pool = vkd.createCommandPool(vkc.device, pool_info, null) catch |err| {
+            printVulkanError("Can't create command pool for render graph", err, vkc.allocator);
+            return;
+        };
+
+        const command_buffer_info: vk.CommandBufferAllocateInfo = .{
+            .level = .primary,
+            .command_pool = self.command_pool,
+            .command_buffer_count = self.in_flight,
+        };
+
+        self.command_buffers = self.allocator.alloc(vk.CommandBuffer, self.in_flight) catch unreachable;
+
+        vkd.allocateCommandBuffers(vkc.device, command_buffer_info, self.command_buffers.ptr) catch |err| {
+            printVulkanError("Can't allocate primary command buffers", err, vkc.allocator);
+        };
+    }
+
     pub fn deinit(self: *RenderGraph) void {
+        vkd.freeCommandBuffers(vkc.device, self.command_pool, self.in_flight, self.command_buffers.ptr);
+        vkd.destroyCommandPool(vkc.device, self.command_pool, null);
+
         self.passes.deinit();
         self.resources.deinit();
 
@@ -70,6 +104,8 @@ pub const RenderGraph = struct {
         self.culled_resources.deinit();
 
         self.sorted_passes.deinit();
+
+        self.allocator.free(self.command_buffers);
     }
 
     pub fn addTexture(self: *RenderGraph, tex: *Texture) void {
@@ -104,6 +140,10 @@ pub const RenderGraph = struct {
         for (self.resource_changes.items) |ctx|
             ctx.change_fn(ctx.res);
 
+        for (self.resource_changes.items) |ctx|
+            for (ctx.res.on_change_callbacks.items) |cb|
+                cb.callback(cb.pass);
+
         self.resource_changes.clearRetainingCapacity();
     }
 
@@ -126,6 +166,8 @@ pub const RenderGraph = struct {
 
         var visited: std.AutoHashMap(*RGPass, bool) = std.AutoHashMap(*RGPass, bool).init(self.allocator);
         defer visited.deinit();
+
+        queue_resources.append(&self.final_swapchain.rg_resource) catch unreachable;
 
         while (queue_resources.items.len > 0 or queue_passes.items.len > 0) {
             if (queue_resources.items.len > 0) {
@@ -159,8 +201,12 @@ pub const RenderGraph = struct {
 
         unready_passes.ensureTotalCapacity(self.culled_passes.items.len) catch unreachable;
 
-        for (self.culled_passes.items) |p, ind|
-            unready_passes.putAssumeCapacity(p, p.reads_from.items.len);
+        for (self.culled_passes.items) |p| {
+            var passes_before_count: usize = 0;
+            for (p.reads_from.items) |r|
+                passes_before_count += r.writers.items.len;
+            unready_passes.putAssumeCapacity(p, passes_before_count);
+        }
 
         while (unready_passes.count() > 0) {
             var it = unready_passes.iterator();
@@ -182,5 +228,67 @@ pub const RenderGraph = struct {
                 }
             }
         }
+    }
+
+    pub fn render(self: *RenderGraph, command_buffer: vk.CommandBuffer, image_index: u32) void {
+        for (self.sorted_passes.items) |rp|
+            rp.renderFn(rp, command_buffer, image_index);
+    }
+
+    pub fn beginSingleTimeCommands(self: *RenderGraph, command_buffer: vk.CommandBuffer) void {
+        const begin_info: vk.CommandBufferBeginInfo = .{
+            .flags = .{
+                .one_time_submit_bit = true,
+            },
+            .p_inheritance_info = undefined,
+        };
+
+        vkd.beginCommandBuffer(command_buffer, begin_info) catch |err| {
+            printVulkanError("Can't begin command buffer", err, vkc.allocator);
+        };
+    }
+
+    pub fn endSingleTimeCommands(self: *RenderGraph, command_buffer: vk.CommandBuffer) void {
+        vkd.endCommandBuffer(command_buffer) catch |err| {
+            printVulkanError("Can't end command buffer", err, vkc.allocator);
+            return;
+        };
+    }
+
+    // Pls don't use, created for special cases
+    pub fn allocateCommandBuffer(self: *RenderGraph) vk.CommandBuffer {
+        const alloc_info: vk.CommandBufferAllocateInfo = .{
+            .level = .primary,
+            .command_pool = self.command_pool,
+            .command_buffer_count = 1,
+        };
+
+        var command_buffer: vk.CommandBuffer = undefined;
+        vkd.allocateCommandBuffers(vkc.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &command_buffer)) catch |err| {
+            printVulkanError("Can't allocate command buffer", err, vkc.allocator);
+        };
+        return command_buffer;
+    }
+
+    // Pls don't use, created for special cases
+    pub fn submitCommandBuffer(self: *RenderGraph, command_buffer: vk.CommandBuffer) void {
+        const submit_info: vk.SubmitInfo = .{
+            .command_buffer_count = 1,
+            .p_command_buffers = @ptrCast([*]const vk.CommandBuffer, &command_buffer),
+            .wait_semaphore_count = 0,
+            .p_wait_semaphores = undefined,
+            .p_wait_dst_stage_mask = undefined,
+            .signal_semaphore_count = 0,
+            .p_signal_semaphores = undefined,
+        };
+
+        vkd.queueSubmit(vkc.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), .null_handle) catch |err| {
+            printVulkanError("Can't submit queue", err, vkc.allocator);
+        };
+        vkd.queueWaitIdle(vkc.graphics_queue) catch |err| {
+            printVulkanError("Can't wait for queue", err, vkc.allocator);
+        };
+
+        vkd.freeCommandBuffers(vkc.device, self.command_pool, 1, @ptrCast([*]const vk.CommandBuffer, &command_buffer));
     }
 };

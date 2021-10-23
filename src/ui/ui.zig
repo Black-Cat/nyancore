@@ -89,7 +89,7 @@ pub const UI = struct {
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
 
-        self.render_pass.init("UI Render Pass", allocator, renderPassInit, renderPassDeinit);
+        self.render_pass.init("UI Render Pass", allocator, renderPassInit, renderPassDeinit, renderPassRender);
     }
 
     fn initPalette(self: *UI) void {
@@ -124,6 +124,11 @@ pub const UI = struct {
     fn renderPassDeinit(render_pass: *RGPass) void {
         const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
         self.render_pass.removeWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
+    }
+
+    fn renderPassRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, image_index: u32) void {
+        const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
+        self.vulkan_context.render(command_buffer, image_index);
     }
 
     fn systemInit(system: *System, app: *Application) void {
@@ -172,11 +177,6 @@ pub const UI = struct {
 
         c.igRender();
         c.igEndFrame();
-    }
-
-    pub fn render(system: *System, index: u32) vk.CommandBuffer {
-        const self: *UI = @fieldParentPtr(UI, "system", system);
-        return self.vulkan_context.render(index);
     }
 
     fn checkFramebufferResized(self: *UI) void {

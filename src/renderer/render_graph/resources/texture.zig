@@ -14,18 +14,24 @@ pub const Texture = struct {
     memory: vk.DeviceMemory,
     view: vk.ImageView,
     sampler: vk.Sampler,
+    image_format: vk.Format = .b8g8r8a8_unorm,
 
-    pub fn init(self: *Texture, name: []const u8, width: u32, height: u32, allocator: *std.mem.Allocator) void {
+    pub fn init(self: *Texture, name: []const u8, width: u32, height: u32, image_format: vk.Format, allocator: *std.mem.Allocator) void {
         self.rg_resource.init(name, allocator);
 
         self.size[0] = width;
         self.size[1] = height;
+        self.image_format = image_format;
+    }
+
+    pub fn deinit(self: *Texture) void {
+        self.rg_resource.deinit();
     }
 
     pub fn alloc(self: *Texture) void {
         const image_info: vk.ImageCreateInfo = .{
             .image_type = .@"2d",
-            .format = .r8g8b8a8_unorm,
+            .format = self.image_format,
             .extent = .{
                 .width = self.size[0],
                 .height = self.size[1],
@@ -50,7 +56,7 @@ pub const Texture = struct {
         };
 
         self.image = vkd.createImage(vkc.device, image_info, null) catch |err| {
-            printVulkanError("Can't create texture for ui", err, vkc.allocator);
+            printVulkanError("Can't create texture", err, vkc.allocator);
             return;
         };
 
@@ -61,19 +67,19 @@ pub const Texture = struct {
             .memory_type_index = vkc.getMemoryType(mem_req.memory_type_bits, .{ .device_local_bit = true }),
         };
         self.memory = vkd.allocateMemory(vkc.device, mem_alloc_info, null) catch |err| {
-            printVulkanError("Can't allocate texture memory for ui", err, vkc.allocator);
+            printVulkanError("Can't allocate texture memory", err, vkc.allocator);
             return;
         };
 
         vkd.bindImageMemory(vkc.device, self.image, self.memory, 0) catch |err| {
-            printVulkanError("Can't bind texture memory for ui", err, vkc.allocator);
+            printVulkanError("Can't bind texture memory", err, vkc.allocator);
             return;
         };
 
         const view_info: vk.ImageViewCreateInfo = .{
             .image = self.image,
             .view_type = .@"2d",
-            .format = .r8g8b8a8_unorm,
+            .format = self.image_format,
             .subresource_range = .{
                 .aspect_mask = .{ .color_bit = true },
                 .level_count = 1,
@@ -85,7 +91,7 @@ pub const Texture = struct {
             .components = .{ .r = .identity, .g = .identity, .b = .identity, .a = .identity },
         };
         self.view = vkd.createImageView(vkc.device, view_info, null) catch |err| {
-            printVulkanError("Can't create image view for ui", err, vkc.allocator);
+            printVulkanError("Can't create image view", err, vkc.allocator);
             return;
         };
 

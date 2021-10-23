@@ -86,7 +86,6 @@ pub const Buffer = struct {
 pub const UIVulkanContext = struct {
     parent: *UI,
     font_texture: Texture,
-    command_pool: vk.CommandPool,
 
     descriptor_pool: vk.DescriptorPool,
     descriptor_set_layout: vk.DescriptorSetLayout,
@@ -140,18 +139,12 @@ pub const UIVulkanContext = struct {
         vkd.destroyDescriptorSetLayout(vkc.device, self.descriptor_set_layout, null);
         vkd.destroyDescriptorPool(vkc.device, self.descriptor_pool, null);
 
-        vkd.destroyCommandPool(vkc.device, self.command_pool, null);
         self.font_texture.destroy();
     }
-    pub fn render(self: *UIVulkanContext, image_index: u32) vk.CommandBuffer {
+    pub fn render(self: *UIVulkanContext, command_buffer: vk.CommandBuffer, image_index: u32) void {
         self.updateBuffers(image_index);
 
         const io: *c.ImGuiIO = c.igGetIO();
-
-        const command_buffer: vk.CommandBuffer = self.beginSingleTimeCommands();
-        defer vkd.endCommandBuffer(command_buffer) catch |err| {
-            printVulkanError("Can't end command buffer for ui", err, vkc.allocator);
-        };
 
         const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } };
         const render_pass_info: vk.RenderPassBeginInfo = .{
@@ -188,13 +181,13 @@ pub const UIVulkanContext = struct {
         vkd.cmdPushConstants(command_buffer, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(PushConstBlock), @ptrCast([*]const PushConstBlock, &push_const_block));
 
         // Render commands
-        const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return command_buffer;
+        const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return;
 
         var vertex_offset: i32 = 0;
         var index_offset: u32 = 0;
 
         if (draw_data.CmdListsCount == 0)
-            return command_buffer;
+            return;
 
         const offset: u64 = 0;
         vkd.cmdBindVertexBuffers(command_buffer, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffers[image_index].buffer), @ptrCast([*]const u64, &offset));
@@ -230,7 +223,7 @@ pub const UIVulkanContext = struct {
                 vkd.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
 
                 // Bind descriptor that user specified with igImage
-                if (false and pcmd.TextureId != null) {
+                if (pcmd.TextureId != null) {
                     const alignment: u26 = @alignOf([*]const vk.DescriptorSet);
                     const descriptor_set: [*]const vk.DescriptorSet = @ptrCast([*]const vk.DescriptorSet, @alignCast(alignment, pcmd.TextureId.?));
                     vkd.cmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, descriptor_set, 0, undefined);
@@ -240,13 +233,11 @@ pub const UIVulkanContext = struct {
                 index_offset += pcmd.ElemCount;
 
                 // Return font descriptor
-                if (false and pcmd.TextureId != null)
+                if (pcmd.TextureId != null)
                     vkd.cmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
             }
             vertex_offset += cmd_list.VtxBuffer.Size;
         }
-
-        return command_buffer;
     }
 
     fn updateBuffers(self: *UIVulkanContext, image_index: u32) void {
@@ -505,7 +496,7 @@ pub const UIVulkanContext = struct {
             .{
                 .binding = 0,
                 .location = 2,
-                .format = .r8g8b8a8_unorm,
+                .format = .b8g8r8a8_unorm,
                 .offset = @byteOffsetOf(c.ImDrawVert, "col"),
             },
         };
@@ -572,59 +563,7 @@ pub const UIVulkanContext = struct {
         };
     }
 
-    fn beginSingleTimeCommands(self: *UIVulkanContext) vk.CommandBuffer {
-        const alloc_info: vk.CommandBufferAllocateInfo = .{
-            .level = .primary,
-            .command_pool = self.command_pool,
-            .command_buffer_count = 1,
-        };
-
-        var command_buffer: vk.CommandBuffer = undefined;
-        vkd.allocateCommandBuffers(vkc.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &command_buffer)) catch |err| {
-            printVulkanError("Can't allocate command buffer for ui", err, vkc.allocator);
-        };
-
-        const begin_info: vk.CommandBufferBeginInfo = .{
-            .flags = .{
-                .one_time_submit_bit = true,
-            },
-            .p_inheritance_info = undefined,
-        };
-
-        vkd.beginCommandBuffer(command_buffer, begin_info) catch |err| {
-            printVulkanError("Can't begin command buffers for ui", err, vkc.allocator);
-        };
-
-        return command_buffer;
-    }
-
-    fn endSingleTimeCommands(self: *UIVulkanContext, command_buffer: vk.CommandBuffer) void {
-        vkd.endCommandBuffer(command_buffer) catch |err| {
-            printVulkanError("Can't end command buffer for ui", err, vkc.allocator);
-            return;
-        };
-
-        const submit_info: vk.SubmitInfo = .{
-            .command_buffer_count = 1,
-            .p_command_buffers = @ptrCast([*]const vk.CommandBuffer, &command_buffer),
-            .wait_semaphore_count = 0,
-            .p_wait_semaphores = undefined,
-            .p_wait_dst_stage_mask = undefined,
-            .signal_semaphore_count = 0,
-            .p_signal_semaphores = undefined,
-        };
-
-        vkd.queueSubmit(vkc.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), .null_handle) catch |err| {
-            printVulkanError("Can't submit queue for ui", err, vkc.allocator);
-        };
-        vkd.queueWaitIdle(vkc.graphics_queue) catch |err| {
-            printVulkanError("Can't wait for queue for ui", err, vkc.allocator);
-        };
-
-        vkd.freeCommandBuffers(vkc.device, self.command_pool, 1, @ptrCast([*]const vk.CommandBuffer, &command_buffer));
-    }
-
-    fn transitionImageLayout(self: *UIVulkanContext, command_buffer: *vk.CommandBuffer, image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) void {
+    fn transitionImageLayout(self: *UIVulkanContext, command_buffer: vk.CommandBuffer, image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) void {
         var barrier: vk.ImageMemoryBarrier = .{
             .old_layout = old_layout,
             .new_layout = new_layout,
@@ -666,24 +605,7 @@ pub const UIVulkanContext = struct {
             @panic("Not supported image layouts for transfer");
         }
 
-        vkd.cmdPipelineBarrier(command_buffer.*, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast([*]const vk.ImageMemoryBarrier, &barrier));
-    }
-
-    fn loadShader(self: *UIVulkanContext, shader_code: [*:0]const u8, stage: shader_util.ShaderStage) vk.ShaderModule {
-        const shader: shader_util.CompiledShader = shader_util.compileShader(shader_code, stage);
-
-        const module_create_info: vk.ShaderModuleCreateInfo = .{
-            .code_size = shader.size,
-            .p_code = shader.pcode,
-            .flags = .{},
-        };
-
-        var shader_module: vk.ShaderModule = vkd.createShaderModule(vkc.device, module_create_info, null) catch |err| {
-            printVulkanError("Can't create shader module for ui", err, vkc.allocator);
-            @panic("Can't create shader module for ui");
-        };
-
-        return shader_module;
+        vkd.cmdPipelineBarrier(command_buffer, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast([*]const vk.ImageMemoryBarrier, &barrier));
     }
 
     fn initFonts(self: *UIVulkanContext) void {
@@ -741,12 +663,13 @@ pub const UIVulkanContext = struct {
         @memcpy(@ptrCast([*]u8, mapped_memory), font_data, tex_size);
         vkd.unmapMemory(vkc.device, staging_buffer_memory);
 
-        self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), vkc.allocator);
+        self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .b8g8r8a8_unorm, vkc.allocator);
         self.font_texture.alloc();
 
-        var command_buffer: vk.CommandBuffer = self.beginSingleTimeCommands();
+        const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
+        rg.global_render_graph.beginSingleTimeCommands(command_buffer);
 
-        self.transitionImageLayout(&command_buffer, self.font_texture.image, .r8g8b8a8_unorm, .@"undefined", .transfer_dst_optimal);
+        self.transitionImageLayout(command_buffer, self.font_texture.image, self.font_texture.image_format, .@"undefined", .transfer_dst_optimal);
 
         const region: vk.BufferImageCopy = .{
             .buffer_offset = 0,
@@ -768,9 +691,10 @@ pub const UIVulkanContext = struct {
 
         vkd.cmdCopyBufferToImage(command_buffer, staging_buffer, self.font_texture.image, .transfer_dst_optimal, 1, @ptrCast([*]const vk.BufferImageCopy, &region));
 
-        self.transitionImageLayout(&command_buffer, self.font_texture.image, .r8g8b8a8_unorm, .transfer_dst_optimal, .shader_read_only_optimal);
+        self.transitionImageLayout(command_buffer, self.font_texture.image, self.font_texture.image_format, .transfer_dst_optimal, .shader_read_only_optimal);
 
-        self.endSingleTimeCommands(command_buffer);
+        rg.global_render_graph.endSingleTimeCommands(command_buffer);
+        rg.global_render_graph.submitCommandBuffer(command_buffer);
 
         const pool_size: vk.DescriptorPoolSize = .{
             .type = .combined_image_sampler,
@@ -840,18 +764,6 @@ pub const UIVulkanContext = struct {
     }
 
     fn initResources(self: *UIVulkanContext) void {
-        const pool_info: vk.CommandPoolCreateInfo = .{
-            .queue_family_index = vkc.family_indices.graphics_family,
-            .flags = .{
-                .reset_command_buffer_bit = true,
-            },
-        };
-
-        self.command_pool = vkd.createCommandPool(vkc.device, pool_info, null) catch |err| {
-            printVulkanError("Can't create command pool for ui", err, vkc.allocator);
-            return;
-        };
-
         self.initFonts();
 
         const pipeline_cache_create_info: vk.PipelineCacheCreateInfo = .{
@@ -867,8 +779,8 @@ pub const UIVulkanContext = struct {
 
         const ui_vert = @embedFile("ui.vert");
         const ui_frag = @embedFile("ui.frag");
-        self.vert_shader = self.loadShader(ui_vert, .vertex);
-        self.frag_shader = self.loadShader(ui_frag, .fragment);
+        self.vert_shader = shader_util.loadShader(ui_vert, .vertex);
+        self.frag_shader = shader_util.loadShader(ui_frag, .fragment);
 
         self.createRenderPass();
         self.createGraphicsPipeline();

@@ -1,9 +1,11 @@
 const std = @import("std");
+const vk = @import("../vk.zig");
 const c = struct {
     usingnamespace @cImport({
         @cInclude("glslang_c_interface.h");
     });
 };
+usingnamespace @import("../vulkan_wrapper/vulkan_wrapper.zig");
 
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
@@ -192,4 +194,21 @@ pub fn compileShader(code: [*:0]const u8, stage: ShaderStage) CompiledShader {
     compiledShader.pcode = c.glslang_program_SPIRV_get_ptr(program);
 
     return compiledShader;
+}
+
+pub fn loadShader(shader_code: [*:0]const u8, stage: ShaderStage) vk.ShaderModule {
+    const shader: CompiledShader = compileShader(shader_code, stage);
+
+    const module_create_info: vk.ShaderModuleCreateInfo = .{
+        .code_size = shader.size,
+        .p_code = shader.pcode,
+        .flags = .{},
+    };
+
+    var shader_module: vk.ShaderModule = vkd.createShaderModule(vkc.device, module_create_info, null) catch |err| {
+        printVulkanError("Can't create shader module", err, vkc.allocator);
+        @panic("Can't create shader module");
+    };
+
+    return shader_module;
 }

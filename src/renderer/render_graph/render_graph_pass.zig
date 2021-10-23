@@ -1,4 +1,5 @@
 const std = @import("std");
+const vk = @import("../../vk.zig");
 
 const RGResource = @import("render_graph_resource.zig").RGResource;
 const RenderGraph = @import("render_graph.zig").RenderGraph;
@@ -8,6 +9,7 @@ const PassList = std.ArrayList(*RGPass);
 
 pub const RGPass = struct {
     const PassFunction = fn (render_pass: *RGPass) void;
+    const RenderFunction = fn (render_pass: *RGPass, command_buffer: vk.CommandBuffer, image_index: u32) void;
 
     name: []const u8,
 
@@ -16,11 +18,13 @@ pub const RGPass = struct {
 
     initFn: PassFunction,
     deinitFn: PassFunction,
+    renderFn: RenderFunction,
 
-    pub fn init(self: *RGPass, name: []const u8, allocator: *std.mem.Allocator, initFn: PassFunction, deinitFn: PassFunction) void {
+    pub fn init(self: *RGPass, name: []const u8, allocator: *std.mem.Allocator, initFn: PassFunction, deinitFn: PassFunction, renderFn: RenderFunction) void {
         self.name = name;
         self.initFn = initFn;
         self.deinitFn = deinitFn;
+        self.renderFn = renderFn;
 
         self.writes_to = ResourceList.init(allocator);
         self.reads_from = ResourceList.init(allocator);

@@ -17,10 +17,12 @@ pub const ViewportTexture = struct {
 
     width: u32,
     height: u32,
+    image_format: vk.Format,
 
-    pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, allocator: *std.mem.Allocator) void {
+    pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, image_format: vk.Format, allocator: *std.mem.Allocator) void {
         self.width = width;
         self.height = height;
+        self.image_format = image_format;
 
         self.rg_resource.init(name, allocator);
 
@@ -34,7 +36,7 @@ pub const ViewportTexture = struct {
 
     pub fn alloc(self: *ViewportTexture) void {
         for (self.textures) |*tex| {
-            tex.init(self.rg_resource.name, self.width, self.height, self.allocator);
+            tex.init(self.rg_resource.name, self.width, self.height, self.image_format, self.allocator);
             tex.alloc();
         }
     }

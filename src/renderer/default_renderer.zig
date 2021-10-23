@@ -26,24 +26,19 @@ pub const DefaultRenderer = struct {
     image_available_semaphores: [frames_in_flight]vk.Semaphore,
     render_finished_semaphores: [frames_in_flight]vk.Semaphore,
     in_flight_fences: [frames_in_flight]vk.Fence,
-    image_index: u32,
 
     framebuffer_resized: bool,
 
-    renderCtx: std.ArrayList(*System),
-    renderFns: std.ArrayList(fn (system: *System, index: u32) vk.CommandBuffer),
+    command_pool: vk.CommandPool,
 
     pub fn init(self: *DefaultRenderer, comptime name: []const u8, allocator: *Allocator) void {
         self.allocator = allocator;
         self.name = name;
         self.framebuffer_resized = false;
-        self.image_index = 0;
-        self.renderCtx = std.ArrayList(*System).init(allocator);
-        self.renderFns = std.ArrayList(fn (system: *System, index: u32) vk.CommandBuffer).init(allocator);
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
 
-        rg.global_render_graph.init(frames_in_flight, self.allocator);
+        rg.global_render_graph.init(self.allocator);
     }
 
     fn systemInit(system: *System, app: *Application) void {
@@ -58,12 +53,16 @@ pub const DefaultRenderer = struct {
         c.glfwGetFramebufferSize(app.window, &width, &height);
 
         rg.global_render_graph.final_swapchain.rg_resource.init("Final Swapchain", app.allocator);
-        rg.global_render_graph.final_swapchain.init(@intCast(u32, width), @intCast(u32, height)) catch @panic("Error during swapchain creation");
+        rg.global_render_graph.final_swapchain.init(@intCast(u32, width), @intCast(u32, height), frames_in_flight) catch @panic("Error during swapchain creation");
+
+        rg.global_render_graph.initVulkan();
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
 
         for (rg.global_render_graph.passes.items) |pass|
             pass.initFn(pass);
+
+        rg.global_render_graph.build();
     }
 
     fn systemDeinit(system: *System) void {
@@ -160,7 +159,14 @@ pub const DefaultRenderer = struct {
             return error.Unknown;
         }
 
-        var command_buffer: vk.CommandBuffer = self.renderFns.items[0](self.renderCtx.items[0], image_index);
+        var command_buffer: vk.CommandBuffer = rg.global_render_graph.command_buffers[image_index];
+        vkd.resetCommandBuffer(command_buffer, .{}) catch |err| {
+            printVulkanError("Can't reset command buffer", err, self.allocator);
+        };
+
+        rg.global_render_graph.beginSingleTimeCommands(command_buffer);
+        rg.global_render_graph.render(command_buffer, image_index);
+        rg.global_render_graph.endSingleTimeCommands(command_buffer);
 
         const wait_stage: vk.PipelineStageFlags = .{ .color_attachment_output_bit = true };
         const submit_info: vk.SubmitInfo = .{
