@@ -23,16 +23,26 @@ pub const ScreenRenderPass = struct {
     pipeline: vk.Pipeline,
 
     vert_shader: vk.ShaderModule,
-    frag_shader: vk.ShaderModule,
+
+    frag_shader: *vk.ShaderModule,
+    frag_push_const_size: usize,
+    frag_push_const_block: *const c_void,
 
     pub fn init(
         self: *ScreenRenderPass,
         name: []const u8,
         allocator: *std.mem.Allocator,
         target: *ViewportTexture,
+        frag_shader: *vk.ShaderModule,
+        frag_push_const_size: usize,
+        frag_push_const_block: *const c_void,
     ) void {
         self.allocator = allocator;
         self.target = target;
+
+        self.frag_shader = frag_shader;
+        self.frag_push_const_size = frag_push_const_size;
+        self.frag_push_const_block = frag_push_const_block;
 
         self.rg_pass.init(name, allocator, passInit, passDeinit, passRender);
         target.rg_resource.registerOnChangeCallback(&self.rg_pass, reinitFramebuffer);
@@ -49,9 +59,7 @@ pub const ScreenRenderPass = struct {
         const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
 
         const vert_code = @embedFile("screen_render_pass.vert");
-        const frag_code = @embedFile("screen_render_pass.frag");
         self.vert_shader = shader_util.loadShader(vert_code, .vertex);
-        self.frag_shader = shader_util.loadShader(frag_code, .fragment);
 
         const color_attachment: vk.AttachmentDescription = .{
             .format = self.target.image_format,
@@ -126,7 +134,6 @@ pub const ScreenRenderPass = struct {
         self.destroyFramebuffers();
 
         vkd.destroyShaderModule(vkc.device, self.vert_shader, null);
-        vkd.destroyShaderModule(vkc.device, self.frag_shader, null);
     }
 
     fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, image_index: u32) void {
@@ -183,7 +190,23 @@ pub const ScreenRenderPass = struct {
             push_const_block.aspect_ratio[1] = viewport_info.height / viewport_info.width;
         }
 
-        vkd.cmdPushConstants(command_buffer, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(VertPushConstBlock), @ptrCast([*]const VertPushConstBlock, &push_const_block));
+        vkd.cmdPushConstants(
+            command_buffer,
+            self.pipeline_layout,
+            .{ .vertex_bit = true },
+            0,
+            @sizeOf(VertPushConstBlock),
+            @ptrCast([*]const VertPushConstBlock, &push_const_block),
+        );
+
+        vkd.cmdPushConstants(
+            command_buffer,
+            self.pipeline_layout,
+            .{ .fragment_bit = true },
+            @sizeOf(VertPushConstBlock),
+            @intCast(u32, self.frag_push_const_size),
+            self.frag_push_const_block,
+        );
 
         vkd.cmdDraw(command_buffer, 3, 1, 0, 0);
     }
@@ -233,16 +256,23 @@ pub const ScreenRenderPass = struct {
     }
 
     fn createPipelineLayout(self: *ScreenRenderPass) void {
-        const push_constant_range: vk.PushConstantRange = .{
-            .stage_flags = .{ .vertex_bit = true },
-            .offset = 0,
-            .size = @sizeOf(VertPushConstBlock),
+        const push_constant_range: [2]vk.PushConstantRange = [_]vk.PushConstantRange{
+            .{
+                .stage_flags = .{ .vertex_bit = true },
+                .offset = 0,
+                .size = @sizeOf(VertPushConstBlock),
+            },
+            .{
+                .stage_flags = .{ .fragment_bit = true },
+                .offset = @sizeOf(VertPushConstBlock),
+                .size = @intCast(u32, self.frag_push_const_size),
+            },
         };
 
         const pipeline_layout_create_info: vk.PipelineLayoutCreateInfo = .{
             .set_layout_count = 0,
             .p_set_layouts = undefined,
-            .push_constant_range_count = 1,
+            .push_constant_range_count = 2,
             .p_push_constant_ranges = @ptrCast([*]const vk.PushConstantRange, &push_constant_range),
             .flags = .{},
         };
@@ -251,6 +281,16 @@ pub const ScreenRenderPass = struct {
             printVulkanError("Can't create pipeline layout", err, vkc.allocator);
             return;
         };
+    }
+
+    fn recreatePipeline(self: *ScreenRenderPass) void {
+        vkd.destroyPipeline(vkc.device, self.pipeline, null);
+        self.createPipeline();
+    }
+
+    pub fn recreatePipelineOnShaderChange(pass: *RGPass) void {
+        const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", pass);
+        self.recreatePipeline();
     }
 
     fn createPipeline(self: *ScreenRenderPass) void {
@@ -370,7 +410,7 @@ pub const ScreenRenderPass = struct {
 
         const ui_frag_shader_stage: vk.PipelineShaderStageCreateInfo = .{
             .stage = .{ .fragment_bit = true },
-            .module = self.frag_shader,
+            .module = self.frag_shader.*,
             .p_name = "main",
             .flags = .{},
             .p_specialization_info = null,

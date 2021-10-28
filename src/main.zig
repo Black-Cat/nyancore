@@ -20,3 +20,5 @@ pub const Widgets = struct {
     pub const Widget = @import("ui/widget.zig").Widget;
     pub const Window = @import("ui/window.zig").Window;
 };
+
+pub const shader_util = @import("shaders/shader_util.zig");
