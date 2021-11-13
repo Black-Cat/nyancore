@@ -1,5 +1,3 @@
-// Based on https://github.com/recp/cglm
-
 const std = @import("std");
 
 usingnamespace @import("types.zig");

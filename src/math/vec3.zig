@@ -38,3 +38,7 @@ pub fn rotate(v: vec3, a: f32, axis: vec3) vec3 {
     t1 = n * @splat(3, dot(n, v) * (1.0 - c));
     return t0 + t1;
 }
+
+pub fn negate(v: vec3) vec3 {
+    return .{ -v[0], -v[1], -v[2] };
+}
