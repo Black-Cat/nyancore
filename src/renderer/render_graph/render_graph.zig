@@ -65,8 +65,8 @@ pub const RenderGraph = struct {
         self.needs_rebuilding = false;
     }
 
-    pub fn initVulkan(self: *RenderGraph) void {
-        self.in_flight = self.final_swapchain.image_count;
+    pub fn initVulkan(self: *RenderGraph, in_flight: u32) void {
+        self.in_flight = in_flight;
 
         const pool_info: vk.CommandPoolCreateInfo = .{
             .queue_family_index = vkc.family_indices.graphics_family,
@@ -235,9 +235,9 @@ pub const RenderGraph = struct {
         }
     }
 
-    pub fn render(self: *RenderGraph, command_buffer: vk.CommandBuffer, image_index: u32) void {
+    pub fn render(self: *RenderGraph, command_buffer: vk.CommandBuffer) void {
         for (self.sorted_passes.items) |rp|
-            rp.renderFn(rp, command_buffer, image_index);
+            rp.renderFn(rp, command_buffer, self.frame_index);
     }
 
     pub fn beginSingleTimeCommands(self: *RenderGraph, command_buffer: vk.CommandBuffer) void {

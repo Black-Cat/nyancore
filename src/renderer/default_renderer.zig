@@ -53,7 +53,7 @@ pub const DefaultRenderer = struct {
         rg.global_render_graph.final_swapchain.rg_resource.init("Final Swapchain", app.allocator);
         rg.global_render_graph.final_swapchain.init(@intCast(u32, width), @intCast(u32, height), frames_in_flight) catch @panic("Error during swapchain creation");
 
-        rg.global_render_graph.initVulkan();
+        rg.global_render_graph.initVulkan(frames_in_flight);
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
 
@@ -158,13 +158,13 @@ pub const DefaultRenderer = struct {
             return error.Unknown;
         }
 
-        var command_buffer: vk.CommandBuffer = rg.global_render_graph.command_buffers[image_index];
+        var command_buffer: vk.CommandBuffer = rg.global_render_graph.command_buffers[rg.global_render_graph.frame_index];
         vkd.resetCommandBuffer(command_buffer, .{}) catch |err| {
             printVulkanError("Can't reset command buffer", err, self.allocator);
         };
 
         rg.global_render_graph.beginSingleTimeCommands(command_buffer);
-        rg.global_render_graph.render(command_buffer, image_index);
+        rg.global_render_graph.render(command_buffer);
         rg.global_render_graph.endSingleTimeCommands(command_buffer);
 
         const wait_stage: vk.PipelineStageFlags = .{ .color_attachment_output_bit = true };

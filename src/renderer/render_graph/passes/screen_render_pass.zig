@@ -136,13 +136,13 @@ pub const ScreenRenderPass = struct {
         vkd.destroyShaderModule(vkc.device, self.vert_shader, null);
     }
 
-    fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, image_index: u32) void {
+    fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void {
         const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
 
         const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } };
         const render_pass_info: vk.RenderPassBeginInfo = .{
             .render_pass = self.render_pass,
-            .framebuffer = self.framebuffers[image_index],
+            .framebuffer = self.framebuffers[frame_index],
             .render_area = .{
                 .offset = .{ .x = 0, .y = 0 },
                 .extent = .{

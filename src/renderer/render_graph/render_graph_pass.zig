@@ -9,7 +9,7 @@ const PassList = std.ArrayList(*RGPass);
 
 pub const RGPass = struct {
     const PassFunction = fn (render_pass: *RGPass) void;
-    const RenderFunction = fn (render_pass: *RGPass, command_buffer: vk.CommandBuffer, image_index: u32) void;
+    const RenderFunction = fn (render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void;
 
     name: []const u8,
 
