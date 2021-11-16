@@ -84,9 +84,8 @@ pub const Application = struct {
             return error.GLFW_VULKAN_NOT_SUPPORTED;
         }
 
-        for (self.systems) |system| {
+        for (self.systems) |system|
             system.init(system, self);
-        }
 
         glfwInitKeymap();
 
@@ -102,9 +101,8 @@ pub const Application = struct {
             const elapsed = now_time - prev_time;
             prev_time = now_time;
 
-            for (self.systems) |system| {
+            for (self.systems) |system|
                 system.update(system, elapsed);
-            }
 
             self.framebuffer_resized = false;
         }
