@@ -126,10 +126,10 @@ pub const DefaultRenderer = struct {
             c.glfwWaitEvents();
         }
 
-        vkd.deviceWaitIdle(vkc.device) catch |err| {
-            printVulkanError("Can't wait for device idle while recreating swapchain", err, self.allocator);
-            return err;
-        };
+        //vkd.deviceWaitIdle(vkc.device) catch |err| {
+        //    printVulkanError("Can't wait for device idle while recreating swapchain", err, self.allocator);
+        //    return err;
+        //};
         try rg.global_render_graph.final_swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
     }
 

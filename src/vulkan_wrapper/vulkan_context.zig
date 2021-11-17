@@ -27,10 +27,25 @@ const BaseDispatch = struct {
 };
 pub var vkb: BaseDispatch = undefined;
 
-const InstanceDispatch = struct {
+const InstanceDispatch = if (build_config.use_vulkan_sdk) struct {
     vkCreateDebugUtilsMessengerEXT: vk.PfnCreateDebugUtilsMessengerEXT,
-    vkCreateDevice: vk.PfnCreateDevice,
     vkDestroyDebugUtilsMessengerEXT: vk.PfnDestroyDebugUtilsMessengerEXT,
+
+    vkCreateDevice: vk.PfnCreateDevice,
+    vkDestroyInstance: vk.PfnDestroyInstance,
+    vkDestroySurfaceKHR: vk.PfnDestroySurfaceKHR,
+    vkEnumerateDeviceExtensionProperties: vk.PfnEnumerateDeviceExtensionProperties,
+    vkEnumeratePhysicalDevices: vk.PfnEnumeratePhysicalDevices,
+    vkGetDeviceProcAddr: vk.PfnGetDeviceProcAddr,
+    vkGetPhysicalDeviceMemoryProperties: vk.PfnGetPhysicalDeviceMemoryProperties,
+    vkGetPhysicalDeviceQueueFamilyProperties: vk.PfnGetPhysicalDeviceQueueFamilyProperties,
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR: vk.PfnGetPhysicalDeviceSurfaceCapabilitiesKHR,
+    vkGetPhysicalDeviceSurfaceFormatsKHR: vk.PfnGetPhysicalDeviceSurfaceFormatsKHR,
+    vkGetPhysicalDeviceSurfacePresentModesKHR: vk.PfnGetPhysicalDeviceSurfacePresentModesKHR,
+    vkGetPhysicalDeviceSurfaceSupportKHR: vk.PfnGetPhysicalDeviceSurfaceSupportKHR,
+    usingnamespace vk.InstanceWrapper(@This());
+} else struct {
+    vkCreateDevice: vk.PfnCreateDevice,
     vkDestroyInstance: vk.PfnDestroyInstance,
     vkDestroySurfaceKHR: vk.PfnDestroySurfaceKHR,
     vkEnumerateDeviceExtensionProperties: vk.PfnEnumerateDeviceExtensionProperties,
@@ -44,6 +59,7 @@ const InstanceDispatch = struct {
     vkGetPhysicalDeviceSurfaceSupportKHR: vk.PfnGetPhysicalDeviceSurfaceSupportKHR,
     usingnamespace vk.InstanceWrapper(@This());
 };
+
 pub var vki: InstanceDispatch = undefined;
 
 const DeviceDispatch = struct {
@@ -329,7 +345,7 @@ pub const VulkanContext = struct {
             .enabled_extension_count = extensions_count,
             .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, extensions),
             .enabled_layer_count = if (build_config.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
-            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else null,
+            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
             .flags = .{},
         };
 
@@ -593,7 +609,7 @@ pub const VulkanContext = struct {
             .queue_create_info_count = @intCast(u32, queue_create_info_count),
             .p_enabled_features = null,
             .enabled_layer_count = if (build_config.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
-            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else null,
+            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
             .enabled_extension_count = @intCast(u32, std.mem.len(required_device_extensions)),
             .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, &required_device_extensions),
         };
