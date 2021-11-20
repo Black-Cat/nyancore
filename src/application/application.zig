@@ -101,6 +101,9 @@ pub const Application = struct {
             const elapsed = now_time - prev_time;
             prev_time = now_time;
 
+            const io: *c.ImGuiIO = c.igGetIO();
+            io.DeltaTime = @floatCast(f32, elapsed);
+
             for (self.systems) |system|
                 system.update(system, elapsed);
 
