@@ -24,10 +24,11 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
     app.addPackage(vulkanPackage);
 
     if (use_vulkan_sdk) {
-        const vulkan_sdk_path = std.os.getenv("VULKAN_SDK") orelse {
+        const vulkan_sdk_path = std.process.getEnvVarOwned(b.allocator, "VULKAN_SDK") catch {
             std.debug.print("[ERR] Can't get VULKAN_SDK environment variable", .{});
             return nyancoreLib;
         };
+        defer b.allocator.free(vulkan_sdk_path);
 
         const vulkan_sdk_include_path = std.fs.path.join(b.allocator, &[_][]const u8{ vulkan_sdk_path, "include" }) catch unreachable;
         defer b.allocator.free(vulkan_sdk_include_path);

@@ -246,9 +246,12 @@ pub const Swapchain = struct {
     }
 
     fn chooseSwapPresentMode(available_present_modes: []vk.PresentModeKHR) vk.PresentModeKHR {
-        for (available_present_modes) |present_mode| {
-            if (present_mode == .immediate_khr) {
-                return present_mode;
+        const prefered_modes: [1]vk.PresentModeKHR = [_]vk.PresentModeKHR{.immediate_khr}; //.mailbox_khr
+        for (prefered_modes) |prefered_mode| {
+            for (available_present_modes) |present_mode| {
+                if (present_mode == prefered_mode) {
+                    return present_mode;
+                }
             }
         }
         return .fifo_khr;
