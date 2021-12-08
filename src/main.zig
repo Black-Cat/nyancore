@@ -11,6 +11,7 @@ pub const vkw = @import("vulkan_wrapper/vulkan_wrapper.zig");
 pub const DefaultRenderer = @import("renderer/default_renderer.zig").DefaultRenderer;
 pub const UI = @import("ui/ui.zig").UI;
 pub const Math = @import("math/math.zig");
+pub const Sdf = @import("sdf/sdf.zig");
 
 pub const RGResource = @import("renderer/render_graph/render_graph_resource.zig").RGResource;
 
