@@ -5,7 +5,7 @@ pub const info: SdfInfo = .{
     .data_size = @sizeOf(Data),
 };
 
-const Data = struct {
+pub const Data = struct {
     length_horizontal: f32,
     length_vertical: f32,
     height: f32,

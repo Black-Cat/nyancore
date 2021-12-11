@@ -6,7 +6,7 @@ pub const info: SdfInfo = .{
     .data_size = @sizeOf(Data),
 };
 
-const Data = struct {
+pub const Data = struct {
     rotation: vec3,
     translation: vec3,
     transform_matrix: mat4x4,

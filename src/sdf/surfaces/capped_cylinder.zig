@@ -6,7 +6,7 @@ pub const info: SdfInfo = .{
     .data_size = @sizeOf(Data),
 };
 
-const Data = struct {
+pub const Data = struct {
     start: vec3,
     end: vec3,
     radius: f32,
