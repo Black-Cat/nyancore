@@ -1,4 +1,11 @@
-pub const Data = struct {
+const SdfInfo = @import("../sdf_info.zig").SdfInfo;
+
+pub const info: SdfInfo = .{
+    .name = "Solid Angle",
+    .data_size = @sizeOf(Data),
+};
+
+const Data = struct {
     angle: f32,
     radius: f32,
 

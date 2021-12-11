@@ -1,4 +1,11 @@
-pub const Data = struct {
+const SdfInfo = @import("../sdf_info.zig").SdfInfo;
+
+pub const info: SdfInfo = .{
+    .name = "Round Box",
+    .data_size = @sizeOf(Data),
+};
+
+const Data = struct {
     size: [3]f32,
     radius: f32,
 

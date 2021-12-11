@@ -1,4 +1,11 @@
-pub const Data = struct {
+const SdfInfo = @import("../sdf_info.zig").SdfInfo;
+
+pub const info: SdfInfo = .{
+    .name = "Pyramid",
+    .data_size = @sizeOf(Data),
+};
+
+const Data = struct {
     height: f32,
 
     enter_index: usize,
