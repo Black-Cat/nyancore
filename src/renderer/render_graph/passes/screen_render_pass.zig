@@ -28,6 +28,8 @@ pub const ScreenRenderPass = struct {
     frag_push_const_size: usize,
     frag_push_const_block: *const c_void,
 
+    final_layout: vk.ImageLayout,
+
     pub fn init(
         self: *ScreenRenderPass,
         name: []const u8,
@@ -36,6 +38,7 @@ pub const ScreenRenderPass = struct {
         frag_shader: *vk.ShaderModule,
         frag_push_const_size: usize,
         frag_push_const_block: *const c_void,
+        final_layout: vk.ImageLayout,
     ) void {
         self.allocator = allocator;
         self.target = target;
@@ -43,6 +46,7 @@ pub const ScreenRenderPass = struct {
         self.frag_shader = frag_shader;
         self.frag_push_const_size = frag_push_const_size;
         self.frag_push_const_block = frag_push_const_block;
+        self.final_layout = final_layout;
 
         self.rg_pass.init(name, allocator, passInit, passDeinit, passRender);
         target.rg_resource.registerOnChangeCallback(&self.rg_pass, reinitFramebuffer);
@@ -69,7 +73,7 @@ pub const ScreenRenderPass = struct {
             .stencil_load_op = .dont_care,
             .stencil_store_op = .dont_care,
             .initial_layout = .@"undefined",
-            .final_layout = .shader_read_only_optimal,
+            .final_layout = self.final_layout,
             .flags = .{},
         };
 

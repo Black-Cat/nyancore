@@ -23,6 +23,8 @@ pub const ViewportTexture = struct {
     new_height: u32,
 
     image_format: vk.Format,
+    usage: vk.ImageUsageFlags,
+    image_layout: vk.ImageLayout,
 
     pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, image_format: vk.Format, allocator: *std.mem.Allocator) void {
         self.width = width;
@@ -33,6 +35,12 @@ pub const ViewportTexture = struct {
 
         self.allocator = allocator;
         self.textures = allocator.alloc(Texture, in_flight) catch unreachable;
+        self.usage = .{
+            .sampled_bit = true,
+            .color_attachment_bit = true,
+            .transfer_dst_bit = true,
+        };
+        self.image_layout = .shader_read_only_optimal;
     }
 
     pub fn deinit(self: *ViewportTexture) void {
@@ -42,6 +50,8 @@ pub const ViewportTexture = struct {
     pub fn alloc(self: *ViewportTexture) void {
         for (self.textures) |*tex| {
             tex.init(self.rg_resource.name, self.width, self.height, self.image_format, self.allocator);
+            tex.image_create_info.usage = self.usage;
+            tex.image_layout = self.image_layout;
             tex.alloc();
         }
     }

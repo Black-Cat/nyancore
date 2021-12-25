@@ -16,6 +16,8 @@ pub const Texture = struct {
     view: vk.ImageView,
     sampler: vk.Sampler,
     image_format: vk.Format = .r8g8b8a8_unorm,
+    image_create_info: vk.ImageCreateInfo,
+    image_layout: vk.ImageLayout,
 
     pub fn init(self: *Texture, name: []const u8, width: u32, height: u32, image_format: vk.Format, allocator: *std.mem.Allocator) void {
         self.rg_resource.init(name, allocator);
@@ -23,14 +25,8 @@ pub const Texture = struct {
         self.size[0] = width;
         self.size[1] = height;
         self.image_format = image_format;
-    }
 
-    pub fn deinit(self: *Texture) void {
-        self.rg_resource.deinit();
-    }
-
-    pub fn alloc(self: *Texture) void {
-        const image_info: vk.ImageCreateInfo = .{
+        self.image_create_info = .{
             .image_type = .@"2d",
             .format = self.image_format,
             .extent = .{
@@ -56,7 +52,15 @@ pub const Texture = struct {
             .p_queue_family_indices = undefined,
         };
 
-        self.image = vkd.createImage(vkc.device, image_info, null) catch |err| {
+        self.image_layout = .shader_read_only_optimal;
+    }
+
+    pub fn deinit(self: *Texture) void {
+        self.rg_resource.deinit();
+    }
+
+    pub fn alloc(self: *Texture) void {
+        self.image = vkd.createImage(vkc.device, self.image_create_info, null) catch |err| {
             printVulkanError("Can't create texture", err, vkc.allocator);
             return;
         };
@@ -120,11 +124,13 @@ pub const Texture = struct {
             return;
         };
 
-        const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
-        rg.global_render_graph.beginSingleTimeCommands(command_buffer);
-        self.transitionImageLayout(command_buffer, .@"undefined", .shader_read_only_optimal);
-        rg.global_render_graph.endSingleTimeCommands(command_buffer);
-        rg.global_render_graph.submitCommandBuffer(command_buffer);
+        if (self.image_layout != .@"undefined") {
+            const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
+            rg.global_render_graph.beginSingleTimeCommands(command_buffer);
+            self.transitionImageLayout(command_buffer, .@"undefined", self.image_layout);
+            rg.global_render_graph.endSingleTimeCommands(command_buffer);
+            rg.global_render_graph.submitCommandBuffer(command_buffer);
+        }
     }
 
     pub fn destroy(self: *Texture) void {
