@@ -3,6 +3,7 @@ const std = @import("std");
 
 const BufMap = std.BufMap;
 const Entry = std.StringHashMap([]const u8).Entry;
+const printError = @import("print_error.zig").printError;
 
 pub var global_config: Config = undefined;
 
@@ -117,6 +118,21 @@ pub const Config = struct {
                 entry.value_ptr.*,
             });
         }
+    }
+
+    pub fn getBool(self: *Config, key: comptime []const u8, default: comptime bool) bool {
+        const val: ?[]const u8 = self.map.get(key);
+        if (val) |v| {
+            return v.len > 0 and v[0] == '1';
+        } else {
+            return default;
+        }
+    }
+
+    pub fn putBool(self: *Config, key: comptime []const u8, val: bool) void {
+        self.map.put(key, if (val) "1" else "0") catch {
+            printError("Config", "Error during putting bool value");
+        };
     }
 };
 

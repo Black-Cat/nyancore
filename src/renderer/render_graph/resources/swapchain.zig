@@ -5,6 +5,7 @@ usingnamespace @import("../../../vulkan_wrapper/vulkan_wrapper.zig");
 
 const printError = @import("../../../application/print_error.zig").printError;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
+const Application = @import("../../../application/application.zig");
 
 pub const Swapchain = struct {
     rg_resource: RGResource,
@@ -35,6 +36,10 @@ pub const Swapchain = struct {
     pub fn recreate(self: *Swapchain, width: u32, height: u32) !void {
         self.cleanup();
         try self.init(width, height, self.image_count);
+    }
+
+    pub fn recreateWithSameSize(self: *Swapchain) !void {
+        try self.recreate(self.image_extent.width, self.image_extent.height);
     }
 
     fn cleanup(self: *Swapchain) void {
@@ -246,7 +251,9 @@ pub const Swapchain = struct {
     }
 
     fn chooseSwapPresentMode(available_present_modes: []vk.PresentModeKHR) vk.PresentModeKHR {
-        const prefered_modes: [1]vk.PresentModeKHR = [_]vk.PresentModeKHR{.immediate_khr}; //.mailbox_khr
+        const vsync: bool = Application.app.config.getBool("swapchain_vsync", false);
+        const prefered_modes: [1]vk.PresentModeKHR = [_]vk.PresentModeKHR{if (vsync) .mailbox_khr else .immediate_khr};
+
         for (prefered_modes) |prefered_mode| {
             for (available_present_modes) |present_mode| {
                 if (present_mode == prefered_mode) {
@@ -254,6 +261,7 @@ pub const Swapchain = struct {
                 }
             }
         }
+
         return .fifo_khr;
     }
 
