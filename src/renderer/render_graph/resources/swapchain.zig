@@ -1,7 +1,7 @@
 const vk = @import("../../../vk.zig");
 const std = @import("std");
 
-usingnamespace @import("../../../vulkan_wrapper/vulkan_wrapper.zig");
+const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
 
 const printError = @import("../../../application/print_error.zig").printError;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
@@ -44,24 +44,24 @@ pub const Swapchain = struct {
 
     fn cleanup(self: *Swapchain) void {
         for (self.image_views) |image_view| {
-            vkd.destroyImageView(vkc.device, image_view, null);
+            vkctxt.vkd.destroyImageView(vkctxt.vkc.device, image_view, null);
         }
 
         for (self.framebuffers) |framebuffer| {
-            vkd.destroyFramebuffer(vkc.device, framebuffer, null);
+            vkctxt.vkd.destroyFramebuffer(vkctxt.vkc.device, framebuffer, null);
         }
 
-        vkc.allocator.free(self.image_views);
-        vkc.allocator.free(self.framebuffers);
+        vkctxt.vkc.allocator.free(self.image_views);
+        vkctxt.vkc.allocator.free(self.framebuffers);
 
-        vkd.destroyRenderPass(vkc.device, self.render_pass, null);
-        vkd.destroySwapchainKHR(vkc.device, self.swapchain, null);
+        vkctxt.vkd.destroyRenderPass(vkctxt.vkc.device, self.render_pass, null);
+        vkctxt.vkd.destroySwapchainKHR(vkctxt.vkc.device, self.swapchain, null);
     }
 
     fn createSwapchain(self: *Swapchain, width: u32, height: u32) !void {
-        const swapchain_support: SwapchainSupportDetails = vkc.getSwapchainSupport(&vkc.physical_device) catch unreachable;
-        defer vkc.allocator.free(swapchain_support.formats);
-        defer vkc.allocator.free(swapchain_support.present_modes);
+        const swapchain_support: vkctxt.SwapchainSupportDetails = vkctxt.vkc.getSwapchainSupport(&vkctxt.vkc.physical_device) catch unreachable;
+        defer vkctxt.vkc.allocator.free(swapchain_support.formats);
+        defer vkctxt.vkc.allocator.free(swapchain_support.present_modes);
 
         const surface_format: vk.SurfaceFormatKHR = chooseSwapSurfaceFormat(swapchain_support.formats);
         const present_mode: vk.PresentModeKHR = chooseSwapPresentMode(swapchain_support.present_modes);
@@ -75,14 +75,14 @@ pub const Swapchain = struct {
         self.image_count = image_count;
 
         const queue_family_indices: [2]u32 = [_]u32{
-            vkc.family_indices.graphics_family,
-            vkc.family_indices.present_family,
+            vkctxt.vkc.family_indices.graphics_family,
+            vkctxt.vkc.family_indices.present_family,
         };
         const queue_concurrent: bool = queue_family_indices[0] != queue_family_indices[1];
 
         const create_info: vk.SwapchainCreateInfoKHR = .{
             .flags = .{},
-            .surface = vkc.surface,
+            .surface = vkctxt.vkc.surface,
 
             .min_image_count = self.image_count,
             .image_format = surface_format.format,
@@ -106,30 +106,30 @@ pub const Swapchain = struct {
             .p_queue_family_indices = @ptrCast([*]const u32, &queue_family_indices),
         };
 
-        self.swapchain = vkd.createSwapchainKHR(vkc.device, create_info, null) catch |err| {
-            printVulkanError("Can't create swapchain", err, vkc.allocator);
+        self.swapchain = vkctxt.vkd.createSwapchainKHR(vkctxt.vkc.device, create_info, null) catch |err| {
+            vkctxt.printVulkanError("Can't create swapchain", err, vkctxt.vkc.allocator);
             return err;
         };
 
         self.image_format = surface_format.format;
         self.image_extent = extent;
 
-        _ = vkd.getSwapchainImagesKHR(vkc.device, self.swapchain, &self.image_count, null) catch |err| {
-            printVulkanError("Can't get image count for swapchain", err, vkc.allocator);
+        _ = vkctxt.vkd.getSwapchainImagesKHR(vkctxt.vkc.device, self.swapchain, &self.image_count, null) catch |err| {
+            vkctxt.printVulkanError("Can't get image count for swapchain", err, vkctxt.vkc.allocator);
             return err;
         };
-        self.images = vkc.allocator.alloc(vk.Image, self.image_count) catch {
+        self.images = vkctxt.vkc.allocator.alloc(vk.Image, self.image_count) catch {
             printError("Vulkan Wrapper", "Can't allocate images for swapchain on host");
             return error.HostAllocationError;
         };
-        _ = vkd.getSwapchainImagesKHR(vkc.device, self.swapchain, &self.image_count, self.images.ptr) catch |err| {
-            printVulkanError("Can't get images for swapchain", err, vkc.allocator);
+        _ = vkctxt.vkd.getSwapchainImagesKHR(vkctxt.vkc.device, self.swapchain, &self.image_count, self.images.ptr) catch |err| {
+            vkctxt.printVulkanError("Can't get images for swapchain", err, vkctxt.vkc.allocator);
             return err;
         };
     }
 
     fn createImageViews(self: *Swapchain) !void {
-        self.image_views = vkc.allocator.alloc(vk.ImageView, self.image_count) catch {
+        self.image_views = vkctxt.vkc.allocator.alloc(vk.ImageView, self.image_count) catch {
             printError("Vulkan Wrapper", "Can't allocate image views for swapchain on host");
             return error.HostAllocationError;
         };
@@ -159,8 +159,8 @@ pub const Swapchain = struct {
                 },
             };
 
-            image_view.* = vkd.createImageView(vkc.device, create_info, null) catch |err| {
-                printVulkanError("Can't create image view", err, vkc.allocator);
+            image_view.* = vkctxt.vkd.createImageView(vkctxt.vkc.device, create_info, null) catch |err| {
+                vkctxt.printVulkanError("Can't create image view", err, vkctxt.vkc.allocator);
                 return err;
             };
         }
@@ -210,14 +210,14 @@ pub const Swapchain = struct {
             .p_dependencies = undefined,
         };
 
-        self.render_pass = vkd.createRenderPass(vkc.device, render_pass_create_info, null) catch |err| {
-            printVulkanError("Can't create render pass for swapchain", err, vkc.allocator);
+        self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.vkc.device, render_pass_create_info, null) catch |err| {
+            vkctxt.printVulkanError("Can't create render pass for swapchain", err, vkctxt.vkc.allocator);
             return err;
         };
     }
 
     fn createSwapBuffers(self: *Swapchain) !void {
-        self.framebuffers = vkc.allocator.alloc(vk.Framebuffer, self.image_count) catch {
+        self.framebuffers = vkctxt.vkc.allocator.alloc(vk.Framebuffer, self.image_count) catch {
             printError("Vulkan Wrapper", "Can't allocate framebuffers for swapchain in host");
             return error.HostAllocationError;
         };
@@ -233,8 +233,8 @@ pub const Swapchain = struct {
                 .layers = 1,
             };
 
-            framebuffer.* = vkd.createFramebuffer(vkc.device, create_info, null) catch |err| {
-                printVulkanError("Can't create framebuffer for swapchain", err, vkc.allocator);
+            framebuffer.* = vkctxt.vkd.createFramebuffer(vkctxt.vkc.device, create_info, null) catch |err| {
+                vkctxt.printVulkanError("Can't create framebuffer for swapchain", err, vkctxt.vkc.allocator);
                 return err;
             };
         }

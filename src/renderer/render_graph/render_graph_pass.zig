@@ -20,7 +20,7 @@ pub const RGPass = struct {
     deinitFn: PassFunction,
     renderFn: RenderFunction,
 
-    pub fn init(self: *RGPass, name: []const u8, allocator: *std.mem.Allocator, initFn: PassFunction, deinitFn: PassFunction, renderFn: RenderFunction) void {
+    pub fn init(self: *RGPass, name: []const u8, allocator: std.mem.Allocator, initFn: PassFunction, deinitFn: PassFunction, renderFn: RenderFunction) void {
         self.name = name;
         self.initFn = initFn;
         self.deinitFn = deinitFn;

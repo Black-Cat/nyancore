@@ -4,7 +4,8 @@ const std = @import("std");
 const rg = @import("../renderer/render_graph/render_graph.zig");
 
 const Allocator = std.mem.Allocator;
-usingnamespace @import("config.zig");
+const Global = @import("../global.zig");
+const Config = @import("config.zig").Config;
 pub const System = @import("../system/system.zig").System;
 const printError = @import("print_error.zig").printError;
 
@@ -16,7 +17,7 @@ const ApplicationError = error{
 };
 
 var application_glfw_map: std.AutoHashMap(*c.GLFWwindow, *Application) = undefined;
-pub fn initGlobalData(allocator: *Allocator) void {
+pub fn initGlobalData(allocator: Allocator) void {
     application_glfw_map = std.AutoHashMap(*c.GLFWwindow, *Application).init(allocator);
 }
 pub fn deinitGlobalData() void {
@@ -26,7 +27,7 @@ pub fn deinitGlobalData() void {
 pub var app: Application = undefined;
 
 pub const Application = struct {
-    allocator: *Allocator,
+    allocator: Allocator,
     config: *Config,
     config_file: []const u8,
     name: [:0]const u8,
@@ -35,7 +36,7 @@ pub const Application = struct {
     window: *c.GLFWwindow,
     framebuffer_resized: bool,
 
-    pub fn init(self: *Application, comptime name: [:0]const u8, allocator: *Allocator, systems: []*System) void {
+    pub fn init(self: *Application, comptime name: [:0]const u8, allocator: Allocator, systems: []*System) void {
         self.allocator = allocator;
         self.config_file = name ++ ".conf";
         self.mouse_just_pressed = [_]bool{false} ** imgui_mouse_button_count;
@@ -43,16 +44,18 @@ pub const Application = struct {
         self.systems = systems;
         self.window = undefined;
         self.framebuffer_resized = false;
-        self.config = &global_config;
+        self.config = &Global.config;
     }
 
-    pub fn deinit(self: *Application) void {}
+    pub fn deinit(self: *Application) void {
+        _ = self;
+    }
 
     pub fn start(self: *Application) !void {
-        global_config.init(self.allocator, self.name, self.config_file);
-        defer global_config.deinit();
+        Global.config.init(self.allocator, self.name, self.config_file);
+        defer Global.config.deinit();
 
-        try global_config.load();
+        try Global.config.load();
 
         if (c.glfwInit() == c.GLFW_FALSE) {
             printError("GLFW", "Couldn't initialize GLFW");
@@ -117,17 +120,22 @@ pub const Application = struct {
             self.systems[i].deinit(self.systems[i]);
         }
 
-        try global_config.flush();
+        try Global.config.flush();
 
         _ = application_glfw_map.remove(self.window);
     }
 
     fn framebufferResizeCallback(window: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {
+        _ = width;
+        _ = height;
+
         var self: *Application = application_glfw_map.get(window.?).?;
         self.framebuffer_resized = true;
     }
 
     fn glfwMouseButtonCallback(window: ?*c.GLFWwindow, button: c_int, action: c_int, mods: c_int) callconv(.C) void {
+        _ = mods;
+
         var self: *Application = application_glfw_map.get(window.?).?;
         if (action == c.GLFW_PRESS and button >= 0 and button < imgui_mouse_button_count)
             self.mouse_just_pressed[@intCast(usize, button)] = true;
@@ -192,10 +200,16 @@ pub const Application = struct {
     }
 
     fn glfwErrorCallback(err: c_int, description: [*c]const u8) callconv(.C) void {
+        _ = err;
+
         printError("GLFW", std.mem.span(description));
     }
 
     fn glfwKeyCallback(win: ?*c.GLFWwindow, key: c_int, scancode: c_int, action: c_int, mods: c_int) callconv(.C) void {
+        _ = win;
+        _ = scancode;
+        _ = mods;
+
         var io: *c.ImGuiIO = c.igGetIO();
 
         if (action == c.GLFW_PRESS)
@@ -215,11 +229,14 @@ pub const Application = struct {
     }
 
     fn glfwCharCallback(win: ?*c.GLFWwindow, char: c_uint) callconv(.C) void {
+        _ = win;
+
         var io: *c.ImGuiIO = c.igGetIO();
         c.ImGuiIO_AddInputCharacter(io, char);
     }
 
     fn glfwScrollCallback(win: ?*c.GLFWwindow, xoffset: f64, yoffset: f64) callconv(.C) void {
+        _ = win;
         var io: *c.ImGuiIO = c.igGetIO();
         io.MouseWheelH += @floatCast(f32, xoffset);
         io.MouseWheel += @floatCast(f32, yoffset);

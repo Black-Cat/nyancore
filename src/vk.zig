@@ -34,9 +34,6 @@ pub fn FlagsMixin(comptime FlagsType: type, comptime Int: type) type {
         pub fn intersect(lhs: FlagsType, rhs: FlagsType) FlagsType {
             return fromInt(toInt(lhs) & toInt(rhs));
         }
-        pub fn complement(self: FlagsType) FlagsType {
-            return fromInt(~toInt(lhs));
-        }
         pub fn subtract(lhs: FlagsType, rhs: FlagsType) FlagsType {
             return fromInt(toInt(lhs) & toInt(rhs.complement()));
         }
@@ -347,50 +344,50 @@ pub const VideoDecodeH265CreateFlagsEXT = packed struct {
     _reserved_bits: Flags = 0,
     pub usingnamespace FlagsMixin(VideoDecodeH265CreateFlagsEXT, Flags);
 };
-pub const Instance = extern enum(usize) { null_handle = 0, _ };
-pub const PhysicalDevice = extern enum(usize) { null_handle = 0, _ };
-pub const Device = extern enum(usize) { null_handle = 0, _ };
-pub const Queue = extern enum(usize) { null_handle = 0, _ };
-pub const CommandBuffer = extern enum(usize) { null_handle = 0, _ };
-pub const DeviceMemory = extern enum(u64) { null_handle = 0, _ };
-pub const CommandPool = extern enum(u64) { null_handle = 0, _ };
-pub const Buffer = extern enum(u64) { null_handle = 0, _ };
-pub const BufferView = extern enum(u64) { null_handle = 0, _ };
-pub const Image = extern enum(u64) { null_handle = 0, _ };
-pub const ImageView = extern enum(u64) { null_handle = 0, _ };
-pub const ShaderModule = extern enum(u64) { null_handle = 0, _ };
-pub const Pipeline = extern enum(u64) { null_handle = 0, _ };
-pub const PipelineLayout = extern enum(u64) { null_handle = 0, _ };
-pub const Sampler = extern enum(u64) { null_handle = 0, _ };
-pub const DescriptorSet = extern enum(u64) { null_handle = 0, _ };
-pub const DescriptorSetLayout = extern enum(u64) { null_handle = 0, _ };
-pub const DescriptorPool = extern enum(u64) { null_handle = 0, _ };
-pub const Fence = extern enum(u64) { null_handle = 0, _ };
-pub const Semaphore = extern enum(u64) { null_handle = 0, _ };
-pub const Event = extern enum(u64) { null_handle = 0, _ };
-pub const QueryPool = extern enum(u64) { null_handle = 0, _ };
-pub const Framebuffer = extern enum(u64) { null_handle = 0, _ };
-pub const RenderPass = extern enum(u64) { null_handle = 0, _ };
-pub const PipelineCache = extern enum(u64) { null_handle = 0, _ };
-pub const IndirectCommandsLayoutNV = extern enum(u64) { null_handle = 0, _ };
-pub const DescriptorUpdateTemplate = extern enum(u64) { null_handle = 0, _ };
+pub const Instance = enum(usize) { null_handle = 0, _ };
+pub const PhysicalDevice = enum(usize) { null_handle = 0, _ };
+pub const Device = enum(usize) { null_handle = 0, _ };
+pub const Queue = enum(usize) { null_handle = 0, _ };
+pub const CommandBuffer = enum(usize) { null_handle = 0, _ };
+pub const DeviceMemory = enum(u64) { null_handle = 0, _ };
+pub const CommandPool = enum(u64) { null_handle = 0, _ };
+pub const Buffer = enum(u64) { null_handle = 0, _ };
+pub const BufferView = enum(u64) { null_handle = 0, _ };
+pub const Image = enum(u64) { null_handle = 0, _ };
+pub const ImageView = enum(u64) { null_handle = 0, _ };
+pub const ShaderModule = enum(u64) { null_handle = 0, _ };
+pub const Pipeline = enum(u64) { null_handle = 0, _ };
+pub const PipelineLayout = enum(u64) { null_handle = 0, _ };
+pub const Sampler = enum(u64) { null_handle = 0, _ };
+pub const DescriptorSet = enum(u64) { null_handle = 0, _ };
+pub const DescriptorSetLayout = enum(u64) { null_handle = 0, _ };
+pub const DescriptorPool = enum(u64) { null_handle = 0, _ };
+pub const Fence = enum(u64) { null_handle = 0, _ };
+pub const Semaphore = enum(u64) { null_handle = 0, _ };
+pub const Event = enum(u64) { null_handle = 0, _ };
+pub const QueryPool = enum(u64) { null_handle = 0, _ };
+pub const Framebuffer = enum(u64) { null_handle = 0, _ };
+pub const RenderPass = enum(u64) { null_handle = 0, _ };
+pub const PipelineCache = enum(u64) { null_handle = 0, _ };
+pub const IndirectCommandsLayoutNV = enum(u64) { null_handle = 0, _ };
+pub const DescriptorUpdateTemplate = enum(u64) { null_handle = 0, _ };
 pub const DescriptorUpdateTemplateKHR = DescriptorUpdateTemplate;
-pub const SamplerYcbcrConversion = extern enum(u64) { null_handle = 0, _ };
+pub const SamplerYcbcrConversion = enum(u64) { null_handle = 0, _ };
 pub const SamplerYcbcrConversionKHR = SamplerYcbcrConversion;
-pub const ValidationCacheEXT = extern enum(u64) { null_handle = 0, _ };
-pub const AccelerationStructureKHR = extern enum(u64) { null_handle = 0, _ };
-pub const AccelerationStructureNV = extern enum(u64) { null_handle = 0, _ };
-pub const PerformanceConfigurationINTEL = extern enum(u64) { null_handle = 0, _ };
-pub const DeferredOperationKHR = extern enum(u64) { null_handle = 0, _ };
-pub const PrivateDataSlotEXT = extern enum(u64) { null_handle = 0, _ };
-pub const DisplayKHR = extern enum(u64) { null_handle = 0, _ };
-pub const DisplayModeKHR = extern enum(u64) { null_handle = 0, _ };
-pub const SurfaceKHR = extern enum(u64) { null_handle = 0, _ };
-pub const SwapchainKHR = extern enum(u64) { null_handle = 0, _ };
-pub const DebugReportCallbackEXT = extern enum(u64) { null_handle = 0, _ };
-pub const DebugUtilsMessengerEXT = extern enum(u64) { null_handle = 0, _ };
-pub const VideoSessionKHR = extern enum(u64) { null_handle = 0, _ };
-pub const VideoSessionParametersKHR = extern enum(u64) { null_handle = 0, _ };
+pub const ValidationCacheEXT = enum(u64) { null_handle = 0, _ };
+pub const AccelerationStructureKHR = enum(u64) { null_handle = 0, _ };
+pub const AccelerationStructureNV = enum(u64) { null_handle = 0, _ };
+pub const PerformanceConfigurationINTEL = enum(u64) { null_handle = 0, _ };
+pub const DeferredOperationKHR = enum(u64) { null_handle = 0, _ };
+pub const PrivateDataSlotEXT = enum(u64) { null_handle = 0, _ };
+pub const DisplayKHR = enum(u64) { null_handle = 0, _ };
+pub const DisplayModeKHR = enum(u64) { null_handle = 0, _ };
+pub const SurfaceKHR = enum(u64) { null_handle = 0, _ };
+pub const SwapchainKHR = enum(u64) { null_handle = 0, _ };
+pub const DebugReportCallbackEXT = enum(u64) { null_handle = 0, _ };
+pub const DebugUtilsMessengerEXT = enum(u64) { null_handle = 0, _ };
+pub const VideoSessionKHR = enum(u64) { null_handle = 0, _ };
+pub const VideoSessionParametersKHR = enum(u64) { null_handle = 0, _ };
 pub const DescriptorUpdateTemplateTypeKHR = DescriptorUpdateTemplateType;
 pub const PointClippingBehaviorKHR = PointClippingBehavior;
 pub const SemaphoreTypeKHR = SemaphoreType;
@@ -406,33 +403,33 @@ pub const SamplerReductionModeEXT = SamplerReductionMode;
 pub const ShaderFloatControlsIndependenceKHR = ShaderFloatControlsIndependence;
 pub const DriverIdKHR = DriverId;
 pub const PfnInternalAllocationNotification = ?fn (
-    p_user_data: *c_void,
+    p_user_data: *anyopaque,
     size: usize,
     allocation_type: InternalAllocationType,
     allocation_scope: SystemAllocationScope,
 ) callconv(vulkan_call_conv) void;
 pub const PfnInternalFreeNotification = ?fn (
-    p_user_data: *c_void,
+    p_user_data: *anyopaque,
     size: usize,
     allocation_type: InternalAllocationType,
     allocation_scope: SystemAllocationScope,
 ) callconv(vulkan_call_conv) void;
 pub const PfnReallocationFunction = ?fn (
-    p_user_data: *c_void,
-    p_original: *c_void,
+    p_user_data: *anyopaque,
+    p_original: *anyopaque,
     size: usize,
     alignment: usize,
     allocation_scope: SystemAllocationScope,
-) callconv(vulkan_call_conv) *c_void;
+) callconv(vulkan_call_conv) *anyopaque;
 pub const PfnAllocationFunction = ?fn (
-    p_user_data: *c_void,
+    p_user_data: *anyopaque,
     size: usize,
     alignment: usize,
     allocation_scope: SystemAllocationScope,
-) callconv(vulkan_call_conv) *c_void;
+) callconv(vulkan_call_conv) *anyopaque;
 pub const PfnFreeFunction = ?fn (
-    p_user_data: *c_void,
-    p_memory: *c_void,
+    p_user_data: *anyopaque,
+    p_memory: *anyopaque,
 ) callconv(vulkan_call_conv) void;
 pub const PfnVoidFunction = ?fn () callconv(vulkan_call_conv) void;
 pub const PfnDebugReportCallbackEXT = ?fn (
@@ -443,17 +440,17 @@ pub const PfnDebugReportCallbackEXT = ?fn (
     message_code: i32,
     p_layer_prefix: *const u8,
     p_message: *const u8,
-    p_user_data: *c_void,
+    p_user_data: *anyopaque,
 ) callconv(vulkan_call_conv) Bool32;
 pub const PfnDebugUtilsMessengerCallbackEXT = ?fn (
     message_severity: DebugUtilsMessageSeverityFlagsEXT.IntType,
     message_types: DebugUtilsMessageTypeFlagsEXT.IntType,
     p_callback_data: *const DebugUtilsMessengerCallbackDataEXT,
-    p_user_data: *c_void,
+    p_user_data: *anyopaque,
 ) callconv(vulkan_call_conv) Bool32;
 pub const PfnDeviceMemoryReportCallbackEXT = ?fn (
     p_callback_data: *const DeviceMemoryReportCallbackDataEXT,
-    p_user_data: *c_void,
+    p_user_data: *anyopaque,
 ) callconv(vulkan_call_conv) void;
 pub const BaseOutStructure = extern struct {
     s_type: StructureType,
@@ -527,7 +524,7 @@ pub const LayerProperties = extern struct {
 };
 pub const ApplicationInfo = extern struct {
     s_type: StructureType = .application_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_application_name: ?[*:0]const u8,
     application_version: u32,
     p_engine_name: ?[*:0]const u8,
@@ -535,7 +532,7 @@ pub const ApplicationInfo = extern struct {
     api_version: u32,
 };
 pub const AllocationCallbacks = extern struct {
-    p_user_data: ?*c_void,
+    p_user_data: ?*anyopaque,
     pfn_allocation: PfnAllocationFunction,
     pfn_reallocation: PfnReallocationFunction,
     pfn_free: PfnFreeFunction,
@@ -544,7 +541,7 @@ pub const AllocationCallbacks = extern struct {
 };
 pub const DeviceQueueCreateInfo = extern struct {
     s_type: StructureType = .device_queue_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DeviceQueueCreateFlags,
     queue_family_index: u32,
     queue_count: u32,
@@ -552,7 +549,7 @@ pub const DeviceQueueCreateInfo = extern struct {
 };
 pub const DeviceCreateInfo = extern struct {
     s_type: StructureType = .device_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DeviceCreateFlags,
     queue_create_info_count: u32,
     p_queue_create_infos: [*]const DeviceQueueCreateInfo,
@@ -564,7 +561,7 @@ pub const DeviceCreateInfo = extern struct {
 };
 pub const InstanceCreateInfo = extern struct {
     s_type: StructureType = .instance_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: InstanceCreateFlags,
     p_application_info: ?*const ApplicationInfo,
     enabled_layer_count: u32,
@@ -586,7 +583,7 @@ pub const PhysicalDeviceMemoryProperties = extern struct {
 };
 pub const MemoryAllocateInfo = extern struct {
     s_type: StructureType = .memory_allocate_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     allocation_size: DeviceSize,
     memory_type_index: u32,
 };
@@ -617,7 +614,7 @@ pub const MemoryHeap = extern struct {
 };
 pub const MappedMemoryRange = extern struct {
     s_type: StructureType = .mapped_memory_range,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     memory: DeviceMemory,
     offset: DeviceSize,
     size: DeviceSize,
@@ -646,7 +643,7 @@ pub const DescriptorImageInfo = extern struct {
 };
 pub const WriteDescriptorSet = extern struct {
     s_type: StructureType = .write_descriptor_set,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     dst_set: DescriptorSet,
     dst_binding: u32,
     dst_array_element: u32,
@@ -658,7 +655,7 @@ pub const WriteDescriptorSet = extern struct {
 };
 pub const CopyDescriptorSet = extern struct {
     s_type: StructureType = .copy_descriptor_set,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_set: DescriptorSet,
     src_binding: u32,
     src_array_element: u32,
@@ -669,7 +666,7 @@ pub const CopyDescriptorSet = extern struct {
 };
 pub const BufferCreateInfo = extern struct {
     s_type: StructureType = .buffer_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: BufferCreateFlags,
     size: DeviceSize,
     usage: BufferUsageFlags,
@@ -679,7 +676,7 @@ pub const BufferCreateInfo = extern struct {
 };
 pub const BufferViewCreateInfo = extern struct {
     s_type: StructureType = .buffer_view_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: BufferViewCreateFlags,
     buffer: Buffer,
     format: Format,
@@ -706,13 +703,13 @@ pub const ImageSubresourceRange = extern struct {
 };
 pub const MemoryBarrier = extern struct {
     s_type: StructureType = .memory_barrier,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_access_mask: AccessFlags,
     dst_access_mask: AccessFlags,
 };
 pub const BufferMemoryBarrier = extern struct {
     s_type: StructureType = .buffer_memory_barrier,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_access_mask: AccessFlags,
     dst_access_mask: AccessFlags,
     src_queue_family_index: u32,
@@ -723,7 +720,7 @@ pub const BufferMemoryBarrier = extern struct {
 };
 pub const ImageMemoryBarrier = extern struct {
     s_type: StructureType = .image_memory_barrier,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_access_mask: AccessFlags,
     dst_access_mask: AccessFlags,
     old_layout: ImageLayout,
@@ -735,7 +732,7 @@ pub const ImageMemoryBarrier = extern struct {
 };
 pub const ImageCreateInfo = extern struct {
     s_type: StructureType = .image_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ImageCreateFlags,
     image_type: ImageType,
     format: Format,
@@ -759,7 +756,7 @@ pub const SubresourceLayout = extern struct {
 };
 pub const ImageViewCreateInfo = extern struct {
     s_type: StructureType = .image_view_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ImageViewCreateFlags,
     image: Image,
     view_type: ImageViewType,
@@ -804,7 +801,7 @@ pub const SparseImageMemoryBindInfo = extern struct {
 };
 pub const BindSparseInfo = extern struct {
     s_type: StructureType = .bind_sparse_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     wait_semaphore_count: u32,
     p_wait_semaphores: [*]const Semaphore,
     buffer_bind_count: u32,
@@ -846,7 +843,7 @@ pub const ImageResolve = extern struct {
 };
 pub const ShaderModuleCreateInfo = extern struct {
     s_type: StructureType = .shader_module_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ShaderModuleCreateFlags,
     code_size: usize,
     p_code: [*]const u32,
@@ -860,7 +857,7 @@ pub const DescriptorSetLayoutBinding = extern struct {
 };
 pub const DescriptorSetLayoutCreateInfo = extern struct {
     s_type: StructureType = .descriptor_set_layout_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DescriptorSetLayoutCreateFlags,
     binding_count: u32,
     p_bindings: [*]const DescriptorSetLayoutBinding,
@@ -871,7 +868,7 @@ pub const DescriptorPoolSize = extern struct {
 };
 pub const DescriptorPoolCreateInfo = extern struct {
     s_type: StructureType = .descriptor_pool_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DescriptorPoolCreateFlags,
     max_sets: u32,
     pool_size_count: u32,
@@ -879,7 +876,7 @@ pub const DescriptorPoolCreateInfo = extern struct {
 };
 pub const DescriptorSetAllocateInfo = extern struct {
     s_type: StructureType = .descriptor_set_allocate_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     descriptor_pool: DescriptorPool,
     descriptor_set_count: u32,
     p_set_layouts: [*]const DescriptorSetLayout,
@@ -893,11 +890,11 @@ pub const SpecializationInfo = extern struct {
     map_entry_count: u32,
     p_map_entries: [*]const SpecializationMapEntry,
     data_size: usize,
-    p_data: *const c_void,
+    p_data: *const anyopaque,
 };
 pub const PipelineShaderStageCreateInfo = extern struct {
     s_type: StructureType = .pipeline_shader_stage_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineShaderStageCreateFlags,
     stage: ShaderStageFlags,
     module: ShaderModule,
@@ -906,7 +903,7 @@ pub const PipelineShaderStageCreateInfo = extern struct {
 };
 pub const ComputePipelineCreateInfo = extern struct {
     s_type: StructureType = .compute_pipeline_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCreateFlags,
     stage: PipelineShaderStageCreateInfo,
     layout: PipelineLayout,
@@ -926,7 +923,7 @@ pub const VertexInputAttributeDescription = extern struct {
 };
 pub const PipelineVertexInputStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_vertex_input_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineVertexInputStateCreateFlags,
     vertex_binding_description_count: u32,
     p_vertex_binding_descriptions: [*]const VertexInputBindingDescription,
@@ -935,20 +932,20 @@ pub const PipelineVertexInputStateCreateInfo = extern struct {
 };
 pub const PipelineInputAssemblyStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_input_assembly_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineInputAssemblyStateCreateFlags,
     topology: PrimitiveTopology,
     primitive_restart_enable: Bool32,
 };
 pub const PipelineTessellationStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_tessellation_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineTessellationStateCreateFlags,
     patch_control_points: u32,
 };
 pub const PipelineViewportStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_viewport_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineViewportStateCreateFlags,
     viewport_count: u32,
     p_viewports: ?[*]const Viewport,
@@ -957,7 +954,7 @@ pub const PipelineViewportStateCreateInfo = extern struct {
 };
 pub const PipelineRasterizationStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_rasterization_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineRasterizationStateCreateFlags,
     depth_clamp_enable: Bool32,
     rasterizer_discard_enable: Bool32,
@@ -972,7 +969,7 @@ pub const PipelineRasterizationStateCreateInfo = extern struct {
 };
 pub const PipelineMultisampleStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_multisample_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineMultisampleStateCreateFlags,
     rasterization_samples: SampleCountFlags,
     sample_shading_enable: Bool32,
@@ -993,7 +990,7 @@ pub const PipelineColorBlendAttachmentState = extern struct {
 };
 pub const PipelineColorBlendStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_color_blend_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineColorBlendStateCreateFlags,
     logic_op_enable: Bool32,
     logic_op: LogicOp,
@@ -1003,7 +1000,7 @@ pub const PipelineColorBlendStateCreateInfo = extern struct {
 };
 pub const PipelineDynamicStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_dynamic_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineDynamicStateCreateFlags,
     dynamic_state_count: u32,
     p_dynamic_states: [*]const DynamicState,
@@ -1019,7 +1016,7 @@ pub const StencilOpState = extern struct {
 };
 pub const PipelineDepthStencilStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_depth_stencil_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineDepthStencilStateCreateFlags,
     depth_test_enable: Bool32,
     depth_write_enable: Bool32,
@@ -1033,7 +1030,7 @@ pub const PipelineDepthStencilStateCreateInfo = extern struct {
 };
 pub const GraphicsPipelineCreateInfo = extern struct {
     s_type: StructureType = .graphics_pipeline_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCreateFlags,
     stage_count: u32,
     p_stages: [*]const PipelineShaderStageCreateInfo,
@@ -1054,10 +1051,10 @@ pub const GraphicsPipelineCreateInfo = extern struct {
 };
 pub const PipelineCacheCreateInfo = extern struct {
     s_type: StructureType = .pipeline_cache_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCacheCreateFlags,
     initial_data_size: usize,
-    p_initial_data: *const c_void,
+    p_initial_data: *const anyopaque,
 };
 pub const PushConstantRange = extern struct {
     stage_flags: ShaderStageFlags,
@@ -1066,7 +1063,7 @@ pub const PushConstantRange = extern struct {
 };
 pub const PipelineLayoutCreateInfo = extern struct {
     s_type: StructureType = .pipeline_layout_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineLayoutCreateFlags,
     set_layout_count: u32,
     p_set_layouts: [*]const DescriptorSetLayout,
@@ -1075,7 +1072,7 @@ pub const PipelineLayoutCreateInfo = extern struct {
 };
 pub const SamplerCreateInfo = extern struct {
     s_type: StructureType = .sampler_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: SamplerCreateFlags,
     mag_filter: Filter,
     min_filter: Filter,
@@ -1095,20 +1092,20 @@ pub const SamplerCreateInfo = extern struct {
 };
 pub const CommandPoolCreateInfo = extern struct {
     s_type: StructureType = .command_pool_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: CommandPoolCreateFlags,
     queue_family_index: u32,
 };
 pub const CommandBufferAllocateInfo = extern struct {
     s_type: StructureType = .command_buffer_allocate_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     command_pool: CommandPool,
     level: CommandBufferLevel,
     command_buffer_count: u32,
 };
 pub const CommandBufferInheritanceInfo = extern struct {
     s_type: StructureType = .command_buffer_inheritance_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     render_pass: RenderPass,
     subpass: u32,
     framebuffer: Framebuffer,
@@ -1118,13 +1115,13 @@ pub const CommandBufferInheritanceInfo = extern struct {
 };
 pub const CommandBufferBeginInfo = extern struct {
     s_type: StructureType = .command_buffer_begin_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: CommandBufferUsageFlags,
     p_inheritance_info: ?*const CommandBufferInheritanceInfo,
 };
 pub const RenderPassBeginInfo = extern struct {
     s_type: StructureType = .render_pass_begin_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     render_pass: RenderPass,
     framebuffer: Framebuffer,
     render_area: Rect2D,
@@ -1187,7 +1184,7 @@ pub const SubpassDependency = extern struct {
 };
 pub const RenderPassCreateInfo = extern struct {
     s_type: StructureType = .render_pass_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: RenderPassCreateFlags,
     attachment_count: u32,
     p_attachments: [*]const AttachmentDescription,
@@ -1198,12 +1195,12 @@ pub const RenderPassCreateInfo = extern struct {
 };
 pub const EventCreateInfo = extern struct {
     s_type: StructureType = .event_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: EventCreateFlags,
 };
 pub const FenceCreateInfo = extern struct {
     s_type: StructureType = .fence_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: FenceCreateFlags,
 };
 pub const PhysicalDeviceFeatures = extern struct {
@@ -1380,12 +1377,12 @@ pub const PhysicalDeviceLimits = extern struct {
 };
 pub const SemaphoreCreateInfo = extern struct {
     s_type: StructureType = .semaphore_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: SemaphoreCreateFlags,
 };
 pub const QueryPoolCreateInfo = extern struct {
     s_type: StructureType = .query_pool_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: QueryPoolCreateFlags,
     query_type: QueryType,
     query_count: u32,
@@ -1393,7 +1390,7 @@ pub const QueryPoolCreateInfo = extern struct {
 };
 pub const FramebufferCreateInfo = extern struct {
     s_type: StructureType = .framebuffer_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: FramebufferCreateFlags,
     render_pass: RenderPass,
     attachment_count: u32,
@@ -1422,7 +1419,7 @@ pub const DispatchIndirectCommand = extern struct {
 };
 pub const SubmitInfo = extern struct {
     s_type: StructureType = .submit_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     wait_semaphore_count: u32,
     p_wait_semaphores: [*]const Semaphore,
     p_wait_dst_stage_mask: [*]const PipelineStageFlags,
@@ -1454,7 +1451,7 @@ pub const DisplayModePropertiesKHR = extern struct {
 };
 pub const DisplayModeCreateInfoKHR = extern struct {
     s_type: StructureType = .display_mode_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DisplayModeCreateFlagsKHR,
     parameters: DisplayModeParametersKHR,
 };
@@ -1471,7 +1468,7 @@ pub const DisplayPlaneCapabilitiesKHR = extern struct {
 };
 pub const DisplaySurfaceCreateInfoKHR = extern struct {
     s_type: StructureType = .display_surface_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DisplaySurfaceCreateFlagsKHR,
     display_mode: DisplayModeKHR,
     plane_index: u32,
@@ -1483,7 +1480,7 @@ pub const DisplaySurfaceCreateInfoKHR = extern struct {
 };
 pub const DisplayPresentInfoKHR = extern struct {
     s_type: StructureType = .display_present_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_rect: Rect2D,
     dst_rect: Rect2D,
     persistent: Bool32,
@@ -1502,66 +1499,66 @@ pub const SurfaceCapabilitiesKHR = extern struct {
 };
 pub const AndroidSurfaceCreateInfoKHR = extern struct {
     s_type: StructureType = .android_surface_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: AndroidSurfaceCreateFlagsKHR,
     window: *ANativeWindow,
 };
 pub const ViSurfaceCreateInfoNN = extern struct {
     s_type: StructureType = .vi_surface_create_info_nn,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ViSurfaceCreateFlagsNN,
-    window: *c_void,
+    window: *anyopaque,
 };
 pub const WaylandSurfaceCreateInfoKHR = extern struct {
     s_type: StructureType = .wayland_surface_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: WaylandSurfaceCreateFlagsKHR,
     display: *wl_display,
     surface: *wl_surface,
 };
 pub const Win32SurfaceCreateInfoKHR = extern struct {
     s_type: StructureType = .win32_surface_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: Win32SurfaceCreateFlagsKHR,
     hinstance: HINSTANCE,
     hwnd: HWND,
 };
 pub const XlibSurfaceCreateInfoKHR = extern struct {
     s_type: StructureType = .xlib_surface_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: XlibSurfaceCreateFlagsKHR,
     dpy: *Display,
     window: Window,
 };
 pub const XcbSurfaceCreateInfoKHR = extern struct {
     s_type: StructureType = .xcb_surface_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: XcbSurfaceCreateFlagsKHR,
     connection: *xcb_connection_t,
     window: xcb_window_t,
 };
 pub const DirectFBSurfaceCreateInfoEXT = extern struct {
     s_type: StructureType = .directfb_surface_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DirectFBSurfaceCreateFlagsEXT,
     dfb: *IDirectFB,
     surface: *IDirectFBSurface,
 };
 pub const ImagePipeSurfaceCreateInfoFUCHSIA = extern struct {
     s_type: StructureType = .imagepipe_surface_create_info_fuchsia,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ImagePipeSurfaceCreateFlagsFUCHSIA,
     image_pipe_handle: zx_handle_t,
 };
 pub const StreamDescriptorSurfaceCreateInfoGGP = extern struct {
     s_type: StructureType = .stream_descriptor_surface_create_info_ggp,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: StreamDescriptorSurfaceCreateFlagsGGP,
     stream_descriptor: GgpStreamDescriptor,
 };
 pub const ScreenSurfaceCreateInfoQNX = extern struct {
     s_type: StructureType = .screen_surface_create_info_qnx,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ScreenSurfaceCreateFlagsQNX,
     context: *_screen_context,
     window: *_screen_window,
@@ -1572,7 +1569,7 @@ pub const SurfaceFormatKHR = extern struct {
 };
 pub const SwapchainCreateInfoKHR = extern struct {
     s_type: StructureType = .swapchain_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: SwapchainCreateFlagsKHR,
     surface: SurfaceKHR,
     min_image_count: u32,
@@ -1592,7 +1589,7 @@ pub const SwapchainCreateInfoKHR = extern struct {
 };
 pub const PresentInfoKHR = extern struct {
     s_type: StructureType = .present_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     wait_semaphore_count: u32,
     p_wait_semaphores: [*]const Semaphore,
     swapchain_count: u32,
@@ -1602,20 +1599,20 @@ pub const PresentInfoKHR = extern struct {
 };
 pub const DebugReportCallbackCreateInfoEXT = extern struct {
     s_type: StructureType = .debug_report_callback_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DebugReportFlagsEXT,
     pfn_callback: PfnDebugReportCallbackEXT,
-    p_user_data: ?*c_void,
+    p_user_data: ?*anyopaque,
 };
 pub const ValidationFlagsEXT = extern struct {
     s_type: StructureType = .validation_flags_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     disabled_validation_check_count: u32,
     p_disabled_validation_checks: [*]const ValidationCheckEXT,
 };
 pub const ValidationFeaturesEXT = extern struct {
     s_type: StructureType = .validation_features_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     enabled_validation_feature_count: u32,
     p_enabled_validation_features: [*]const ValidationFeatureEnableEXT,
     disabled_validation_feature_count: u32,
@@ -1623,44 +1620,44 @@ pub const ValidationFeaturesEXT = extern struct {
 };
 pub const PipelineRasterizationStateRasterizationOrderAMD = extern struct {
     s_type: StructureType = .pipeline_rasterization_state_rasterization_order_amd,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     rasterization_order: RasterizationOrderAMD,
 };
 pub const DebugMarkerObjectNameInfoEXT = extern struct {
     s_type: StructureType = .debug_marker_object_name_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     object_type: DebugReportObjectTypeEXT,
     object: u64,
     p_object_name: [*:0]const u8,
 };
 pub const DebugMarkerObjectTagInfoEXT = extern struct {
     s_type: StructureType = .debug_marker_object_tag_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     object_type: DebugReportObjectTypeEXT,
     object: u64,
     tag_name: u64,
     tag_size: usize,
-    p_tag: *const c_void,
+    p_tag: *const anyopaque,
 };
 pub const DebugMarkerMarkerInfoEXT = extern struct {
     s_type: StructureType = .debug_marker_marker_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_marker_name: [*:0]const u8,
     color: [4]f32,
 };
 pub const DedicatedAllocationImageCreateInfoNV = extern struct {
     s_type: StructureType = .dedicated_allocation_image_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     dedicated_allocation: Bool32,
 };
 pub const DedicatedAllocationBufferCreateInfoNV = extern struct {
     s_type: StructureType = .dedicated_allocation_buffer_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     dedicated_allocation: Bool32,
 };
 pub const DedicatedAllocationMemoryAllocateInfoNV = extern struct {
     s_type: StructureType = .dedicated_allocation_memory_allocate_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     image: Image,
     buffer: Buffer,
 };
@@ -1672,29 +1669,29 @@ pub const ExternalImageFormatPropertiesNV = extern struct {
 };
 pub const ExternalMemoryImageCreateInfoNV = extern struct {
     s_type: StructureType = .external_memory_image_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_types: ExternalMemoryHandleTypeFlagsNV,
 };
 pub const ExportMemoryAllocateInfoNV = extern struct {
     s_type: StructureType = .export_memory_allocate_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_types: ExternalMemoryHandleTypeFlagsNV,
 };
 pub const ImportMemoryWin32HandleInfoNV = extern struct {
     s_type: StructureType = .import_memory_win32_handle_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_type: ExternalMemoryHandleTypeFlagsNV,
     handle: HANDLE,
 };
 pub const ExportMemoryWin32HandleInfoNV = extern struct {
     s_type: StructureType = .export_memory_win32_handle_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_attributes: ?*const SECURITY_ATTRIBUTES,
     dw_access: DWORD,
 };
 pub const Win32KeyedMutexAcquireReleaseInfoNV = extern struct {
     s_type: StructureType = .win32_keyed_mutex_acquire_release_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     acquire_count: u32,
     p_acquire_syncs: [*]const DeviceMemory,
     p_acquire_keys: [*]const u64,
@@ -1705,27 +1702,27 @@ pub const Win32KeyedMutexAcquireReleaseInfoNV = extern struct {
 };
 pub const PhysicalDeviceDeviceGeneratedCommandsFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_device_generated_commands_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     device_generated_commands: Bool32,
 };
 pub const DevicePrivateDataCreateInfoEXT = extern struct {
     s_type: StructureType = .device_private_data_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     private_data_slot_request_count: u32,
 };
 pub const PrivateDataSlotCreateInfoEXT = extern struct {
     s_type: StructureType = .private_data_slot_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PrivateDataSlotCreateFlagsEXT,
 };
 pub const PhysicalDevicePrivateDataFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_private_data_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     private_data: Bool32,
 };
 pub const PhysicalDeviceDeviceGeneratedCommandsPropertiesNV = extern struct {
     s_type: StructureType = .physical_device_device_generated_commands_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_graphics_shader_group_count: u32,
     max_indirect_sequence_count: u32,
     max_indirect_commands_token_count: u32,
@@ -1738,7 +1735,7 @@ pub const PhysicalDeviceDeviceGeneratedCommandsPropertiesNV = extern struct {
 };
 pub const GraphicsShaderGroupCreateInfoNV = extern struct {
     s_type: StructureType = .graphics_shader_group_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     stage_count: u32,
     p_stages: [*]const PipelineShaderStageCreateInfo,
     p_vertex_input_state: ?*const PipelineVertexInputStateCreateInfo,
@@ -1746,7 +1743,7 @@ pub const GraphicsShaderGroupCreateInfoNV = extern struct {
 };
 pub const GraphicsPipelineShaderGroupsCreateInfoNV = extern struct {
     s_type: StructureType = .graphics_pipeline_shader_groups_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     group_count: u32,
     p_groups: [*]const GraphicsShaderGroupCreateInfoNV,
     pipeline_count: u32,
@@ -1774,7 +1771,7 @@ pub const IndirectCommandsStreamNV = extern struct {
 };
 pub const IndirectCommandsLayoutTokenNV = extern struct {
     s_type: StructureType = .indirect_commands_layout_token_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     token_type: IndirectCommandsTokenTypeNV,
     stream: u32,
     offset: u32,
@@ -1791,7 +1788,7 @@ pub const IndirectCommandsLayoutTokenNV = extern struct {
 };
 pub const IndirectCommandsLayoutCreateInfoNV = extern struct {
     s_type: StructureType = .indirect_commands_layout_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: IndirectCommandsLayoutUsageFlagsNV,
     pipeline_bind_point: PipelineBindPoint,
     token_count: u32,
@@ -1801,7 +1798,7 @@ pub const IndirectCommandsLayoutCreateInfoNV = extern struct {
 };
 pub const GeneratedCommandsInfoNV = extern struct {
     s_type: StructureType = .generated_commands_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     pipeline_bind_point: PipelineBindPoint,
     pipeline: Pipeline,
     indirect_commands_layout: IndirectCommandsLayoutNV,
@@ -1818,7 +1815,7 @@ pub const GeneratedCommandsInfoNV = extern struct {
 };
 pub const GeneratedCommandsMemoryRequirementsInfoNV = extern struct {
     s_type: StructureType = .generated_commands_memory_requirements_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     pipeline_bind_point: PipelineBindPoint,
     pipeline: Pipeline,
     indirect_commands_layout: IndirectCommandsLayoutNV,
@@ -1826,31 +1823,31 @@ pub const GeneratedCommandsMemoryRequirementsInfoNV = extern struct {
 };
 pub const PhysicalDeviceFeatures2 = extern struct {
     s_type: StructureType = .physical_device_features_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     features: PhysicalDeviceFeatures,
 };
 pub const PhysicalDeviceFeatures2KHR = PhysicalDeviceFeatures2;
 pub const PhysicalDeviceProperties2 = extern struct {
     s_type: StructureType = .physical_device_properties_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     properties: PhysicalDeviceProperties,
 };
 pub const PhysicalDeviceProperties2KHR = PhysicalDeviceProperties2;
 pub const FormatProperties2 = extern struct {
     s_type: StructureType = .format_properties_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     format_properties: FormatProperties,
 };
 pub const FormatProperties2KHR = FormatProperties2;
 pub const ImageFormatProperties2 = extern struct {
     s_type: StructureType = .image_format_properties_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     image_format_properties: ImageFormatProperties,
 };
 pub const ImageFormatProperties2KHR = ImageFormatProperties2;
 pub const PhysicalDeviceImageFormatInfo2 = extern struct {
     s_type: StructureType = .physical_device_image_format_info_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     format: Format,
     type: ImageType,
     tiling: ImageTiling,
@@ -1860,25 +1857,25 @@ pub const PhysicalDeviceImageFormatInfo2 = extern struct {
 pub const PhysicalDeviceImageFormatInfo2KHR = PhysicalDeviceImageFormatInfo2;
 pub const QueueFamilyProperties2 = extern struct {
     s_type: StructureType = .queue_family_properties_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     queue_family_properties: QueueFamilyProperties,
 };
 pub const QueueFamilyProperties2KHR = QueueFamilyProperties2;
 pub const PhysicalDeviceMemoryProperties2 = extern struct {
     s_type: StructureType = .physical_device_memory_properties_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     memory_properties: PhysicalDeviceMemoryProperties,
 };
 pub const PhysicalDeviceMemoryProperties2KHR = PhysicalDeviceMemoryProperties2;
 pub const SparseImageFormatProperties2 = extern struct {
     s_type: StructureType = .sparse_image_format_properties_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     properties: SparseImageFormatProperties,
 };
 pub const SparseImageFormatProperties2KHR = SparseImageFormatProperties2;
 pub const PhysicalDeviceSparseImageFormatInfo2 = extern struct {
     s_type: StructureType = .physical_device_sparse_image_format_info_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     format: Format,
     type: ImageType,
     samples: SampleCountFlags,
@@ -1888,7 +1885,7 @@ pub const PhysicalDeviceSparseImageFormatInfo2 = extern struct {
 pub const PhysicalDeviceSparseImageFormatInfo2KHR = PhysicalDeviceSparseImageFormatInfo2;
 pub const PhysicalDevicePushDescriptorPropertiesKHR = extern struct {
     s_type: StructureType = .physical_device_push_descriptor_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_push_descriptors: u32,
 };
 pub const ConformanceVersion = extern struct {
@@ -1900,7 +1897,7 @@ pub const ConformanceVersion = extern struct {
 pub const ConformanceVersionKHR = ConformanceVersion;
 pub const PhysicalDeviceDriverProperties = extern struct {
     s_type: StructureType = .physical_device_driver_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     driver_id: DriverId,
     driver_name: [MAX_DRIVER_NAME_SIZE]u8,
     driver_info: [MAX_DRIVER_INFO_SIZE]u8,
@@ -1909,7 +1906,7 @@ pub const PhysicalDeviceDriverProperties = extern struct {
 pub const PhysicalDeviceDriverPropertiesKHR = PhysicalDeviceDriverProperties;
 pub const PresentRegionsKHR = extern struct {
     s_type: StructureType = .present_regions_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     swapchain_count: u32,
     p_regions: ?[*]const PresentRegionKHR,
 };
@@ -1924,7 +1921,7 @@ pub const RectLayerKHR = extern struct {
 };
 pub const PhysicalDeviceVariablePointersFeatures = extern struct {
     s_type: StructureType = .physical_device_variable_pointers_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     variable_pointers_storage_buffer: Bool32,
     variable_pointers: Bool32,
 };
@@ -1939,19 +1936,19 @@ pub const ExternalMemoryProperties = extern struct {
 pub const ExternalMemoryPropertiesKHR = ExternalMemoryProperties;
 pub const PhysicalDeviceExternalImageFormatInfo = extern struct {
     s_type: StructureType = .physical_device_external_image_format_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_type: ExternalMemoryHandleTypeFlags,
 };
 pub const PhysicalDeviceExternalImageFormatInfoKHR = PhysicalDeviceExternalImageFormatInfo;
 pub const ExternalImageFormatProperties = extern struct {
     s_type: StructureType = .external_image_format_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     external_memory_properties: ExternalMemoryProperties,
 };
 pub const ExternalImageFormatPropertiesKHR = ExternalImageFormatProperties;
 pub const PhysicalDeviceExternalBufferInfo = extern struct {
     s_type: StructureType = .physical_device_external_buffer_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: BufferCreateFlags,
     usage: BufferUsageFlags,
     handle_type: ExternalMemoryHandleTypeFlags,
@@ -1959,13 +1956,13 @@ pub const PhysicalDeviceExternalBufferInfo = extern struct {
 pub const PhysicalDeviceExternalBufferInfoKHR = PhysicalDeviceExternalBufferInfo;
 pub const ExternalBufferProperties = extern struct {
     s_type: StructureType = .external_buffer_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     external_memory_properties: ExternalMemoryProperties,
 };
 pub const ExternalBufferPropertiesKHR = ExternalBufferProperties;
 pub const PhysicalDeviceIDProperties = extern struct {
     s_type: StructureType = .physical_device_id_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     device_uuid: [UUID_SIZE]u8,
     driver_uuid: [UUID_SIZE]u8,
     device_luid: [LUID_SIZE]u8,
@@ -1975,84 +1972,84 @@ pub const PhysicalDeviceIDProperties = extern struct {
 pub const PhysicalDeviceIDPropertiesKHR = PhysicalDeviceIDProperties;
 pub const ExternalMemoryImageCreateInfo = extern struct {
     s_type: StructureType = .external_memory_image_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_types: ExternalMemoryHandleTypeFlags,
 };
 pub const ExternalMemoryImageCreateInfoKHR = ExternalMemoryImageCreateInfo;
 pub const ExternalMemoryBufferCreateInfo = extern struct {
     s_type: StructureType = .external_memory_buffer_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_types: ExternalMemoryHandleTypeFlags,
 };
 pub const ExternalMemoryBufferCreateInfoKHR = ExternalMemoryBufferCreateInfo;
 pub const ExportMemoryAllocateInfo = extern struct {
     s_type: StructureType = .export_memory_allocate_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_types: ExternalMemoryHandleTypeFlags,
 };
 pub const ExportMemoryAllocateInfoKHR = ExportMemoryAllocateInfo;
 pub const ImportMemoryWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .import_memory_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_type: ExternalMemoryHandleTypeFlags,
     handle: HANDLE,
     name: LPCWSTR,
 };
 pub const ExportMemoryWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .export_memory_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_attributes: ?*const SECURITY_ATTRIBUTES,
     dw_access: DWORD,
     name: LPCWSTR,
 };
 pub const ImportMemoryZirconHandleInfoFUCHSIA = extern struct {
     s_type: StructureType = .import_memory_zircon_handle_info_fuchsia,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     handle_type: ExternalMemoryHandleTypeFlags,
     handle: zx_handle_t,
 };
 pub const MemoryZirconHandlePropertiesFUCHSIA = extern struct {
     s_type: StructureType = .memory_zircon_handle_properties_fuchsia,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     memory_type_bits: u32,
 };
 pub const MemoryGetZirconHandleInfoFUCHSIA = extern struct {
     s_type: StructureType = .memory_get_zircon_handle_info_fuchsia,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     memory: DeviceMemory,
     handle_type: ExternalMemoryHandleTypeFlags,
 };
 pub const MemoryWin32HandlePropertiesKHR = extern struct {
     s_type: StructureType = .memory_win32_handle_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     memory_type_bits: u32,
 };
 pub const MemoryGetWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .memory_get_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     memory: DeviceMemory,
     handle_type: ExternalMemoryHandleTypeFlags,
 };
 pub const ImportMemoryFdInfoKHR = extern struct {
     s_type: StructureType = .import_memory_fd_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_type: ExternalMemoryHandleTypeFlags,
     fd: c_int,
 };
 pub const MemoryFdPropertiesKHR = extern struct {
     s_type: StructureType = .memory_fd_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     memory_type_bits: u32,
 };
 pub const MemoryGetFdInfoKHR = extern struct {
     s_type: StructureType = .memory_get_fd_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     memory: DeviceMemory,
     handle_type: ExternalMemoryHandleTypeFlags,
 };
 pub const Win32KeyedMutexAcquireReleaseInfoKHR = extern struct {
     s_type: StructureType = .win32_keyed_mutex_acquire_release_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     acquire_count: u32,
     p_acquire_syncs: [*]const DeviceMemory,
     p_acquire_keys: [*]const u64,
@@ -2063,13 +2060,13 @@ pub const Win32KeyedMutexAcquireReleaseInfoKHR = extern struct {
 };
 pub const PhysicalDeviceExternalSemaphoreInfo = extern struct {
     s_type: StructureType = .physical_device_external_semaphore_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_type: ExternalSemaphoreHandleTypeFlags,
 };
 pub const PhysicalDeviceExternalSemaphoreInfoKHR = PhysicalDeviceExternalSemaphoreInfo;
 pub const ExternalSemaphoreProperties = extern struct {
     s_type: StructureType = .external_semaphore_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     export_from_imported_handle_types: ExternalSemaphoreHandleTypeFlags,
     compatible_handle_types: ExternalSemaphoreHandleTypeFlags,
     external_semaphore_features: ExternalSemaphoreFeatureFlags,
@@ -2077,13 +2074,13 @@ pub const ExternalSemaphoreProperties = extern struct {
 pub const ExternalSemaphorePropertiesKHR = ExternalSemaphoreProperties;
 pub const ExportSemaphoreCreateInfo = extern struct {
     s_type: StructureType = .export_semaphore_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_types: ExternalSemaphoreHandleTypeFlags,
 };
 pub const ExportSemaphoreCreateInfoKHR = ExportSemaphoreCreateInfo;
 pub const ImportSemaphoreWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .import_semaphore_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore: Semaphore,
     flags: SemaphoreImportFlags,
     handle_type: ExternalSemaphoreHandleTypeFlags,
@@ -2092,14 +2089,14 @@ pub const ImportSemaphoreWin32HandleInfoKHR = extern struct {
 };
 pub const ExportSemaphoreWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .export_semaphore_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_attributes: ?*const SECURITY_ATTRIBUTES,
     dw_access: DWORD,
     name: LPCWSTR,
 };
 pub const D3D12FenceSubmitInfoKHR = extern struct {
     s_type: StructureType = .d3d12_fence_submit_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     wait_semaphore_values_count: u32,
     p_wait_semaphore_values: ?[*]const u64,
     signal_semaphore_values_count: u32,
@@ -2107,13 +2104,13 @@ pub const D3D12FenceSubmitInfoKHR = extern struct {
 };
 pub const SemaphoreGetWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .semaphore_get_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore: Semaphore,
     handle_type: ExternalSemaphoreHandleTypeFlags,
 };
 pub const ImportSemaphoreFdInfoKHR = extern struct {
     s_type: StructureType = .import_semaphore_fd_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore: Semaphore,
     flags: SemaphoreImportFlags,
     handle_type: ExternalSemaphoreHandleTypeFlags,
@@ -2121,13 +2118,13 @@ pub const ImportSemaphoreFdInfoKHR = extern struct {
 };
 pub const SemaphoreGetFdInfoKHR = extern struct {
     s_type: StructureType = .semaphore_get_fd_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore: Semaphore,
     handle_type: ExternalSemaphoreHandleTypeFlags,
 };
 pub const ImportSemaphoreZirconHandleInfoFUCHSIA = extern struct {
     s_type: StructureType = .import_semaphore_zircon_handle_info_fuchsia,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore: Semaphore,
     flags: SemaphoreImportFlags,
     handle_type: ExternalSemaphoreHandleTypeFlags,
@@ -2135,19 +2132,19 @@ pub const ImportSemaphoreZirconHandleInfoFUCHSIA = extern struct {
 };
 pub const SemaphoreGetZirconHandleInfoFUCHSIA = extern struct {
     s_type: StructureType = .semaphore_get_zircon_handle_info_fuchsia,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore: Semaphore,
     handle_type: ExternalSemaphoreHandleTypeFlags,
 };
 pub const PhysicalDeviceExternalFenceInfo = extern struct {
     s_type: StructureType = .physical_device_external_fence_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_type: ExternalFenceHandleTypeFlags,
 };
 pub const PhysicalDeviceExternalFenceInfoKHR = PhysicalDeviceExternalFenceInfo;
 pub const ExternalFenceProperties = extern struct {
     s_type: StructureType = .external_fence_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     export_from_imported_handle_types: ExternalFenceHandleTypeFlags,
     compatible_handle_types: ExternalFenceHandleTypeFlags,
     external_fence_features: ExternalFenceFeatureFlags,
@@ -2155,13 +2152,13 @@ pub const ExternalFenceProperties = extern struct {
 pub const ExternalFencePropertiesKHR = ExternalFenceProperties;
 pub const ExportFenceCreateInfo = extern struct {
     s_type: StructureType = .export_fence_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_types: ExternalFenceHandleTypeFlags,
 };
 pub const ExportFenceCreateInfoKHR = ExportFenceCreateInfo;
 pub const ImportFenceWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .import_fence_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     fence: Fence,
     flags: FenceImportFlags,
     handle_type: ExternalFenceHandleTypeFlags,
@@ -2170,20 +2167,20 @@ pub const ImportFenceWin32HandleInfoKHR = extern struct {
 };
 pub const ExportFenceWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .export_fence_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_attributes: ?*const SECURITY_ATTRIBUTES,
     dw_access: DWORD,
     name: LPCWSTR,
 };
 pub const FenceGetWin32HandleInfoKHR = extern struct {
     s_type: StructureType = .fence_get_win32_handle_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     fence: Fence,
     handle_type: ExternalFenceHandleTypeFlags,
 };
 pub const ImportFenceFdInfoKHR = extern struct {
     s_type: StructureType = .import_fence_fd_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     fence: Fence,
     flags: FenceImportFlags,
     handle_type: ExternalFenceHandleTypeFlags,
@@ -2191,13 +2188,13 @@ pub const ImportFenceFdInfoKHR = extern struct {
 };
 pub const FenceGetFdInfoKHR = extern struct {
     s_type: StructureType = .fence_get_fd_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     fence: Fence,
     handle_type: ExternalFenceHandleTypeFlags,
 };
 pub const PhysicalDeviceMultiviewFeatures = extern struct {
     s_type: StructureType = .physical_device_multiview_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     multiview: Bool32,
     multiview_geometry_shader: Bool32,
     multiview_tessellation_shader: Bool32,
@@ -2205,14 +2202,14 @@ pub const PhysicalDeviceMultiviewFeatures = extern struct {
 pub const PhysicalDeviceMultiviewFeaturesKHR = PhysicalDeviceMultiviewFeatures;
 pub const PhysicalDeviceMultiviewProperties = extern struct {
     s_type: StructureType = .physical_device_multiview_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_multiview_view_count: u32,
     max_multiview_instance_index: u32,
 };
 pub const PhysicalDeviceMultiviewPropertiesKHR = PhysicalDeviceMultiviewProperties;
 pub const RenderPassMultiviewCreateInfo = extern struct {
     s_type: StructureType = .render_pass_multiview_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     subpass_count: u32,
     p_view_masks: [*]const u32,
     dependency_count: u32,
@@ -2223,7 +2220,7 @@ pub const RenderPassMultiviewCreateInfo = extern struct {
 pub const RenderPassMultiviewCreateInfoKHR = RenderPassMultiviewCreateInfo;
 pub const SurfaceCapabilities2EXT = extern struct {
     s_type: StructureType = .surface_capabilities_2_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     min_image_count: u32,
     max_image_count: u32,
     current_extent: Extent2D,
@@ -2238,27 +2235,27 @@ pub const SurfaceCapabilities2EXT = extern struct {
 };
 pub const DisplayPowerInfoEXT = extern struct {
     s_type: StructureType = .display_power_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     power_state: DisplayPowerStateEXT,
 };
 pub const DeviceEventInfoEXT = extern struct {
     s_type: StructureType = .device_event_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     device_event: DeviceEventTypeEXT,
 };
 pub const DisplayEventInfoEXT = extern struct {
     s_type: StructureType = .display_event_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     display_event: DisplayEventTypeEXT,
 };
 pub const SwapchainCounterCreateInfoEXT = extern struct {
     s_type: StructureType = .swapchain_counter_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     surface_counters: SurfaceCounterFlagsEXT,
 };
 pub const PhysicalDeviceGroupProperties = extern struct {
     s_type: StructureType = .physical_device_group_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     physical_device_count: u32,
     physical_devices: [MAX_DEVICE_GROUP_SIZE]PhysicalDevice,
     subset_allocation: Bool32,
@@ -2266,14 +2263,14 @@ pub const PhysicalDeviceGroupProperties = extern struct {
 pub const PhysicalDeviceGroupPropertiesKHR = PhysicalDeviceGroupProperties;
 pub const MemoryAllocateFlagsInfo = extern struct {
     s_type: StructureType = .memory_allocate_flags_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: MemoryAllocateFlags,
     device_mask: u32,
 };
 pub const MemoryAllocateFlagsInfoKHR = MemoryAllocateFlagsInfo;
 pub const BindBufferMemoryInfo = extern struct {
     s_type: StructureType = .bind_buffer_memory_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     buffer: Buffer,
     memory: DeviceMemory,
     memory_offset: DeviceSize,
@@ -2281,14 +2278,14 @@ pub const BindBufferMemoryInfo = extern struct {
 pub const BindBufferMemoryInfoKHR = BindBufferMemoryInfo;
 pub const BindBufferMemoryDeviceGroupInfo = extern struct {
     s_type: StructureType = .bind_buffer_memory_device_group_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     device_index_count: u32,
     p_device_indices: [*]const u32,
 };
 pub const BindBufferMemoryDeviceGroupInfoKHR = BindBufferMemoryDeviceGroupInfo;
 pub const BindImageMemoryInfo = extern struct {
     s_type: StructureType = .bind_image_memory_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     image: Image,
     memory: DeviceMemory,
     memory_offset: DeviceSize,
@@ -2296,7 +2293,7 @@ pub const BindImageMemoryInfo = extern struct {
 pub const BindImageMemoryInfoKHR = BindImageMemoryInfo;
 pub const BindImageMemoryDeviceGroupInfo = extern struct {
     s_type: StructureType = .bind_image_memory_device_group_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     device_index_count: u32,
     p_device_indices: [*]const u32,
     split_instance_bind_region_count: u32,
@@ -2305,7 +2302,7 @@ pub const BindImageMemoryDeviceGroupInfo = extern struct {
 pub const BindImageMemoryDeviceGroupInfoKHR = BindImageMemoryDeviceGroupInfo;
 pub const DeviceGroupRenderPassBeginInfo = extern struct {
     s_type: StructureType = .device_group_render_pass_begin_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     device_mask: u32,
     device_render_area_count: u32,
     p_device_render_areas: [*]const Rect2D,
@@ -2313,13 +2310,13 @@ pub const DeviceGroupRenderPassBeginInfo = extern struct {
 pub const DeviceGroupRenderPassBeginInfoKHR = DeviceGroupRenderPassBeginInfo;
 pub const DeviceGroupCommandBufferBeginInfo = extern struct {
     s_type: StructureType = .device_group_command_buffer_begin_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     device_mask: u32,
 };
 pub const DeviceGroupCommandBufferBeginInfoKHR = DeviceGroupCommandBufferBeginInfo;
 pub const DeviceGroupSubmitInfo = extern struct {
     s_type: StructureType = .device_group_submit_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     wait_semaphore_count: u32,
     p_wait_semaphore_device_indices: [*]const u32,
     command_buffer_count: u32,
@@ -2330,31 +2327,31 @@ pub const DeviceGroupSubmitInfo = extern struct {
 pub const DeviceGroupSubmitInfoKHR = DeviceGroupSubmitInfo;
 pub const DeviceGroupBindSparseInfo = extern struct {
     s_type: StructureType = .device_group_bind_sparse_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     resource_device_index: u32,
     memory_device_index: u32,
 };
 pub const DeviceGroupBindSparseInfoKHR = DeviceGroupBindSparseInfo;
 pub const DeviceGroupPresentCapabilitiesKHR = extern struct {
     s_type: StructureType = .device_group_present_capabilities_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     present_mask: [MAX_DEVICE_GROUP_SIZE]u32,
     modes: DeviceGroupPresentModeFlagsKHR,
 };
 pub const ImageSwapchainCreateInfoKHR = extern struct {
     s_type: StructureType = .image_swapchain_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     swapchain: SwapchainKHR,
 };
 pub const BindImageMemorySwapchainInfoKHR = extern struct {
     s_type: StructureType = .bind_image_memory_swapchain_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     swapchain: SwapchainKHR,
     image_index: u32,
 };
 pub const AcquireNextImageInfoKHR = extern struct {
     s_type: StructureType = .acquire_next_image_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     swapchain: SwapchainKHR,
     timeout: u64,
     semaphore: Semaphore,
@@ -2363,21 +2360,21 @@ pub const AcquireNextImageInfoKHR = extern struct {
 };
 pub const DeviceGroupPresentInfoKHR = extern struct {
     s_type: StructureType = .device_group_present_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     swapchain_count: u32,
     p_device_masks: [*]const u32,
     mode: DeviceGroupPresentModeFlagsKHR,
 };
 pub const DeviceGroupDeviceCreateInfo = extern struct {
     s_type: StructureType = .device_group_device_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     physical_device_count: u32,
     p_physical_devices: [*]const PhysicalDevice,
 };
 pub const DeviceGroupDeviceCreateInfoKHR = DeviceGroupDeviceCreateInfo;
 pub const DeviceGroupSwapchainCreateInfoKHR = extern struct {
     s_type: StructureType = .device_group_swapchain_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     modes: DeviceGroupPresentModeFlagsKHR,
 };
 pub const DescriptorUpdateTemplateEntry = extern struct {
@@ -2391,7 +2388,7 @@ pub const DescriptorUpdateTemplateEntry = extern struct {
 pub const DescriptorUpdateTemplateEntryKHR = DescriptorUpdateTemplateEntry;
 pub const DescriptorUpdateTemplateCreateInfo = extern struct {
     s_type: StructureType = .descriptor_update_template_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DescriptorUpdateTemplateCreateFlags,
     descriptor_update_entry_count: u32,
     p_descriptor_update_entries: [*]const DescriptorUpdateTemplateEntry,
@@ -2408,7 +2405,7 @@ pub const XYColorEXT = extern struct {
 };
 pub const HdrMetadataEXT = extern struct {
     s_type: StructureType = .hdr_metadata_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     display_primary_red: XYColorEXT,
     display_primary_green: XYColorEXT,
     display_primary_blue: XYColorEXT,
@@ -2420,12 +2417,12 @@ pub const HdrMetadataEXT = extern struct {
 };
 pub const DisplayNativeHdrSurfaceCapabilitiesAMD = extern struct {
     s_type: StructureType = .display_native_hdr_surface_capabilities_amd,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     local_dimming_support: Bool32,
 };
 pub const SwapchainDisplayNativeHdrCreateInfoAMD = extern struct {
     s_type: StructureType = .swapchain_display_native_hdr_create_info_amd,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     local_dimming_enable: Bool32,
 };
 pub const RefreshCycleDurationGOOGLE = extern struct {
@@ -2440,7 +2437,7 @@ pub const PastPresentationTimingGOOGLE = extern struct {
 };
 pub const PresentTimesInfoGOOGLE = extern struct {
     s_type: StructureType = .present_times_info_google,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     swapchain_count: u32,
     p_times: ?[*]const PresentTimeGOOGLE,
 };
@@ -2450,19 +2447,19 @@ pub const PresentTimeGOOGLE = extern struct {
 };
 pub const IOSSurfaceCreateInfoMVK = extern struct {
     s_type: StructureType = .ios_surface_create_info_mvk,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: IOSSurfaceCreateFlagsMVK,
-    p_view: *const c_void,
+    p_view: *const anyopaque,
 };
 pub const MacOSSurfaceCreateInfoMVK = extern struct {
     s_type: StructureType = .macos_surface_create_info_mvk,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: MacOSSurfaceCreateFlagsMVK,
-    p_view: *const c_void,
+    p_view: *const anyopaque,
 };
 pub const MetalSurfaceCreateInfoEXT = extern struct {
     s_type: StructureType = .metal_surface_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: MetalSurfaceCreateFlagsEXT,
     p_layer: *const CAMetalLayer,
 };
@@ -2472,7 +2469,7 @@ pub const ViewportWScalingNV = extern struct {
 };
 pub const PipelineViewportWScalingStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_viewport_w_scaling_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     viewport_w_scaling_enable: Bool32,
     viewport_count: u32,
     p_viewport_w_scalings: ?[*]const ViewportWScalingNV,
@@ -2485,19 +2482,19 @@ pub const ViewportSwizzleNV = extern struct {
 };
 pub const PipelineViewportSwizzleStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_viewport_swizzle_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineViewportSwizzleStateCreateFlagsNV,
     viewport_count: u32,
     p_viewport_swizzles: [*]const ViewportSwizzleNV,
 };
 pub const PhysicalDeviceDiscardRectanglePropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_discard_rectangle_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_discard_rectangles: u32,
 };
 pub const PipelineDiscardRectangleStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_discard_rectangle_state_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineDiscardRectangleStateCreateFlagsEXT,
     discard_rectangle_mode: DiscardRectangleModeEXT,
     discard_rectangle_count: u32,
@@ -2505,7 +2502,7 @@ pub const PipelineDiscardRectangleStateCreateInfoEXT = extern struct {
 };
 pub const PhysicalDeviceMultiviewPerViewAttributesPropertiesNVX = extern struct {
     s_type: StructureType = .physical_device_multiview_per_view_attributes_properties_nvx,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     per_view_position_all_components: Bool32,
 };
 pub const InputAttachmentAspectReference = extern struct {
@@ -2516,60 +2513,60 @@ pub const InputAttachmentAspectReference = extern struct {
 pub const InputAttachmentAspectReferenceKHR = InputAttachmentAspectReference;
 pub const RenderPassInputAttachmentAspectCreateInfo = extern struct {
     s_type: StructureType = .render_pass_input_attachment_aspect_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     aspect_reference_count: u32,
     p_aspect_references: [*]const InputAttachmentAspectReference,
 };
 pub const RenderPassInputAttachmentAspectCreateInfoKHR = RenderPassInputAttachmentAspectCreateInfo;
 pub const PhysicalDeviceSurfaceInfo2KHR = extern struct {
     s_type: StructureType = .physical_device_surface_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     surface: SurfaceKHR,
 };
 pub const SurfaceCapabilities2KHR = extern struct {
     s_type: StructureType = .surface_capabilities_2_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     surface_capabilities: SurfaceCapabilitiesKHR,
 };
 pub const SurfaceFormat2KHR = extern struct {
     s_type: StructureType = .surface_format_2_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     surface_format: SurfaceFormatKHR,
 };
 pub const DisplayProperties2KHR = extern struct {
     s_type: StructureType = .display_properties_2_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     display_properties: DisplayPropertiesKHR,
 };
 pub const DisplayPlaneProperties2KHR = extern struct {
     s_type: StructureType = .display_plane_properties_2_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     display_plane_properties: DisplayPlanePropertiesKHR,
 };
 pub const DisplayModeProperties2KHR = extern struct {
     s_type: StructureType = .display_mode_properties_2_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     display_mode_properties: DisplayModePropertiesKHR,
 };
 pub const DisplayPlaneInfo2KHR = extern struct {
     s_type: StructureType = .display_plane_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     mode: DisplayModeKHR,
     plane_index: u32,
 };
 pub const DisplayPlaneCapabilities2KHR = extern struct {
     s_type: StructureType = .display_plane_capabilities_2_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     capabilities: DisplayPlaneCapabilitiesKHR,
 };
 pub const SharedPresentSurfaceCapabilitiesKHR = extern struct {
     s_type: StructureType = .shared_present_surface_capabilities_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shared_present_supported_usage_flags: ImageUsageFlags,
 };
 pub const PhysicalDevice16BitStorageFeatures = extern struct {
     s_type: StructureType = .physical_device_16bit_storage_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     storage_buffer_16_bit_access: Bool32,
     uniform_and_storage_buffer_16_bit_access: Bool32,
     storage_push_constant_16: Bool32,
@@ -2578,7 +2575,7 @@ pub const PhysicalDevice16BitStorageFeatures = extern struct {
 pub const PhysicalDevice16BitStorageFeaturesKHR = PhysicalDevice16BitStorageFeatures;
 pub const PhysicalDeviceSubgroupProperties = extern struct {
     s_type: StructureType = .physical_device_subgroup_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     subgroup_size: u32,
     supported_stages: ShaderStageFlags,
     supported_operations: SubgroupFeatureFlags,
@@ -2586,81 +2583,81 @@ pub const PhysicalDeviceSubgroupProperties = extern struct {
 };
 pub const PhysicalDeviceShaderSubgroupExtendedTypesFeatures = extern struct {
     s_type: StructureType = .physical_device_shader_subgroup_extended_types_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_subgroup_extended_types: Bool32,
 };
 pub const PhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR = PhysicalDeviceShaderSubgroupExtendedTypesFeatures;
 pub const BufferMemoryRequirementsInfo2 = extern struct {
     s_type: StructureType = .buffer_memory_requirements_info_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     buffer: Buffer,
 };
 pub const BufferMemoryRequirementsInfo2KHR = BufferMemoryRequirementsInfo2;
 pub const ImageMemoryRequirementsInfo2 = extern struct {
     s_type: StructureType = .image_memory_requirements_info_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     image: Image,
 };
 pub const ImageMemoryRequirementsInfo2KHR = ImageMemoryRequirementsInfo2;
 pub const ImageSparseMemoryRequirementsInfo2 = extern struct {
     s_type: StructureType = .image_sparse_memory_requirements_info_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     image: Image,
 };
 pub const ImageSparseMemoryRequirementsInfo2KHR = ImageSparseMemoryRequirementsInfo2;
 pub const MemoryRequirements2 = extern struct {
     s_type: StructureType = .memory_requirements_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     memory_requirements: MemoryRequirements,
 };
 pub const MemoryRequirements2KHR = MemoryRequirements2;
 pub const SparseImageMemoryRequirements2 = extern struct {
     s_type: StructureType = .sparse_image_memory_requirements_2,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     memory_requirements: SparseImageMemoryRequirements,
 };
 pub const SparseImageMemoryRequirements2KHR = SparseImageMemoryRequirements2;
 pub const PhysicalDevicePointClippingProperties = extern struct {
     s_type: StructureType = .physical_device_point_clipping_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     point_clipping_behavior: PointClippingBehavior,
 };
 pub const PhysicalDevicePointClippingPropertiesKHR = PhysicalDevicePointClippingProperties;
 pub const MemoryDedicatedRequirements = extern struct {
     s_type: StructureType = .memory_dedicated_requirements,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     prefers_dedicated_allocation: Bool32,
     requires_dedicated_allocation: Bool32,
 };
 pub const MemoryDedicatedRequirementsKHR = MemoryDedicatedRequirements;
 pub const MemoryDedicatedAllocateInfo = extern struct {
     s_type: StructureType = .memory_dedicated_allocate_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     image: Image,
     buffer: Buffer,
 };
 pub const MemoryDedicatedAllocateInfoKHR = MemoryDedicatedAllocateInfo;
 pub const ImageViewUsageCreateInfo = extern struct {
     s_type: StructureType = .image_view_usage_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     usage: ImageUsageFlags,
 };
 pub const ImageViewUsageCreateInfoKHR = ImageViewUsageCreateInfo;
 pub const PipelineTessellationDomainOriginStateCreateInfo = extern struct {
     s_type: StructureType = .pipeline_tessellation_domain_origin_state_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     domain_origin: TessellationDomainOrigin,
 };
 pub const PipelineTessellationDomainOriginStateCreateInfoKHR = PipelineTessellationDomainOriginStateCreateInfo;
 pub const SamplerYcbcrConversionInfo = extern struct {
     s_type: StructureType = .sampler_ycbcr_conversion_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     conversion: SamplerYcbcrConversion,
 };
 pub const SamplerYcbcrConversionInfoKHR = SamplerYcbcrConversionInfo;
 pub const SamplerYcbcrConversionCreateInfo = extern struct {
     s_type: StructureType = .sampler_ycbcr_conversion_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     format: Format,
     ycbcr_model: SamplerYcbcrModelConversion,
     ycbcr_range: SamplerYcbcrRange,
@@ -2673,72 +2670,72 @@ pub const SamplerYcbcrConversionCreateInfo = extern struct {
 pub const SamplerYcbcrConversionCreateInfoKHR = SamplerYcbcrConversionCreateInfo;
 pub const BindImagePlaneMemoryInfo = extern struct {
     s_type: StructureType = .bind_image_plane_memory_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     plane_aspect: ImageAspectFlags,
 };
 pub const BindImagePlaneMemoryInfoKHR = BindImagePlaneMemoryInfo;
 pub const ImagePlaneMemoryRequirementsInfo = extern struct {
     s_type: StructureType = .image_plane_memory_requirements_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     plane_aspect: ImageAspectFlags,
 };
 pub const ImagePlaneMemoryRequirementsInfoKHR = ImagePlaneMemoryRequirementsInfo;
 pub const PhysicalDeviceSamplerYcbcrConversionFeatures = extern struct {
     s_type: StructureType = .physical_device_sampler_ycbcr_conversion_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     sampler_ycbcr_conversion: Bool32,
 };
 pub const PhysicalDeviceSamplerYcbcrConversionFeaturesKHR = PhysicalDeviceSamplerYcbcrConversionFeatures;
 pub const SamplerYcbcrConversionImageFormatProperties = extern struct {
     s_type: StructureType = .sampler_ycbcr_conversion_image_format_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     combined_image_sampler_descriptor_count: u32,
 };
 pub const SamplerYcbcrConversionImageFormatPropertiesKHR = SamplerYcbcrConversionImageFormatProperties;
 pub const TextureLODGatherFormatPropertiesAMD = extern struct {
     s_type: StructureType = .texture_lod_gather_format_properties_amd,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     supports_texture_gather_lod_bias_amd: Bool32,
 };
 pub const ConditionalRenderingBeginInfoEXT = extern struct {
     s_type: StructureType = .conditional_rendering_begin_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     buffer: Buffer,
     offset: DeviceSize,
     flags: ConditionalRenderingFlagsEXT,
 };
 pub const ProtectedSubmitInfo = extern struct {
     s_type: StructureType = .protected_submit_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     protected_submit: Bool32,
 };
 pub const PhysicalDeviceProtectedMemoryFeatures = extern struct {
     s_type: StructureType = .physical_device_protected_memory_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     protected_memory: Bool32,
 };
 pub const PhysicalDeviceProtectedMemoryProperties = extern struct {
     s_type: StructureType = .physical_device_protected_memory_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     protected_no_fault: Bool32,
 };
 pub const DeviceQueueInfo2 = extern struct {
     s_type: StructureType = .device_queue_info_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DeviceQueueCreateFlags,
     queue_family_index: u32,
     queue_index: u32,
 };
 pub const PipelineCoverageToColorStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_coverage_to_color_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCoverageToColorStateCreateFlagsNV,
     coverage_to_color_enable: Bool32,
     coverage_to_color_location: u32,
 };
 pub const PhysicalDeviceSamplerFilterMinmaxProperties = extern struct {
     s_type: StructureType = .physical_device_sampler_filter_minmax_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     filter_minmax_single_component_formats: Bool32,
     filter_minmax_image_component_mapping: Bool32,
 };
@@ -2749,7 +2746,7 @@ pub const SampleLocationEXT = extern struct {
 };
 pub const SampleLocationsInfoEXT = extern struct {
     s_type: StructureType = .sample_locations_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     sample_locations_per_pixel: SampleCountFlags,
     sample_location_grid_size: Extent2D,
     sample_locations_count: u32,
@@ -2765,7 +2762,7 @@ pub const SubpassSampleLocationsEXT = extern struct {
 };
 pub const RenderPassSampleLocationsBeginInfoEXT = extern struct {
     s_type: StructureType = .render_pass_sample_locations_begin_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     attachment_initial_sample_locations_count: u32,
     p_attachment_initial_sample_locations: [*]const AttachmentSampleLocationsEXT,
     post_subpass_sample_locations_count: u32,
@@ -2773,13 +2770,13 @@ pub const RenderPassSampleLocationsBeginInfoEXT = extern struct {
 };
 pub const PipelineSampleLocationsStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_sample_locations_state_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     sample_locations_enable: Bool32,
     sample_locations_info: SampleLocationsInfoEXT,
 };
 pub const PhysicalDeviceSampleLocationsPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_sample_locations_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     sample_location_sample_counts: SampleCountFlags,
     max_sample_location_grid_size: Extent2D,
     sample_location_coordinate_range: [2]f32,
@@ -2788,23 +2785,23 @@ pub const PhysicalDeviceSampleLocationsPropertiesEXT = extern struct {
 };
 pub const MultisamplePropertiesEXT = extern struct {
     s_type: StructureType = .multisample_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_sample_location_grid_size: Extent2D,
 };
 pub const SamplerReductionModeCreateInfo = extern struct {
     s_type: StructureType = .sampler_reduction_mode_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     reduction_mode: SamplerReductionMode,
 };
 pub const SamplerReductionModeCreateInfoEXT = SamplerReductionModeCreateInfo;
 pub const PhysicalDeviceBlendOperationAdvancedFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_blend_operation_advanced_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     advanced_blend_coherent_operations: Bool32,
 };
 pub const PhysicalDeviceBlendOperationAdvancedPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_blend_operation_advanced_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     advanced_blend_max_color_attachments: u32,
     advanced_blend_independent_blend: Bool32,
     advanced_blend_non_premultiplied_src_color: Bool32,
@@ -2814,20 +2811,20 @@ pub const PhysicalDeviceBlendOperationAdvancedPropertiesEXT = extern struct {
 };
 pub const PipelineColorBlendAdvancedStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_color_blend_advanced_state_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_premultiplied: Bool32,
     dst_premultiplied: Bool32,
     blend_overlap: BlendOverlapEXT,
 };
 pub const PhysicalDeviceInlineUniformBlockFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_inline_uniform_block_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     inline_uniform_block: Bool32,
     descriptor_binding_inline_uniform_block_update_after_bind: Bool32,
 };
 pub const PhysicalDeviceInlineUniformBlockPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_inline_uniform_block_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_inline_uniform_block_size: u32,
     max_per_stage_descriptor_inline_uniform_blocks: u32,
     max_per_stage_descriptor_update_after_bind_inline_uniform_blocks: u32,
@@ -2836,18 +2833,18 @@ pub const PhysicalDeviceInlineUniformBlockPropertiesEXT = extern struct {
 };
 pub const WriteDescriptorSetInlineUniformBlockEXT = extern struct {
     s_type: StructureType = .write_descriptor_set_inline_uniform_block_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     data_size: u32,
-    p_data: *const c_void,
+    p_data: *const anyopaque,
 };
 pub const DescriptorPoolInlineUniformBlockCreateInfoEXT = extern struct {
     s_type: StructureType = .descriptor_pool_inline_uniform_block_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     max_inline_uniform_block_bindings: u32,
 };
 pub const PipelineCoverageModulationStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_coverage_modulation_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCoverageModulationStateCreateFlagsNV,
     coverage_modulation_mode: CoverageModulationModeNV,
     coverage_modulation_table_enable: Bool32,
@@ -2856,45 +2853,45 @@ pub const PipelineCoverageModulationStateCreateInfoNV = extern struct {
 };
 pub const ImageFormatListCreateInfo = extern struct {
     s_type: StructureType = .image_format_list_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     view_format_count: u32,
     p_view_formats: [*]const Format,
 };
 pub const ImageFormatListCreateInfoKHR = ImageFormatListCreateInfo;
 pub const ValidationCacheCreateInfoEXT = extern struct {
     s_type: StructureType = .validation_cache_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ValidationCacheCreateFlagsEXT,
     initial_data_size: usize,
-    p_initial_data: *const c_void,
+    p_initial_data: *const anyopaque,
 };
 pub const ShaderModuleValidationCacheCreateInfoEXT = extern struct {
     s_type: StructureType = .shader_module_validation_cache_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     validation_cache: ValidationCacheEXT,
 };
 pub const PhysicalDeviceMaintenance3Properties = extern struct {
     s_type: StructureType = .physical_device_maintenance_3_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_per_set_descriptors: u32,
     max_memory_allocation_size: DeviceSize,
 };
 pub const PhysicalDeviceMaintenance3PropertiesKHR = PhysicalDeviceMaintenance3Properties;
 pub const DescriptorSetLayoutSupport = extern struct {
     s_type: StructureType = .descriptor_set_layout_support,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     supported: Bool32,
 };
 pub const DescriptorSetLayoutSupportKHR = DescriptorSetLayoutSupport;
 pub const PhysicalDeviceShaderDrawParametersFeatures = extern struct {
     s_type: StructureType = .physical_device_shader_draw_parameters_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_draw_parameters: Bool32,
 };
 pub const PhysicalDeviceShaderDrawParameterFeatures = PhysicalDeviceShaderDrawParametersFeatures;
 pub const PhysicalDeviceShaderFloat16Int8Features = extern struct {
     s_type: StructureType = .physical_device_shader_float16_int8_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_float_16: Bool32,
     shader_int_8: Bool32,
 };
@@ -2902,7 +2899,7 @@ pub const PhysicalDeviceShaderFloat16Int8FeaturesKHR = PhysicalDeviceShaderFloat
 pub const PhysicalDeviceFloat16Int8FeaturesKHR = PhysicalDeviceShaderFloat16Int8Features;
 pub const PhysicalDeviceFloatControlsProperties = extern struct {
     s_type: StructureType = .physical_device_float_controls_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     denorm_behavior_independence: ShaderFloatControlsIndependence,
     rounding_mode_independence: ShaderFloatControlsIndependence,
     shader_signed_zero_inf_nan_preserve_float_16: Bool32,
@@ -2924,7 +2921,7 @@ pub const PhysicalDeviceFloatControlsProperties = extern struct {
 pub const PhysicalDeviceFloatControlsPropertiesKHR = PhysicalDeviceFloatControlsProperties;
 pub const PhysicalDeviceHostQueryResetFeatures = extern struct {
     s_type: StructureType = .physical_device_host_query_reset_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     host_query_reset: Bool32,
 };
 pub const PhysicalDeviceHostQueryResetFeaturesEXT = PhysicalDeviceHostQueryResetFeatures;
@@ -2934,8 +2931,8 @@ pub const NativeBufferUsage2ANDROID = extern struct {
 };
 pub const NativeBufferANDROID = extern struct {
     s_type: StructureType = .native_buffer_android,
-    p_next: ?*const c_void = null,
-    handle: *const c_void,
+    p_next: ?*const anyopaque = null,
+    handle: *const anyopaque,
     stride: c_int,
     format: c_int,
     usage: c_int,
@@ -2943,12 +2940,12 @@ pub const NativeBufferANDROID = extern struct {
 };
 pub const SwapchainImageCreateInfoANDROID = extern struct {
     s_type: StructureType = .swapchain_image_create_info_android,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     usage: SwapchainImageUsageFlagsANDROID,
 };
 pub const PhysicalDevicePresentationPropertiesANDROID = extern struct {
     s_type: StructureType = .physical_device_presentation_properties_android,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     shared_image: Bool32,
 };
 pub const ShaderResourceUsageAMD = extern struct {
@@ -2969,43 +2966,43 @@ pub const ShaderStatisticsInfoAMD = extern struct {
 };
 pub const DeviceQueueGlobalPriorityCreateInfoEXT = extern struct {
     s_type: StructureType = .device_queue_global_priority_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     global_priority: QueueGlobalPriorityEXT,
 };
 pub const DebugUtilsObjectNameInfoEXT = extern struct {
     s_type: StructureType = .debug_utils_object_name_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     object_type: ObjectType,
     object_handle: u64,
     p_object_name: ?[*:0]const u8,
 };
 pub const DebugUtilsObjectTagInfoEXT = extern struct {
     s_type: StructureType = .debug_utils_object_tag_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     object_type: ObjectType,
     object_handle: u64,
     tag_name: u64,
     tag_size: usize,
-    p_tag: *const c_void,
+    p_tag: *const anyopaque,
 };
 pub const DebugUtilsLabelEXT = extern struct {
     s_type: StructureType = .debug_utils_label_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_label_name: [*:0]const u8,
     color: [4]f32,
 };
 pub const DebugUtilsMessengerCreateInfoEXT = extern struct {
     s_type: StructureType = .debug_utils_messenger_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DebugUtilsMessengerCreateFlagsEXT,
     message_severity: DebugUtilsMessageSeverityFlagsEXT,
     message_type: DebugUtilsMessageTypeFlagsEXT,
     pfn_user_callback: PfnDebugUtilsMessengerCallbackEXT,
-    p_user_data: ?*c_void,
+    p_user_data: ?*anyopaque,
 };
 pub const DebugUtilsMessengerCallbackDataEXT = extern struct {
     s_type: StructureType = .debug_utils_messenger_callback_data_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DebugUtilsMessengerCallbackDataFlagsEXT,
     p_message_id_name: ?[*:0]const u8,
     message_id_number: i32,
@@ -3019,19 +3016,19 @@ pub const DebugUtilsMessengerCallbackDataEXT = extern struct {
 };
 pub const PhysicalDeviceDeviceMemoryReportFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_device_memory_report_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     device_memory_report: Bool32,
 };
 pub const DeviceDeviceMemoryReportCreateInfoEXT = extern struct {
     s_type: StructureType = .device_device_memory_report_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DeviceMemoryReportFlagsEXT,
     pfn_user_callback: PfnDeviceMemoryReportCallbackEXT,
-    p_user_data: *c_void,
+    p_user_data: *anyopaque,
 };
 pub const DeviceMemoryReportCallbackDataEXT = extern struct {
     s_type: StructureType = .device_memory_report_callback_data_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DeviceMemoryReportFlagsEXT,
     type: DeviceMemoryReportEventTypeEXT,
     memory_object_id: u64,
@@ -3042,23 +3039,23 @@ pub const DeviceMemoryReportCallbackDataEXT = extern struct {
 };
 pub const ImportMemoryHostPointerInfoEXT = extern struct {
     s_type: StructureType = .import_memory_host_pointer_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     handle_type: ExternalMemoryHandleTypeFlags,
-    p_host_pointer: *c_void,
+    p_host_pointer: *anyopaque,
 };
 pub const MemoryHostPointerPropertiesEXT = extern struct {
     s_type: StructureType = .memory_host_pointer_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     memory_type_bits: u32,
 };
 pub const PhysicalDeviceExternalMemoryHostPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_external_memory_host_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     min_imported_host_pointer_alignment: DeviceSize,
 };
 pub const PhysicalDeviceConservativeRasterizationPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_conservative_rasterization_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     primitive_overestimation_size: f32,
     max_extra_primitive_overestimation_size: f32,
     extra_primitive_overestimation_size_granularity: f32,
@@ -3071,12 +3068,12 @@ pub const PhysicalDeviceConservativeRasterizationPropertiesEXT = extern struct {
 };
 pub const CalibratedTimestampInfoEXT = extern struct {
     s_type: StructureType = .calibrated_timestamp_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     time_domain: TimeDomainEXT,
 };
 pub const PhysicalDeviceShaderCorePropertiesAMD = extern struct {
     s_type: StructureType = .physical_device_shader_core_properties_amd,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_engine_count: u32,
     shader_arrays_per_engine_count: u32,
     compute_units_per_shader_array: u32,
@@ -3094,20 +3091,20 @@ pub const PhysicalDeviceShaderCorePropertiesAMD = extern struct {
 };
 pub const PhysicalDeviceShaderCoreProperties2AMD = extern struct {
     s_type: StructureType = .physical_device_shader_core_properties_2_amd,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_core_features: ShaderCorePropertiesFlagsAMD,
     active_compute_unit_count: u32,
 };
 pub const PipelineRasterizationConservativeStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_rasterization_conservative_state_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineRasterizationConservativeStateCreateFlagsEXT,
     conservative_rasterization_mode: ConservativeRasterizationModeEXT,
     extra_primitive_overestimation_size: f32,
 };
 pub const PhysicalDeviceDescriptorIndexingFeatures = extern struct {
     s_type: StructureType = .physical_device_descriptor_indexing_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_input_attachment_array_dynamic_indexing: Bool32,
     shader_uniform_texel_buffer_array_dynamic_indexing: Bool32,
     shader_storage_texel_buffer_array_dynamic_indexing: Bool32,
@@ -3132,7 +3129,7 @@ pub const PhysicalDeviceDescriptorIndexingFeatures = extern struct {
 pub const PhysicalDeviceDescriptorIndexingFeaturesEXT = PhysicalDeviceDescriptorIndexingFeatures;
 pub const PhysicalDeviceDescriptorIndexingProperties = extern struct {
     s_type: StructureType = .physical_device_descriptor_indexing_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_update_after_bind_descriptors_in_all_pools: u32,
     shader_uniform_buffer_array_non_uniform_indexing_native: Bool32,
     shader_sampled_image_array_non_uniform_indexing_native: Bool32,
@@ -3160,27 +3157,27 @@ pub const PhysicalDeviceDescriptorIndexingProperties = extern struct {
 pub const PhysicalDeviceDescriptorIndexingPropertiesEXT = PhysicalDeviceDescriptorIndexingProperties;
 pub const DescriptorSetLayoutBindingFlagsCreateInfo = extern struct {
     s_type: StructureType = .descriptor_set_layout_binding_flags_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     binding_count: u32,
     p_binding_flags: [*]const DescriptorBindingFlags,
 };
 pub const DescriptorSetLayoutBindingFlagsCreateInfoEXT = DescriptorSetLayoutBindingFlagsCreateInfo;
 pub const DescriptorSetVariableDescriptorCountAllocateInfo = extern struct {
     s_type: StructureType = .descriptor_set_variable_descriptor_count_allocate_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     descriptor_set_count: u32,
     p_descriptor_counts: [*]const u32,
 };
 pub const DescriptorSetVariableDescriptorCountAllocateInfoEXT = DescriptorSetVariableDescriptorCountAllocateInfo;
 pub const DescriptorSetVariableDescriptorCountLayoutSupport = extern struct {
     s_type: StructureType = .descriptor_set_variable_descriptor_count_layout_support,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_variable_descriptor_count: u32,
 };
 pub const DescriptorSetVariableDescriptorCountLayoutSupportEXT = DescriptorSetVariableDescriptorCountLayoutSupport;
 pub const AttachmentDescription2 = extern struct {
     s_type: StructureType = .attachment_description_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: AttachmentDescriptionFlags,
     format: Format,
     samples: SampleCountFlags,
@@ -3194,7 +3191,7 @@ pub const AttachmentDescription2 = extern struct {
 pub const AttachmentDescription2KHR = AttachmentDescription2;
 pub const AttachmentReference2 = extern struct {
     s_type: StructureType = .attachment_reference_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     attachment: u32,
     layout: ImageLayout,
     aspect_mask: ImageAspectFlags,
@@ -3202,7 +3199,7 @@ pub const AttachmentReference2 = extern struct {
 pub const AttachmentReference2KHR = AttachmentReference2;
 pub const SubpassDescription2 = extern struct {
     s_type: StructureType = .subpass_description_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: SubpassDescriptionFlags,
     pipeline_bind_point: PipelineBindPoint,
     view_mask: u32,
@@ -3218,7 +3215,7 @@ pub const SubpassDescription2 = extern struct {
 pub const SubpassDescription2KHR = SubpassDescription2;
 pub const SubpassDependency2 = extern struct {
     s_type: StructureType = .subpass_dependency_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_subpass: u32,
     dst_subpass: u32,
     src_stage_mask: PipelineStageFlags,
@@ -3231,7 +3228,7 @@ pub const SubpassDependency2 = extern struct {
 pub const SubpassDependency2KHR = SubpassDependency2;
 pub const RenderPassCreateInfo2 = extern struct {
     s_type: StructureType = .render_pass_create_info_2,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: RenderPassCreateFlags,
     attachment_count: u32,
     p_attachments: [*]const AttachmentDescription2,
@@ -3245,37 +3242,37 @@ pub const RenderPassCreateInfo2 = extern struct {
 pub const RenderPassCreateInfo2KHR = RenderPassCreateInfo2;
 pub const SubpassBeginInfo = extern struct {
     s_type: StructureType = .subpass_begin_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     contents: SubpassContents,
 };
 pub const SubpassBeginInfoKHR = SubpassBeginInfo;
 pub const SubpassEndInfo = extern struct {
     s_type: StructureType = .subpass_end_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
 };
 pub const SubpassEndInfoKHR = SubpassEndInfo;
 pub const PhysicalDeviceTimelineSemaphoreFeatures = extern struct {
     s_type: StructureType = .physical_device_timeline_semaphore_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     timeline_semaphore: Bool32,
 };
 pub const PhysicalDeviceTimelineSemaphoreFeaturesKHR = PhysicalDeviceTimelineSemaphoreFeatures;
 pub const PhysicalDeviceTimelineSemaphoreProperties = extern struct {
     s_type: StructureType = .physical_device_timeline_semaphore_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_timeline_semaphore_value_difference: u64,
 };
 pub const PhysicalDeviceTimelineSemaphorePropertiesKHR = PhysicalDeviceTimelineSemaphoreProperties;
 pub const SemaphoreTypeCreateInfo = extern struct {
     s_type: StructureType = .semaphore_type_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore_type: SemaphoreType,
     initial_value: u64,
 };
 pub const SemaphoreTypeCreateInfoKHR = SemaphoreTypeCreateInfo;
 pub const TimelineSemaphoreSubmitInfo = extern struct {
     s_type: StructureType = .timeline_semaphore_submit_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     wait_semaphore_value_count: u32,
     p_wait_semaphore_values: ?[*]const u64,
     signal_semaphore_value_count: u32,
@@ -3284,7 +3281,7 @@ pub const TimelineSemaphoreSubmitInfo = extern struct {
 pub const TimelineSemaphoreSubmitInfoKHR = TimelineSemaphoreSubmitInfo;
 pub const SemaphoreWaitInfo = extern struct {
     s_type: StructureType = .semaphore_wait_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: SemaphoreWaitFlags,
     semaphore_count: u32,
     p_semaphores: [*]const Semaphore,
@@ -3293,7 +3290,7 @@ pub const SemaphoreWaitInfo = extern struct {
 pub const SemaphoreWaitInfoKHR = SemaphoreWaitInfo;
 pub const SemaphoreSignalInfo = extern struct {
     s_type: StructureType = .semaphore_signal_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     semaphore: Semaphore,
     value: u64,
 };
@@ -3304,18 +3301,18 @@ pub const VertexInputBindingDivisorDescriptionEXT = extern struct {
 };
 pub const PipelineVertexInputDivisorStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_vertex_input_divisor_state_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     vertex_binding_divisor_count: u32,
     p_vertex_binding_divisors: [*]const VertexInputBindingDivisorDescriptionEXT,
 };
 pub const PhysicalDeviceVertexAttributeDivisorPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_vertex_attribute_divisor_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_vertex_attrib_divisor: u32,
 };
 pub const PhysicalDevicePCIBusInfoPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_pci_bus_info_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     pci_domain: u32,
     pci_bus: u32,
     pci_device: u32,
@@ -3323,28 +3320,28 @@ pub const PhysicalDevicePCIBusInfoPropertiesEXT = extern struct {
 };
 pub const ImportAndroidHardwareBufferInfoANDROID = extern struct {
     s_type: StructureType = .import_android_hardware_buffer_info_android,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     buffer: *AHardwareBuffer,
 };
 pub const AndroidHardwareBufferUsageANDROID = extern struct {
     s_type: StructureType = .android_hardware_buffer_usage_android,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     android_hardware_buffer_usage: u64,
 };
 pub const AndroidHardwareBufferPropertiesANDROID = extern struct {
     s_type: StructureType = .android_hardware_buffer_properties_android,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     allocation_size: DeviceSize,
     memory_type_bits: u32,
 };
 pub const MemoryGetAndroidHardwareBufferInfoANDROID = extern struct {
     s_type: StructureType = .memory_get_android_hardware_buffer_info_android,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     memory: DeviceMemory,
 };
 pub const AndroidHardwareBufferFormatPropertiesANDROID = extern struct {
     s_type: StructureType = .android_hardware_buffer_format_properties_android,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     format: Format,
     external_format: u64,
     format_features: FormatFeatureFlags,
@@ -3356,17 +3353,17 @@ pub const AndroidHardwareBufferFormatPropertiesANDROID = extern struct {
 };
 pub const CommandBufferInheritanceConditionalRenderingInfoEXT = extern struct {
     s_type: StructureType = .command_buffer_inheritance_conditional_rendering_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     conditional_rendering_enable: Bool32,
 };
 pub const ExternalFormatANDROID = extern struct {
     s_type: StructureType = .external_format_android,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     external_format: u64,
 };
 pub const PhysicalDevice8BitStorageFeatures = extern struct {
     s_type: StructureType = .physical_device_8bit_storage_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     storage_buffer_8_bit_access: Bool32,
     uniform_and_storage_buffer_8_bit_access: Bool32,
     storage_push_constant_8: Bool32,
@@ -3374,13 +3371,13 @@ pub const PhysicalDevice8BitStorageFeatures = extern struct {
 pub const PhysicalDevice8BitStorageFeaturesKHR = PhysicalDevice8BitStorageFeatures;
 pub const PhysicalDeviceConditionalRenderingFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_conditional_rendering_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     conditional_rendering: Bool32,
     inherited_conditional_rendering: Bool32,
 };
 pub const PhysicalDeviceVulkanMemoryModelFeatures = extern struct {
     s_type: StructureType = .physical_device_vulkan_memory_model_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     vulkan_memory_model: Bool32,
     vulkan_memory_model_device_scope: Bool32,
     vulkan_memory_model_availability_visibility_chains: Bool32,
@@ -3388,14 +3385,14 @@ pub const PhysicalDeviceVulkanMemoryModelFeatures = extern struct {
 pub const PhysicalDeviceVulkanMemoryModelFeaturesKHR = PhysicalDeviceVulkanMemoryModelFeatures;
 pub const PhysicalDeviceShaderAtomicInt64Features = extern struct {
     s_type: StructureType = .physical_device_shader_atomic_int64_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_buffer_int_64_atomics: Bool32,
     shader_shared_int_64_atomics: Bool32,
 };
 pub const PhysicalDeviceShaderAtomicInt64FeaturesKHR = PhysicalDeviceShaderAtomicInt64Features;
 pub const PhysicalDeviceShaderAtomicFloatFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_shader_atomic_float_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_buffer_float_32_atomics: Bool32,
     shader_buffer_float_32_atomic_add: Bool32,
     shader_buffer_float_64_atomics: Bool32,
@@ -3411,24 +3408,24 @@ pub const PhysicalDeviceShaderAtomicFloatFeaturesEXT = extern struct {
 };
 pub const PhysicalDeviceVertexAttributeDivisorFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_vertex_attribute_divisor_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     vertex_attribute_instance_rate_divisor: Bool32,
     vertex_attribute_instance_rate_zero_divisor: Bool32,
 };
 pub const QueueFamilyCheckpointPropertiesNV = extern struct {
     s_type: StructureType = .queue_family_checkpoint_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     checkpoint_execution_stage_mask: PipelineStageFlags,
 };
 pub const CheckpointDataNV = extern struct {
     s_type: StructureType = .checkpoint_data_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     stage: PipelineStageFlags,
-    p_checkpoint_marker: *c_void,
+    p_checkpoint_marker: *anyopaque,
 };
 pub const PhysicalDeviceDepthStencilResolveProperties = extern struct {
     s_type: StructureType = .physical_device_depth_stencil_resolve_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     supported_depth_resolve_modes: ResolveModeFlags,
     supported_stencil_resolve_modes: ResolveModeFlags,
     independent_resolve_none: Bool32,
@@ -3437,7 +3434,7 @@ pub const PhysicalDeviceDepthStencilResolveProperties = extern struct {
 pub const PhysicalDeviceDepthStencilResolvePropertiesKHR = PhysicalDeviceDepthStencilResolveProperties;
 pub const SubpassDescriptionDepthStencilResolve = extern struct {
     s_type: StructureType = .subpass_description_depth_stencil_resolve,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     depth_resolve_mode: ResolveModeFlags,
     stencil_resolve_mode: ResolveModeFlags,
     p_depth_stencil_resolve_attachment: ?*const AttachmentReference2,
@@ -3445,23 +3442,23 @@ pub const SubpassDescriptionDepthStencilResolve = extern struct {
 pub const SubpassDescriptionDepthStencilResolveKHR = SubpassDescriptionDepthStencilResolve;
 pub const ImageViewASTCDecodeModeEXT = extern struct {
     s_type: StructureType = .image_view_astc_decode_mode_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     decode_mode: Format,
 };
 pub const PhysicalDeviceASTCDecodeFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_astc_decode_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     decode_mode_shared_exponent: Bool32,
 };
 pub const PhysicalDeviceTransformFeedbackFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_transform_feedback_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     transform_feedback: Bool32,
     geometry_streams: Bool32,
 };
 pub const PhysicalDeviceTransformFeedbackPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_transform_feedback_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_transform_feedback_streams: u32,
     max_transform_feedback_buffers: u32,
     max_transform_feedback_buffer_size: DeviceSize,
@@ -3475,55 +3472,55 @@ pub const PhysicalDeviceTransformFeedbackPropertiesEXT = extern struct {
 };
 pub const PipelineRasterizationStateStreamCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_rasterization_state_stream_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineRasterizationStateStreamCreateFlagsEXT,
     rasterization_stream: u32,
 };
 pub const PhysicalDeviceRepresentativeFragmentTestFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_representative_fragment_test_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     representative_fragment_test: Bool32,
 };
 pub const PipelineRepresentativeFragmentTestStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_representative_fragment_test_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     representative_fragment_test_enable: Bool32,
 };
 pub const PhysicalDeviceExclusiveScissorFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_exclusive_scissor_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     exclusive_scissor: Bool32,
 };
 pub const PipelineViewportExclusiveScissorStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_viewport_exclusive_scissor_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     exclusive_scissor_count: u32,
     p_exclusive_scissors: [*]const Rect2D,
 };
 pub const PhysicalDeviceCornerSampledImageFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_corner_sampled_image_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     corner_sampled_image: Bool32,
 };
 pub const PhysicalDeviceComputeShaderDerivativesFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_compute_shader_derivatives_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     compute_derivative_group_quads: Bool32,
     compute_derivative_group_linear: Bool32,
 };
 pub const PhysicalDeviceFragmentShaderBarycentricFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_fragment_shader_barycentric_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     fragment_shader_barycentric: Bool32,
 };
 pub const PhysicalDeviceShaderImageFootprintFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_shader_image_footprint_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     image_footprint: Bool32,
 };
 pub const PhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_dedicated_allocation_image_aliasing_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     dedicated_allocation_image_aliasing: Bool32,
 };
 pub const ShadingRatePaletteNV = extern struct {
@@ -3532,20 +3529,20 @@ pub const ShadingRatePaletteNV = extern struct {
 };
 pub const PipelineViewportShadingRateImageStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_viewport_shading_rate_image_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     shading_rate_image_enable: Bool32,
     viewport_count: u32,
     p_shading_rate_palettes: [*]const ShadingRatePaletteNV,
 };
 pub const PhysicalDeviceShadingRateImageFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_shading_rate_image_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shading_rate_image: Bool32,
     shading_rate_coarse_sample_order: Bool32,
 };
 pub const PhysicalDeviceShadingRateImagePropertiesNV = extern struct {
     s_type: StructureType = .physical_device_shading_rate_image_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shading_rate_texel_size: Extent2D,
     shading_rate_palette_size: u32,
     shading_rate_max_coarse_samples: u32,
@@ -3563,20 +3560,20 @@ pub const CoarseSampleOrderCustomNV = extern struct {
 };
 pub const PipelineViewportCoarseSampleOrderStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_viewport_coarse_sample_order_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     sample_order_type: CoarseSampleOrderTypeNV,
     custom_sample_order_count: u32,
     p_custom_sample_orders: [*]const CoarseSampleOrderCustomNV,
 };
 pub const PhysicalDeviceMeshShaderFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_mesh_shader_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     task_shader: Bool32,
     mesh_shader: Bool32,
 };
 pub const PhysicalDeviceMeshShaderPropertiesNV = extern struct {
     s_type: StructureType = .physical_device_mesh_shader_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_draw_mesh_tasks_count: u32,
     max_task_work_group_invocations: u32,
     max_task_work_group_size: [3]u32,
@@ -3597,7 +3594,7 @@ pub const DrawMeshTasksIndirectCommandNV = extern struct {
 };
 pub const RayTracingShaderGroupCreateInfoNV = extern struct {
     s_type: StructureType = .ray_tracing_shader_group_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     type: RayTracingShaderGroupTypeKHR,
     general_shader: u32,
     closest_hit_shader: u32,
@@ -3606,17 +3603,17 @@ pub const RayTracingShaderGroupCreateInfoNV = extern struct {
 };
 pub const RayTracingShaderGroupCreateInfoKHR = extern struct {
     s_type: StructureType = .ray_tracing_shader_group_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     type: RayTracingShaderGroupTypeKHR,
     general_shader: u32,
     closest_hit_shader: u32,
     any_hit_shader: u32,
     intersection_shader: u32,
-    p_shader_group_capture_replay_handle: ?*const c_void,
+    p_shader_group_capture_replay_handle: ?*const anyopaque,
 };
 pub const RayTracingPipelineCreateInfoNV = extern struct {
     s_type: StructureType = .ray_tracing_pipeline_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCreateFlags,
     stage_count: u32,
     p_stages: [*]const PipelineShaderStageCreateInfo,
@@ -3629,7 +3626,7 @@ pub const RayTracingPipelineCreateInfoNV = extern struct {
 };
 pub const RayTracingPipelineCreateInfoKHR = extern struct {
     s_type: StructureType = .ray_tracing_pipeline_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCreateFlags,
     stage_count: u32,
     p_stages: [*]const PipelineShaderStageCreateInfo,
@@ -3645,7 +3642,7 @@ pub const RayTracingPipelineCreateInfoKHR = extern struct {
 };
 pub const GeometryTrianglesNV = extern struct {
     s_type: StructureType = .geometry_triangles_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     vertex_data: Buffer,
     vertex_offset: DeviceSize,
     vertex_count: u32,
@@ -3660,7 +3657,7 @@ pub const GeometryTrianglesNV = extern struct {
 };
 pub const GeometryAABBNV = extern struct {
     s_type: StructureType = .geometry_aabb_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     aabb_data: Buffer,
     num_aab_bs: u32,
     stride: u32,
@@ -3672,14 +3669,14 @@ pub const GeometryDataNV = extern struct {
 };
 pub const GeometryNV = extern struct {
     s_type: StructureType = .geometry_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     geometry_type: GeometryTypeKHR,
     geometry: GeometryDataNV,
     flags: GeometryFlagsKHR,
 };
 pub const AccelerationStructureInfoNV = extern struct {
     s_type: StructureType = .acceleration_structure_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     type: AccelerationStructureTypeNV,
     flags: BuildAccelerationStructureFlagsNV,
     instance_count: u32,
@@ -3688,13 +3685,13 @@ pub const AccelerationStructureInfoNV = extern struct {
 };
 pub const AccelerationStructureCreateInfoNV = extern struct {
     s_type: StructureType = .acceleration_structure_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     compacted_size: DeviceSize,
     info: AccelerationStructureInfoNV,
 };
 pub const BindAccelerationStructureMemoryInfoNV = extern struct {
     s_type: StructureType = .bind_acceleration_structure_memory_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     acceleration_structure: AccelerationStructureNV,
     memory: DeviceMemory,
     memory_offset: DeviceSize,
@@ -3703,25 +3700,25 @@ pub const BindAccelerationStructureMemoryInfoNV = extern struct {
 };
 pub const WriteDescriptorSetAccelerationStructureKHR = extern struct {
     s_type: StructureType = .write_descriptor_set_acceleration_structure_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     acceleration_structure_count: u32,
     p_acceleration_structures: [*]const AccelerationStructureKHR,
 };
 pub const WriteDescriptorSetAccelerationStructureNV = extern struct {
     s_type: StructureType = .write_descriptor_set_acceleration_structure_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     acceleration_structure_count: u32,
     p_acceleration_structures: [*]const AccelerationStructureNV,
 };
 pub const AccelerationStructureMemoryRequirementsInfoNV = extern struct {
     s_type: StructureType = .acceleration_structure_memory_requirements_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     type: AccelerationStructureMemoryRequirementsTypeNV,
     acceleration_structure: AccelerationStructureNV,
 };
 pub const PhysicalDeviceAccelerationStructureFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_acceleration_structure_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     acceleration_structure: Bool32,
     acceleration_structure_capture_replay: Bool32,
     acceleration_structure_indirect_build: Bool32,
@@ -3730,7 +3727,7 @@ pub const PhysicalDeviceAccelerationStructureFeaturesKHR = extern struct {
 };
 pub const PhysicalDeviceRayTracingPipelineFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_ray_tracing_pipeline_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     ray_tracing_pipeline: Bool32,
     ray_tracing_pipeline_shader_group_handle_capture_replay: Bool32,
     ray_tracing_pipeline_shader_group_handle_capture_replay_mixed: Bool32,
@@ -3739,12 +3736,12 @@ pub const PhysicalDeviceRayTracingPipelineFeaturesKHR = extern struct {
 };
 pub const PhysicalDeviceRayQueryFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_ray_query_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     ray_query: Bool32,
 };
 pub const PhysicalDeviceAccelerationStructurePropertiesKHR = extern struct {
     s_type: StructureType = .physical_device_acceleration_structure_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_geometry_count: u64,
     max_instance_count: u64,
     max_primitive_count: u64,
@@ -3756,7 +3753,7 @@ pub const PhysicalDeviceAccelerationStructurePropertiesKHR = extern struct {
 };
 pub const PhysicalDeviceRayTracingPipelinePropertiesKHR = extern struct {
     s_type: StructureType = .physical_device_ray_tracing_pipeline_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_group_handle_size: u32,
     max_ray_recursion_depth: u32,
     max_shader_group_stride: u32,
@@ -3768,7 +3765,7 @@ pub const PhysicalDeviceRayTracingPipelinePropertiesKHR = extern struct {
 };
 pub const PhysicalDeviceRayTracingPropertiesNV = extern struct {
     s_type: StructureType = .physical_device_ray_tracing_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_group_handle_size: u32,
     max_recursion_depth: u32,
     max_shader_group_stride: u32,
@@ -3790,7 +3787,7 @@ pub const TraceRaysIndirectCommandKHR = extern struct {
 };
 pub const DrmFormatModifierPropertiesListEXT = extern struct {
     s_type: StructureType = .drm_format_modifier_properties_list_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     drm_format_modifier_count: u32,
     p_drm_format_modifier_properties: ?[*]DrmFormatModifierPropertiesEXT,
 };
@@ -3801,7 +3798,7 @@ pub const DrmFormatModifierPropertiesEXT = extern struct {
 };
 pub const PhysicalDeviceImageDrmFormatModifierInfoEXT = extern struct {
     s_type: StructureType = .physical_device_image_drm_format_modifier_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     drm_format_modifier: u64,
     sharing_mode: SharingMode,
     queue_family_index_count: u32,
@@ -3809,55 +3806,55 @@ pub const PhysicalDeviceImageDrmFormatModifierInfoEXT = extern struct {
 };
 pub const ImageDrmFormatModifierListCreateInfoEXT = extern struct {
     s_type: StructureType = .image_drm_format_modifier_list_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     drm_format_modifier_count: u32,
     p_drm_format_modifiers: [*]const u64,
 };
 pub const ImageDrmFormatModifierExplicitCreateInfoEXT = extern struct {
     s_type: StructureType = .image_drm_format_modifier_explicit_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     drm_format_modifier: u64,
     drm_format_modifier_plane_count: u32,
     p_plane_layouts: [*]const SubresourceLayout,
 };
 pub const ImageDrmFormatModifierPropertiesEXT = extern struct {
     s_type: StructureType = .image_drm_format_modifier_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     drm_format_modifier: u64,
 };
 pub const ImageStencilUsageCreateInfo = extern struct {
     s_type: StructureType = .image_stencil_usage_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     stencil_usage: ImageUsageFlags,
 };
 pub const ImageStencilUsageCreateInfoEXT = ImageStencilUsageCreateInfo;
 pub const DeviceMemoryOverallocationCreateInfoAMD = extern struct {
     s_type: StructureType = .device_memory_overallocation_create_info_amd,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     overallocation_behavior: MemoryOverallocationBehaviorAMD,
 };
 pub const PhysicalDeviceFragmentDensityMapFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_fragment_density_map_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     fragment_density_map: Bool32,
     fragment_density_map_dynamic: Bool32,
     fragment_density_map_non_subsampled_images: Bool32,
 };
 pub const PhysicalDeviceFragmentDensityMap2FeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_fragment_density_map_2_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     fragment_density_map_deferred: Bool32,
 };
 pub const PhysicalDeviceFragmentDensityMapPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_fragment_density_map_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     min_fragment_density_texel_size: Extent2D,
     max_fragment_density_texel_size: Extent2D,
     fragment_density_invocations: Bool32,
 };
 pub const PhysicalDeviceFragmentDensityMap2PropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_fragment_density_map_2_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     subsampled_loads: Bool32,
     subsampled_coarse_reconstruction_early_access: Bool32,
     max_subsampled_array_layers: u32,
@@ -3865,56 +3862,56 @@ pub const PhysicalDeviceFragmentDensityMap2PropertiesEXT = extern struct {
 };
 pub const RenderPassFragmentDensityMapCreateInfoEXT = extern struct {
     s_type: StructureType = .render_pass_fragment_density_map_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     fragment_density_map_attachment: AttachmentReference,
 };
 pub const PhysicalDeviceScalarBlockLayoutFeatures = extern struct {
     s_type: StructureType = .physical_device_scalar_block_layout_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     scalar_block_layout: Bool32,
 };
 pub const PhysicalDeviceScalarBlockLayoutFeaturesEXT = PhysicalDeviceScalarBlockLayoutFeatures;
 pub const SurfaceProtectedCapabilitiesKHR = extern struct {
     s_type: StructureType = .surface_protected_capabilities_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     supports_protected: Bool32,
 };
 pub const PhysicalDeviceUniformBufferStandardLayoutFeatures = extern struct {
     s_type: StructureType = .physical_device_uniform_buffer_standard_layout_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     uniform_buffer_standard_layout: Bool32,
 };
 pub const PhysicalDeviceUniformBufferStandardLayoutFeaturesKHR = PhysicalDeviceUniformBufferStandardLayoutFeatures;
 pub const PhysicalDeviceDepthClipEnableFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_depth_clip_enable_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     depth_clip_enable: Bool32,
 };
 pub const PipelineRasterizationDepthClipStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_rasterization_depth_clip_state_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineRasterizationDepthClipStateCreateFlagsEXT,
     depth_clip_enable: Bool32,
 };
 pub const PhysicalDeviceMemoryBudgetPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_memory_budget_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     heap_budget: [MAX_MEMORY_HEAPS]DeviceSize,
     heap_usage: [MAX_MEMORY_HEAPS]DeviceSize,
 };
 pub const PhysicalDeviceMemoryPriorityFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_memory_priority_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     memory_priority: Bool32,
 };
 pub const MemoryPriorityAllocateInfoEXT = extern struct {
     s_type: StructureType = .memory_priority_allocate_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     priority: f32,
 };
 pub const PhysicalDeviceBufferDeviceAddressFeatures = extern struct {
     s_type: StructureType = .physical_device_buffer_device_address_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     buffer_device_address: Bool32,
     buffer_device_address_capture_replay: Bool32,
     buffer_device_address_multi_device: Bool32,
@@ -3922,7 +3919,7 @@ pub const PhysicalDeviceBufferDeviceAddressFeatures = extern struct {
 pub const PhysicalDeviceBufferDeviceAddressFeaturesKHR = PhysicalDeviceBufferDeviceAddressFeatures;
 pub const PhysicalDeviceBufferDeviceAddressFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_buffer_device_address_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     buffer_device_address: Bool32,
     buffer_device_address_capture_replay: Bool32,
     buffer_device_address_multi_device: Bool32,
@@ -3930,49 +3927,49 @@ pub const PhysicalDeviceBufferDeviceAddressFeaturesEXT = extern struct {
 pub const PhysicalDeviceBufferAddressFeaturesEXT = PhysicalDeviceBufferDeviceAddressFeaturesEXT;
 pub const BufferDeviceAddressInfo = extern struct {
     s_type: StructureType = .buffer_device_address_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     buffer: Buffer,
 };
 pub const BufferDeviceAddressInfoKHR = BufferDeviceAddressInfo;
 pub const BufferDeviceAddressInfoEXT = BufferDeviceAddressInfo;
 pub const BufferOpaqueCaptureAddressCreateInfo = extern struct {
     s_type: StructureType = .buffer_opaque_capture_address_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     opaque_capture_address: u64,
 };
 pub const BufferOpaqueCaptureAddressCreateInfoKHR = BufferOpaqueCaptureAddressCreateInfo;
 pub const BufferDeviceAddressCreateInfoEXT = extern struct {
     s_type: StructureType = .buffer_device_address_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     device_address: DeviceAddress,
 };
 pub const PhysicalDeviceImageViewImageFormatInfoEXT = extern struct {
     s_type: StructureType = .physical_device_image_view_image_format_info_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     image_view_type: ImageViewType,
 };
 pub const FilterCubicImageViewImageFormatPropertiesEXT = extern struct {
     s_type: StructureType = .filter_cubic_image_view_image_format_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     filter_cubic: Bool32,
     filter_cubic_minmax: Bool32,
 };
 pub const PhysicalDeviceImagelessFramebufferFeatures = extern struct {
     s_type: StructureType = .physical_device_imageless_framebuffer_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     imageless_framebuffer: Bool32,
 };
 pub const PhysicalDeviceImagelessFramebufferFeaturesKHR = PhysicalDeviceImagelessFramebufferFeatures;
 pub const FramebufferAttachmentsCreateInfo = extern struct {
     s_type: StructureType = .framebuffer_attachments_create_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     attachment_image_info_count: u32,
     p_attachment_image_infos: [*]const FramebufferAttachmentImageInfo,
 };
 pub const FramebufferAttachmentsCreateInfoKHR = FramebufferAttachmentsCreateInfo;
 pub const FramebufferAttachmentImageInfo = extern struct {
     s_type: StructureType = .framebuffer_attachment_image_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: ImageCreateFlags,
     usage: ImageUsageFlags,
     width: u32,
@@ -3984,30 +3981,30 @@ pub const FramebufferAttachmentImageInfo = extern struct {
 pub const FramebufferAttachmentImageInfoKHR = FramebufferAttachmentImageInfo;
 pub const RenderPassAttachmentBeginInfo = extern struct {
     s_type: StructureType = .render_pass_attachment_begin_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     attachment_count: u32,
     p_attachments: [*]const ImageView,
 };
 pub const RenderPassAttachmentBeginInfoKHR = RenderPassAttachmentBeginInfo;
 pub const PhysicalDeviceTextureCompressionASTCHDRFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_texture_compression_astc_hdr_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     texture_compression_astc_hdr: Bool32,
 };
 pub const PhysicalDeviceCooperativeMatrixFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_cooperative_matrix_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     cooperative_matrix: Bool32,
     cooperative_matrix_robust_buffer_access: Bool32,
 };
 pub const PhysicalDeviceCooperativeMatrixPropertiesNV = extern struct {
     s_type: StructureType = .physical_device_cooperative_matrix_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     cooperative_matrix_supported_stages: ShaderStageFlags,
 };
 pub const CooperativeMatrixPropertiesNV = extern struct {
     s_type: StructureType = .cooperative_matrix_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     m_size: u32,
     n_size: u32,
     k_size: u32,
@@ -4019,25 +4016,25 @@ pub const CooperativeMatrixPropertiesNV = extern struct {
 };
 pub const PhysicalDeviceYcbcrImageArraysFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_ycbcr_image_arrays_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     ycbcr_image_arrays: Bool32,
 };
 pub const ImageViewHandleInfoNVX = extern struct {
     s_type: StructureType = .image_view_handle_info_nvx,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     image_view: ImageView,
     descriptor_type: DescriptorType,
     sampler: Sampler,
 };
 pub const ImageViewAddressPropertiesNVX = extern struct {
     s_type: StructureType = .image_view_address_properties_nvx,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     device_address: DeviceAddress,
     size: DeviceSize,
 };
 pub const PresentFrameTokenGGP = extern struct {
     s_type: StructureType = .present_frame_token_ggp,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     frame_token: GgpFrameToken,
 };
 pub const PipelineCreationFeedbackEXT = extern struct {
@@ -4046,40 +4043,40 @@ pub const PipelineCreationFeedbackEXT = extern struct {
 };
 pub const PipelineCreationFeedbackCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_creation_feedback_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_pipeline_creation_feedback: *PipelineCreationFeedbackEXT,
     pipeline_stage_creation_feedback_count: u32,
     p_pipeline_stage_creation_feedbacks: [*]PipelineCreationFeedbackEXT,
 };
 pub const SurfaceFullScreenExclusiveInfoEXT = extern struct {
     s_type: StructureType = .surface_full_screen_exclusive_info_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     full_screen_exclusive: FullScreenExclusiveEXT,
 };
 pub const SurfaceFullScreenExclusiveWin32InfoEXT = extern struct {
     s_type: StructureType = .surface_full_screen_exclusive_win32_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     hmonitor: HMONITOR,
 };
 pub const SurfaceCapabilitiesFullScreenExclusiveEXT = extern struct {
     s_type: StructureType = .surface_capabilities_full_screen_exclusive_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     full_screen_exclusive_supported: Bool32,
 };
 pub const PhysicalDevicePerformanceQueryFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_performance_query_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     performance_counter_query_pools: Bool32,
     performance_counter_multiple_query_pools: Bool32,
 };
 pub const PhysicalDevicePerformanceQueryPropertiesKHR = extern struct {
     s_type: StructureType = .physical_device_performance_query_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     allow_command_buffer_query_copies: Bool32,
 };
 pub const PerformanceCounterKHR = extern struct {
     s_type: StructureType = .performance_counter_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     unit: PerformanceCounterUnitKHR,
     scope: PerformanceCounterScopeKHR,
     storage: PerformanceCounterStorageKHR,
@@ -4087,7 +4084,7 @@ pub const PerformanceCounterKHR = extern struct {
 };
 pub const PerformanceCounterDescriptionKHR = extern struct {
     s_type: StructureType = .performance_counter_description_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PerformanceCounterDescriptionFlagsKHR,
     name: [MAX_DESCRIPTION_SIZE]u8,
     category: [MAX_DESCRIPTION_SIZE]u8,
@@ -4095,7 +4092,7 @@ pub const PerformanceCounterDescriptionKHR = extern struct {
 };
 pub const QueryPoolPerformanceCreateInfoKHR = extern struct {
     s_type: StructureType = .query_pool_performance_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     queue_family_index: u32,
     counter_index_count: u32,
     p_counter_indices: [*]const u32,
@@ -4110,34 +4107,34 @@ pub const PerformanceCounterResultKHR = extern union {
 };
 pub const AcquireProfilingLockInfoKHR = extern struct {
     s_type: StructureType = .acquire_profiling_lock_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: AcquireProfilingLockFlagsKHR,
     timeout: u64,
 };
 pub const PerformanceQuerySubmitInfoKHR = extern struct {
     s_type: StructureType = .performance_query_submit_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     counter_pass_index: u32,
 };
 pub const HeadlessSurfaceCreateInfoEXT = extern struct {
     s_type: StructureType = .headless_surface_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: HeadlessSurfaceCreateFlagsEXT,
 };
 pub const PhysicalDeviceCoverageReductionModeFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_coverage_reduction_mode_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     coverage_reduction_mode: Bool32,
 };
 pub const PipelineCoverageReductionStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_coverage_reduction_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: PipelineCoverageReductionStateCreateFlagsNV,
     coverage_reduction_mode: CoverageReductionModeNV,
 };
 pub const FramebufferMixedSamplesCombinationNV = extern struct {
     s_type: StructureType = .framebuffer_mixed_samples_combination_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     coverage_reduction_mode: CoverageReductionModeNV,
     rasterization_samples: SampleCountFlags,
     depth_stencil_samples: SampleCountFlags,
@@ -4145,7 +4142,7 @@ pub const FramebufferMixedSamplesCombinationNV = extern struct {
 };
 pub const PhysicalDeviceShaderIntegerFunctions2FeaturesINTEL = extern struct {
     s_type: StructureType = .physical_device_shader_integer_functions_2_features_intel,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_integer_functions_2: Bool32,
 };
 pub const PerformanceValueDataINTEL = extern union {
@@ -4161,98 +4158,98 @@ pub const PerformanceValueINTEL = extern struct {
 };
 pub const InitializePerformanceApiInfoINTEL = extern struct {
     s_type: StructureType = .initialize_performance_api_info_intel,
-    p_next: ?*const c_void = null,
-    p_user_data: ?*c_void,
+    p_next: ?*const anyopaque = null,
+    p_user_data: ?*anyopaque,
 };
 pub const QueryPoolPerformanceQueryCreateInfoINTEL = extern struct {
     s_type: StructureType = .query_pool_performance_query_create_info_intel,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     performance_counters_sampling: QueryPoolSamplingModeINTEL,
 };
 pub const QueryPoolCreateInfoINTEL = QueryPoolPerformanceQueryCreateInfoINTEL;
 pub const PerformanceMarkerInfoINTEL = extern struct {
     s_type: StructureType = .performance_marker_info_intel,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     marker: u64,
 };
 pub const PerformanceStreamMarkerInfoINTEL = extern struct {
     s_type: StructureType = .performance_stream_marker_info_intel,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     marker: u32,
 };
 pub const PerformanceOverrideInfoINTEL = extern struct {
     s_type: StructureType = .performance_override_info_intel,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     type: PerformanceOverrideTypeINTEL,
     enable: Bool32,
     parameter: u64,
 };
 pub const PerformanceConfigurationAcquireInfoINTEL = extern struct {
     s_type: StructureType = .performance_configuration_acquire_info_intel,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     type: PerformanceConfigurationTypeINTEL,
 };
 pub const PhysicalDeviceShaderClockFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_shader_clock_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_subgroup_clock: Bool32,
     shader_device_clock: Bool32,
 };
 pub const PhysicalDeviceIndexTypeUint8FeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_index_type_uint8_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     index_type_uint_8: Bool32,
 };
 pub const PhysicalDeviceShaderSMBuiltinsPropertiesNV = extern struct {
     s_type: StructureType = .physical_device_shader_sm_builtins_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_sm_count: u32,
     shader_warps_per_sm: u32,
 };
 pub const PhysicalDeviceShaderSMBuiltinsFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_shader_sm_builtins_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_sm_builtins: Bool32,
 };
 pub const PhysicalDeviceFragmentShaderInterlockFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_fragment_shader_interlock_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     fragment_shader_sample_interlock: Bool32,
     fragment_shader_pixel_interlock: Bool32,
     fragment_shader_shading_rate_interlock: Bool32,
 };
 pub const PhysicalDeviceSeparateDepthStencilLayoutsFeatures = extern struct {
     s_type: StructureType = .physical_device_separate_depth_stencil_layouts_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     separate_depth_stencil_layouts: Bool32,
 };
 pub const PhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR = PhysicalDeviceSeparateDepthStencilLayoutsFeatures;
 pub const AttachmentReferenceStencilLayout = extern struct {
     s_type: StructureType = .attachment_reference_stencil_layout,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     stencil_layout: ImageLayout,
 };
 pub const AttachmentReferenceStencilLayoutKHR = AttachmentReferenceStencilLayout;
 pub const AttachmentDescriptionStencilLayout = extern struct {
     s_type: StructureType = .attachment_description_stencil_layout,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     stencil_initial_layout: ImageLayout,
     stencil_final_layout: ImageLayout,
 };
 pub const AttachmentDescriptionStencilLayoutKHR = AttachmentDescriptionStencilLayout;
 pub const PhysicalDevicePipelineExecutablePropertiesFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_pipeline_executable_properties_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     pipeline_executable_info: Bool32,
 };
 pub const PipelineInfoKHR = extern struct {
     s_type: StructureType = .pipeline_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     pipeline: Pipeline,
 };
 pub const PipelineExecutablePropertiesKHR = extern struct {
     s_type: StructureType = .pipeline_executable_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     stages: ShaderStageFlags,
     name: [MAX_DESCRIPTION_SIZE]u8,
     description: [MAX_DESCRIPTION_SIZE]u8,
@@ -4260,7 +4257,7 @@ pub const PipelineExecutablePropertiesKHR = extern struct {
 };
 pub const PipelineExecutableInfoKHR = extern struct {
     s_type: StructureType = .pipeline_executable_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     pipeline: Pipeline,
     executable_index: u32,
 };
@@ -4272,7 +4269,7 @@ pub const PipelineExecutableStatisticValueKHR = extern union {
 };
 pub const PipelineExecutableStatisticKHR = extern struct {
     s_type: StructureType = .pipeline_executable_statistic_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     name: [MAX_DESCRIPTION_SIZE]u8,
     description: [MAX_DESCRIPTION_SIZE]u8,
     format: PipelineExecutableStatisticFormatKHR,
@@ -4280,26 +4277,26 @@ pub const PipelineExecutableStatisticKHR = extern struct {
 };
 pub const PipelineExecutableInternalRepresentationKHR = extern struct {
     s_type: StructureType = .pipeline_executable_internal_representation_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     name: [MAX_DESCRIPTION_SIZE]u8,
     description: [MAX_DESCRIPTION_SIZE]u8,
     is_text: Bool32,
     data_size: usize,
-    p_data: ?*c_void,
+    p_data: ?*anyopaque,
 };
 pub const PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_shader_demote_to_helper_invocation_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_demote_to_helper_invocation: Bool32,
 };
 pub const PhysicalDeviceTexelBufferAlignmentFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_texel_buffer_alignment_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     texel_buffer_alignment: Bool32,
 };
 pub const PhysicalDeviceTexelBufferAlignmentPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_texel_buffer_alignment_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     storage_texel_buffer_offset_alignment_bytes: DeviceSize,
     storage_texel_buffer_offset_single_texel_alignment: Bool32,
     uniform_texel_buffer_offset_alignment_bytes: DeviceSize,
@@ -4307,13 +4304,13 @@ pub const PhysicalDeviceTexelBufferAlignmentPropertiesEXT = extern struct {
 };
 pub const PhysicalDeviceSubgroupSizeControlFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_subgroup_size_control_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     subgroup_size_control: Bool32,
     compute_full_subgroups: Bool32,
 };
 pub const PhysicalDeviceSubgroupSizeControlPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_subgroup_size_control_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     min_subgroup_size: u32,
     max_subgroup_size: u32,
     max_compute_workgroup_subgroups: u32,
@@ -4321,24 +4318,24 @@ pub const PhysicalDeviceSubgroupSizeControlPropertiesEXT = extern struct {
 };
 pub const PipelineShaderStageRequiredSubgroupSizeCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_shader_stage_required_subgroup_size_create_info_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     required_subgroup_size: u32,
 };
 pub const MemoryOpaqueCaptureAddressAllocateInfo = extern struct {
     s_type: StructureType = .memory_opaque_capture_address_allocate_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     opaque_capture_address: u64,
 };
 pub const MemoryOpaqueCaptureAddressAllocateInfoKHR = MemoryOpaqueCaptureAddressAllocateInfo;
 pub const DeviceMemoryOpaqueCaptureAddressInfo = extern struct {
     s_type: StructureType = .device_memory_opaque_capture_address_info,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     memory: DeviceMemory,
 };
 pub const DeviceMemoryOpaqueCaptureAddressInfoKHR = DeviceMemoryOpaqueCaptureAddressInfo;
 pub const PhysicalDeviceLineRasterizationFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_line_rasterization_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     rectangular_lines: Bool32,
     bresenham_lines: Bool32,
     smooth_lines: Bool32,
@@ -4348,12 +4345,12 @@ pub const PhysicalDeviceLineRasterizationFeaturesEXT = extern struct {
 };
 pub const PhysicalDeviceLineRasterizationPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_line_rasterization_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     line_sub_pixel_precision_bits: u32,
 };
 pub const PipelineRasterizationLineStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_rasterization_line_state_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     line_rasterization_mode: LineRasterizationModeEXT,
     stippled_line_enable: Bool32,
     line_stipple_factor: u32,
@@ -4361,12 +4358,12 @@ pub const PipelineRasterizationLineStateCreateInfoEXT = extern struct {
 };
 pub const PhysicalDevicePipelineCreationCacheControlFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_pipeline_creation_cache_control_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     pipeline_creation_cache_control: Bool32,
 };
 pub const PhysicalDeviceVulkan11Features = extern struct {
     s_type: StructureType = .physical_device_vulkan_1_1_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     storage_buffer_16_bit_access: Bool32,
     uniform_and_storage_buffer_16_bit_access: Bool32,
     storage_push_constant_16: Bool32,
@@ -4382,7 +4379,7 @@ pub const PhysicalDeviceVulkan11Features = extern struct {
 };
 pub const PhysicalDeviceVulkan11Properties = extern struct {
     s_type: StructureType = .physical_device_vulkan_1_1_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     device_uuid: [UUID_SIZE]u8,
     driver_uuid: [UUID_SIZE]u8,
     device_luid: [LUID_SIZE]u8,
@@ -4401,7 +4398,7 @@ pub const PhysicalDeviceVulkan11Properties = extern struct {
 };
 pub const PhysicalDeviceVulkan12Features = extern struct {
     s_type: StructureType = .physical_device_vulkan_1_2_features,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     sampler_mirror_clamp_to_edge: Bool32,
     draw_indirect_count: Bool32,
     storage_buffer_8_bit_access: Bool32,
@@ -4452,7 +4449,7 @@ pub const PhysicalDeviceVulkan12Features = extern struct {
 };
 pub const PhysicalDeviceVulkan12Properties = extern struct {
     s_type: StructureType = .physical_device_vulkan_1_2_properties,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     driver_id: DriverId,
     driver_name: [MAX_DRIVER_NAME_SIZE]u8,
     driver_info: [MAX_DRIVER_INFO_SIZE]u8,
@@ -4508,17 +4505,17 @@ pub const PhysicalDeviceVulkan12Properties = extern struct {
 };
 pub const PipelineCompilerControlCreateInfoAMD = extern struct {
     s_type: StructureType = .pipeline_compiler_control_create_info_amd,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     compiler_control_flags: PipelineCompilerControlFlagsAMD,
 };
 pub const PhysicalDeviceCoherentMemoryFeaturesAMD = extern struct {
     s_type: StructureType = .physical_device_coherent_memory_features_amd,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     device_coherent_memory: Bool32,
 };
 pub const PhysicalDeviceToolPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_tool_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     name: [MAX_EXTENSION_NAME_SIZE]u8,
     version: [MAX_EXTENSION_NAME_SIZE]u8,
     purposes: ToolPurposeFlagsEXT,
@@ -4527,32 +4524,32 @@ pub const PhysicalDeviceToolPropertiesEXT = extern struct {
 };
 pub const SamplerCustomBorderColorCreateInfoEXT = extern struct {
     s_type: StructureType = .sampler_custom_border_color_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     custom_border_color: ClearColorValue,
     format: Format,
 };
 pub const PhysicalDeviceCustomBorderColorPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_custom_border_color_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_custom_border_color_samplers: u32,
 };
 pub const PhysicalDeviceCustomBorderColorFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_custom_border_color_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     custom_border_colors: Bool32,
     custom_border_color_without_format: Bool32,
 };
 pub const DeviceOrHostAddressKHR = extern union {
     device_address: DeviceAddress,
-    host_address: *c_void,
+    host_address: *anyopaque,
 };
 pub const DeviceOrHostAddressConstKHR = extern union {
     device_address: DeviceAddress,
-    host_address: *const c_void,
+    host_address: *const anyopaque,
 };
 pub const AccelerationStructureGeometryTrianglesDataKHR = extern struct {
     s_type: StructureType = .acceleration_structure_geometry_triangles_data_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     vertex_format: Format,
     vertex_data: DeviceOrHostAddressConstKHR,
     vertex_stride: DeviceSize,
@@ -4563,13 +4560,13 @@ pub const AccelerationStructureGeometryTrianglesDataKHR = extern struct {
 };
 pub const AccelerationStructureGeometryAabbsDataKHR = extern struct {
     s_type: StructureType = .acceleration_structure_geometry_aabbs_data_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     data: DeviceOrHostAddressConstKHR,
     stride: DeviceSize,
 };
 pub const AccelerationStructureGeometryInstancesDataKHR = extern struct {
     s_type: StructureType = .acceleration_structure_geometry_instances_data_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     array_of_pointers: Bool32,
     data: DeviceOrHostAddressConstKHR,
 };
@@ -4580,14 +4577,14 @@ pub const AccelerationStructureGeometryDataKHR = extern union {
 };
 pub const AccelerationStructureGeometryKHR = extern struct {
     s_type: StructureType = .acceleration_structure_geometry_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     geometry_type: GeometryTypeKHR,
     geometry: AccelerationStructureGeometryDataKHR,
     flags: GeometryFlagsKHR,
 };
 pub const AccelerationStructureBuildGeometryInfoKHR = extern struct {
     s_type: StructureType = .acceleration_structure_build_geometry_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     type: AccelerationStructureTypeKHR,
     flags: BuildAccelerationStructureFlagsKHR,
     mode: BuildAccelerationStructureModeKHR,
@@ -4606,7 +4603,7 @@ pub const AccelerationStructureBuildRangeInfoKHR = extern struct {
 };
 pub const AccelerationStructureCreateInfoKHR = extern struct {
     s_type: StructureType = .acceleration_structure_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     create_flags: AccelerationStructureCreateFlagsKHR,
     buffer: Buffer,
     offset: DeviceSize,
@@ -4638,111 +4635,111 @@ pub const AccelerationStructureInstanceKHR = packed struct {
 pub const AccelerationStructureInstanceNV = AccelerationStructureInstanceKHR;
 pub const AccelerationStructureDeviceAddressInfoKHR = extern struct {
     s_type: StructureType = .acceleration_structure_device_address_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     acceleration_structure: AccelerationStructureKHR,
 };
 pub const AccelerationStructureVersionInfoKHR = extern struct {
     s_type: StructureType = .acceleration_structure_version_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_version_data: [*]const u8,
 };
 pub const CopyAccelerationStructureInfoKHR = extern struct {
     s_type: StructureType = .copy_acceleration_structure_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src: AccelerationStructureKHR,
     dst: AccelerationStructureKHR,
     mode: CopyAccelerationStructureModeKHR,
 };
 pub const CopyAccelerationStructureToMemoryInfoKHR = extern struct {
     s_type: StructureType = .copy_acceleration_structure_to_memory_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src: AccelerationStructureKHR,
     dst: DeviceOrHostAddressKHR,
     mode: CopyAccelerationStructureModeKHR,
 };
 pub const CopyMemoryToAccelerationStructureInfoKHR = extern struct {
     s_type: StructureType = .copy_memory_to_acceleration_structure_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src: DeviceOrHostAddressConstKHR,
     dst: AccelerationStructureKHR,
     mode: CopyAccelerationStructureModeKHR,
 };
 pub const RayTracingPipelineInterfaceCreateInfoKHR = extern struct {
     s_type: StructureType = .ray_tracing_pipeline_interface_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     max_pipeline_ray_payload_size: u32,
     max_pipeline_ray_hit_attribute_size: u32,
 };
 pub const PipelineLibraryCreateInfoKHR = extern struct {
     s_type: StructureType = .pipeline_library_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     library_count: u32,
     p_libraries: [*]const Pipeline,
 };
 pub const PhysicalDeviceExtendedDynamicStateFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_extended_dynamic_state_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     extended_dynamic_state: Bool32,
 };
 pub const PhysicalDeviceExtendedDynamicState2FeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_extended_dynamic_state_2_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     extended_dynamic_state_2: Bool32,
     extended_dynamic_state_2_logic_op: Bool32,
     extended_dynamic_state_2_patch_control_points: Bool32,
 };
 pub const RenderPassTransformBeginInfoQCOM = extern struct {
     s_type: StructureType = .render_pass_transform_begin_info_qcom,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     transform: SurfaceTransformFlagsKHR,
 };
 pub const CopyCommandTransformInfoQCOM = extern struct {
     s_type: StructureType = .copy_command_transform_info_qcom,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     transform: SurfaceTransformFlagsKHR,
 };
 pub const CommandBufferInheritanceRenderPassTransformInfoQCOM = extern struct {
     s_type: StructureType = .command_buffer_inheritance_render_pass_transform_info_qcom,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     transform: SurfaceTransformFlagsKHR,
     render_area: Rect2D,
 };
 pub const PhysicalDeviceDiagnosticsConfigFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_diagnostics_config_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     diagnostics_config: Bool32,
 };
 pub const DeviceDiagnosticsConfigCreateInfoNV = extern struct {
     s_type: StructureType = .device_diagnostics_config_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     flags: DeviceDiagnosticsConfigFlagsNV,
 };
 pub const PhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_zero_initialize_workgroup_memory_features_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     shader_zero_initialize_workgroup_memory: Bool32,
 };
 pub const PhysicalDeviceRobustness2FeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_robustness_2_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     robust_buffer_access_2: Bool32,
     robust_image_access_2: Bool32,
     null_descriptor: Bool32,
 };
 pub const PhysicalDeviceRobustness2PropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_robustness_2_properties_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     robust_storage_buffer_access_size_alignment: DeviceSize,
     robust_uniform_buffer_access_size_alignment: DeviceSize,
 };
 pub const PhysicalDeviceImageRobustnessFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_image_robustness_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     robust_image_access: Bool32,
 };
 pub const PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_workgroup_memory_explicit_layout_features_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     workgroup_memory_explicit_layout: Bool32,
     workgroup_memory_explicit_layout_scalar_block_layout: Bool32,
     workgroup_memory_explicit_layout_8_bit_access: Bool32,
@@ -4750,7 +4747,7 @@ pub const PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR = extern struct
 };
 pub const PhysicalDevicePortabilitySubsetFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_portability_subset_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     constant_alpha_color_blend_factors: Bool32,
     events: Bool32,
     image_view_format_reinterpretation: Bool32,
@@ -4769,25 +4766,25 @@ pub const PhysicalDevicePortabilitySubsetFeaturesKHR = extern struct {
 };
 pub const PhysicalDevicePortabilitySubsetPropertiesKHR = extern struct {
     s_type: StructureType = .physical_device_portability_subset_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     min_vertex_input_binding_stride_alignment: u32,
 };
 pub const PhysicalDevice4444FormatsFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_4444_formats_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     format_a4r4g4b4: Bool32,
     format_a4b4g4r4: Bool32,
 };
 pub const BufferCopy2KHR = extern struct {
     s_type: StructureType = .buffer_copy_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_offset: DeviceSize,
     dst_offset: DeviceSize,
     size: DeviceSize,
 };
 pub const ImageCopy2KHR = extern struct {
     s_type: StructureType = .image_copy_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_subresource: ImageSubresourceLayers,
     src_offset: Offset3D,
     dst_subresource: ImageSubresourceLayers,
@@ -4796,7 +4793,7 @@ pub const ImageCopy2KHR = extern struct {
 };
 pub const ImageBlit2KHR = extern struct {
     s_type: StructureType = .image_blit_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_subresource: ImageSubresourceLayers,
     src_offsets: [2]Offset3D,
     dst_subresource: ImageSubresourceLayers,
@@ -4804,7 +4801,7 @@ pub const ImageBlit2KHR = extern struct {
 };
 pub const BufferImageCopy2KHR = extern struct {
     s_type: StructureType = .buffer_image_copy_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     buffer_offset: DeviceSize,
     buffer_row_length: u32,
     buffer_image_height: u32,
@@ -4814,7 +4811,7 @@ pub const BufferImageCopy2KHR = extern struct {
 };
 pub const ImageResolve2KHR = extern struct {
     s_type: StructureType = .image_resolve_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_subresource: ImageSubresourceLayers,
     src_offset: Offset3D,
     dst_subresource: ImageSubresourceLayers,
@@ -4823,7 +4820,7 @@ pub const ImageResolve2KHR = extern struct {
 };
 pub const CopyBufferInfo2KHR = extern struct {
     s_type: StructureType = .copy_buffer_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_buffer: Buffer,
     dst_buffer: Buffer,
     region_count: u32,
@@ -4831,7 +4828,7 @@ pub const CopyBufferInfo2KHR = extern struct {
 };
 pub const CopyImageInfo2KHR = extern struct {
     s_type: StructureType = .copy_image_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_image: Image,
     src_image_layout: ImageLayout,
     dst_image: Image,
@@ -4841,7 +4838,7 @@ pub const CopyImageInfo2KHR = extern struct {
 };
 pub const BlitImageInfo2KHR = extern struct {
     s_type: StructureType = .blit_image_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_image: Image,
     src_image_layout: ImageLayout,
     dst_image: Image,
@@ -4852,7 +4849,7 @@ pub const BlitImageInfo2KHR = extern struct {
 };
 pub const CopyBufferToImageInfo2KHR = extern struct {
     s_type: StructureType = .copy_buffer_to_image_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_buffer: Buffer,
     dst_image: Image,
     dst_image_layout: ImageLayout,
@@ -4861,7 +4858,7 @@ pub const CopyBufferToImageInfo2KHR = extern struct {
 };
 pub const CopyImageToBufferInfo2KHR = extern struct {
     s_type: StructureType = .copy_image_to_buffer_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_image: Image,
     src_image_layout: ImageLayout,
     dst_buffer: Buffer,
@@ -4870,7 +4867,7 @@ pub const CopyImageToBufferInfo2KHR = extern struct {
 };
 pub const ResolveImageInfo2KHR = extern struct {
     s_type: StructureType = .resolve_image_info_2_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     src_image: Image,
     src_image_layout: ImageLayout,
     dst_image: Image,
@@ -4880,32 +4877,32 @@ pub const ResolveImageInfo2KHR = extern struct {
 };
 pub const PhysicalDeviceShaderImageAtomicInt64FeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_shader_image_atomic_int64_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_image_int_64_atomics: Bool32,
     sparse_image_int_64_atomics: Bool32,
 };
 pub const FragmentShadingRateAttachmentInfoKHR = extern struct {
     s_type: StructureType = .fragment_shading_rate_attachment_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     p_fragment_shading_rate_attachment: *const AttachmentReference2,
     shading_rate_attachment_texel_size: Extent2D,
 };
 pub const PipelineFragmentShadingRateStateCreateInfoKHR = extern struct {
     s_type: StructureType = .pipeline_fragment_shading_rate_state_create_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     fragment_size: Extent2D,
     combiner_ops: [2]FragmentShadingRateCombinerOpKHR,
 };
 pub const PhysicalDeviceFragmentShadingRateFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_fragment_shading_rate_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     pipeline_fragment_shading_rate: Bool32,
     primitive_fragment_shading_rate: Bool32,
     attachment_fragment_shading_rate: Bool32,
 };
 pub const PhysicalDeviceFragmentShadingRatePropertiesKHR = extern struct {
     s_type: StructureType = .physical_device_fragment_shading_rate_properties_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     min_fragment_shading_rate_attachment_texel_size: Extent2D,
     max_fragment_shading_rate_attachment_texel_size: Extent2D,
     max_fragment_shading_rate_attachment_texel_size_aspect_ratio: u32,
@@ -4926,44 +4923,44 @@ pub const PhysicalDeviceFragmentShadingRatePropertiesKHR = extern struct {
 };
 pub const PhysicalDeviceFragmentShadingRateKHR = extern struct {
     s_type: StructureType = .physical_device_fragment_shading_rate_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     sample_counts: SampleCountFlags,
     fragment_size: Extent2D,
 };
 pub const PhysicalDeviceShaderTerminateInvocationFeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_shader_terminate_invocation_features_khr,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     shader_terminate_invocation: Bool32,
 };
 pub const PhysicalDeviceFragmentShadingRateEnumsFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_fragment_shading_rate_enums_features_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     fragment_shading_rate_enums: Bool32,
     supersample_fragment_shading_rates: Bool32,
     no_invocation_fragment_shading_rates: Bool32,
 };
 pub const PhysicalDeviceFragmentShadingRateEnumsPropertiesNV = extern struct {
     s_type: StructureType = .physical_device_fragment_shading_rate_enums_properties_nv,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     max_fragment_shading_rate_invocation_count: SampleCountFlags,
 };
 pub const PipelineFragmentShadingRateEnumStateCreateInfoNV = extern struct {
     s_type: StructureType = .pipeline_fragment_shading_rate_enum_state_create_info_nv,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     shading_rate_type: FragmentShadingRateTypeNV,
     shading_rate: FragmentShadingRateNV,
     combiner_ops: [2]FragmentShadingRateCombinerOpKHR,
 };
 pub const AccelerationStructureBuildSizesInfoKHR = extern struct {
     s_type: StructureType = .acceleration_structure_build_sizes_info_khr,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     acceleration_structure_size: DeviceSize,
     update_scratch_size: DeviceSize,
     build_scratch_size: DeviceSize,
 };
 pub const PhysicalDeviceMutableDescriptorTypeFeaturesVALVE = extern struct {
     s_type: StructureType = .physical_device_mutable_descriptor_type_features_valve,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     mutable_descriptor_type: Bool32,
 };
 pub const MutableDescriptorTypeListVALVE = extern struct {
@@ -4972,18 +4969,18 @@ pub const MutableDescriptorTypeListVALVE = extern struct {
 };
 pub const MutableDescriptorTypeCreateInfoVALVE = extern struct {
     s_type: StructureType = .mutable_descriptor_type_create_info_valve,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     mutable_descriptor_type_list_count: u32,
     p_mutable_descriptor_type_lists: [*]const MutableDescriptorTypeListVALVE,
 };
 pub const PhysicalDeviceVertexInputDynamicStateFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_vertex_input_dynamic_state_features_ext,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     vertex_input_dynamic_state: Bool32,
 };
 pub const VertexInputBindingDescription2EXT = extern struct {
     s_type: StructureType = .vertex_input_binding_description_2_ext,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     binding: u32,
     stride: u32,
     input_rate: VertexInputRate,
@@ -4991,7 +4988,7 @@ pub const VertexInputBindingDescription2EXT = extern struct {
 };
 pub const VertexInputAttributeDescription2EXT = extern struct {
     s_type: StructureType = .vertex_input_attribute_description_2_ext,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     location: u32,
     binding: u32,
     format: Format,
@@ -4999,18 +4996,18 @@ pub const VertexInputAttributeDescription2EXT = extern struct {
 };
 pub const PhysicalDeviceColorWriteEnableFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_color_write_enable_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     color_write_enable: Bool32,
 };
 pub const PipelineColorWriteCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_color_write_create_info_ext,
-    p_next: ?*const c_void = null,
+    p_next: ?*const anyopaque = null,
     attachment_count: u32,
     p_color_write_enables: [*]const Bool32,
 };
 pub const MemoryBarrier2KHR = extern struct {
     s_type: StructureType = .memory_barrier_2_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     src_stage_mask: PipelineStageFlags2KHR,
     src_access_mask: AccessFlags2KHR,
     dst_stage_mask: PipelineStageFlags2KHR,
@@ -5018,7 +5015,7 @@ pub const MemoryBarrier2KHR = extern struct {
 };
 pub const ImageMemoryBarrier2KHR = extern struct {
     s_type: StructureType = .image_memory_barrier_2_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     src_stage_mask: PipelineStageFlags2KHR,
     src_access_mask: AccessFlags2KHR,
     dst_stage_mask: PipelineStageFlags2KHR,
@@ -5032,7 +5029,7 @@ pub const ImageMemoryBarrier2KHR = extern struct {
 };
 pub const BufferMemoryBarrier2KHR = extern struct {
     s_type: StructureType = .buffer_memory_barrier_2_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     src_stage_mask: PipelineStageFlags2KHR,
     src_access_mask: AccessFlags2KHR,
     dst_stage_mask: PipelineStageFlags2KHR,
@@ -5045,7 +5042,7 @@ pub const BufferMemoryBarrier2KHR = extern struct {
 };
 pub const DependencyInfoKHR = extern struct {
     s_type: StructureType = .dependency_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     dependency_flags: DependencyFlags,
     memory_barrier_count: u32,
     p_memory_barriers: [*]const MemoryBarrier2KHR,
@@ -5056,7 +5053,7 @@ pub const DependencyInfoKHR = extern struct {
 };
 pub const SemaphoreSubmitInfoKHR = extern struct {
     s_type: StructureType = .semaphore_submit_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     semaphore: Semaphore,
     value: u64,
     stage_mask: PipelineStageFlags2KHR,
@@ -5064,13 +5061,13 @@ pub const SemaphoreSubmitInfoKHR = extern struct {
 };
 pub const CommandBufferSubmitInfoKHR = extern struct {
     s_type: StructureType = .command_buffer_submit_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     command_buffer: CommandBuffer,
     device_mask: u32,
 };
 pub const SubmitInfo2KHR = extern struct {
     s_type: StructureType = .submit_info_2_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: SubmitFlagsKHR,
     wait_semaphore_info_count: u32,
     p_wait_semaphore_infos: [*]const SemaphoreSubmitInfoKHR,
@@ -5081,45 +5078,45 @@ pub const SubmitInfo2KHR = extern struct {
 };
 pub const QueueFamilyCheckpointProperties2NV = extern struct {
     s_type: StructureType = .queue_family_checkpoint_properties_2_nv,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     checkpoint_execution_stage_mask: PipelineStageFlags2KHR,
 };
 pub const CheckpointData2NV = extern struct {
     s_type: StructureType = .checkpoint_data_2_nv,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     stage: PipelineStageFlags2KHR,
-    p_checkpoint_marker: *c_void,
+    p_checkpoint_marker: *anyopaque,
 };
 pub const PhysicalDeviceSynchronization2FeaturesKHR = extern struct {
     s_type: StructureType = .physical_device_synchronization_2_features_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     synchronization_2: Bool32,
 };
 pub const VideoQueueFamilyProperties2KHR = extern struct {
     s_type: StructureType = .video_queue_family_properties_2_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     video_codec_operations: VideoCodecOperationFlagsKHR,
 };
 pub const VideoProfilesKHR = extern struct {
     s_type: StructureType = .video_profiles_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     profile_count: u32,
     p_profiles: *const VideoProfileKHR,
 };
 pub const PhysicalDeviceVideoFormatInfoKHR = extern struct {
     s_type: StructureType = .physical_device_video_format_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     image_usage: ImageUsageFlags,
     p_video_profiles: *const VideoProfilesKHR,
 };
 pub const VideoFormatPropertiesKHR = extern struct {
     s_type: StructureType = .video_format_properties_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     format: Format,
 };
 pub const VideoProfileKHR = extern struct {
     s_type: StructureType = .video_profile_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     video_codec_operation: VideoCodecOperationFlagsKHR,
     chroma_subsampling: VideoChromaSubsamplingFlagsKHR,
     luma_bit_depth: VideoComponentBitDepthFlagsKHR,
@@ -5127,7 +5124,7 @@ pub const VideoProfileKHR = extern struct {
 };
 pub const VideoCapabilitiesKHR = extern struct {
     s_type: StructureType = .video_capabilities_khr,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     capability_flags: VideoCapabilitiesFlagsKHR,
     min_bitstream_buffer_offset_alignment: DeviceSize,
     min_bitstream_buffer_size_alignment: DeviceSize,
@@ -5139,13 +5136,13 @@ pub const VideoCapabilitiesKHR = extern struct {
 };
 pub const VideoGetMemoryPropertiesKHR = extern struct {
     s_type: StructureType = .video_get_memory_properties_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     memory_bind_index: u32,
     p_memory_requirements: *MemoryRequirements2,
 };
 pub const VideoBindMemoryKHR = extern struct {
     s_type: StructureType = .video_bind_memory_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     memory_bind_index: u32,
     memory: DeviceMemory,
     memory_offset: DeviceSize,
@@ -5153,7 +5150,7 @@ pub const VideoBindMemoryKHR = extern struct {
 };
 pub const VideoPictureResourceKHR = extern struct {
     s_type: StructureType = .video_picture_resource_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     coded_offset: Offset2D,
     coded_extent: Extent2D,
     base_array_layer: u32,
@@ -5161,13 +5158,13 @@ pub const VideoPictureResourceKHR = extern struct {
 };
 pub const VideoReferenceSlotKHR = extern struct {
     s_type: StructureType = .video_reference_slot_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     slot_index: i8,
     p_picture_resource: *const VideoPictureResourceKHR,
 };
 pub const VideoDecodeInfoKHR = extern struct {
     s_type: StructureType = .video_decode_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoDecodeFlagsKHR,
     coded_offset: Offset2D,
     coded_extent: Extent2D,
@@ -5185,20 +5182,20 @@ pub const StdVideoDecodeH264ReferenceInfo = if (@hasDecl(root, "StdVideoDecodeH2
 pub const StdVideoDecodeH264Mvc = if (@hasDecl(root, "StdVideoDecodeH264Mvc")) root.StdVideoDecodeH264Mvc else @compileError("Missing type definition of 'StdVideoDecodeH264Mvc'");
 pub const VideoDecodeH264ProfileEXT = extern struct {
     s_type: StructureType = .video_decode_h264_profile_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     std_profile_idc: StdVideoH264ProfileIdc,
     field_layout: VideoDecodeH264FieldLayoutFlagsEXT,
 };
 pub const VideoDecodeH264CapabilitiesEXT = extern struct {
     s_type: StructureType = .video_decode_h264_capabilities_ext,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     max_level: u32,
     field_offset_granularity: Offset2D,
     std_extension_version: ExtensionProperties,
 };
 pub const VideoDecodeH264SessionCreateInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h264_session_create_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoDecodeH264CreateFlagsEXT,
     p_std_extension_version: *const ExtensionProperties,
 };
@@ -5206,7 +5203,7 @@ pub const StdVideoH264SequenceParameterSet = if (@hasDecl(root, "StdVideoH264Seq
 pub const StdVideoH264PictureParameterSet = if (@hasDecl(root, "StdVideoH264PictureParameterSet")) root.StdVideoH264PictureParameterSet else @compileError("Missing type definition of 'StdVideoH264PictureParameterSet'");
 pub const VideoDecodeH264SessionParametersAddInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h264_session_parameters_add_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     sps_std_count: u32,
     p_sps_std: ?[*]const StdVideoH264SequenceParameterSet,
     pps_std_count: u32,
@@ -5214,26 +5211,26 @@ pub const VideoDecodeH264SessionParametersAddInfoEXT = extern struct {
 };
 pub const VideoDecodeH264SessionParametersCreateInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h264_session_parameters_create_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     max_sps_std_count: u32,
     max_pps_std_count: u32,
     p_parameters_add_info: ?*const VideoDecodeH264SessionParametersAddInfoEXT,
 };
 pub const VideoDecodeH264PictureInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h264_picture_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     p_std_picture_info: *const StdVideoDecodeH264PictureInfo,
     slices_count: u32,
     p_slices_data_offsets: [*]const u32,
 };
 pub const VideoDecodeH264DpbSlotInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h264_dpb_slot_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     p_std_reference_info: *const StdVideoDecodeH264ReferenceInfo,
 };
 pub const VideoDecodeH264MvcEXT = extern struct {
     s_type: StructureType = .video_decode_h264_mvc_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     p_std_mvc: *const StdVideoDecodeH264Mvc,
 };
 pub const StdVideoH265ProfileIdc = if (@hasDecl(root, "StdVideoH265ProfileIdc")) root.StdVideoH265ProfileIdc else @compileError("Missing type definition of 'StdVideoH265ProfileIdc'");
@@ -5244,24 +5241,24 @@ pub const StdVideoDecodeH265PictureInfo = if (@hasDecl(root, "StdVideoDecodeH265
 pub const StdVideoDecodeH265ReferenceInfo = if (@hasDecl(root, "StdVideoDecodeH265ReferenceInfo")) root.StdVideoDecodeH265ReferenceInfo else @compileError("Missing type definition of 'StdVideoDecodeH265ReferenceInfo'");
 pub const VideoDecodeH265ProfileEXT = extern struct {
     s_type: StructureType = .video_decode_h265_profile_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     std_profile_idc: StdVideoH265ProfileIdc,
 };
 pub const VideoDecodeH265CapabilitiesEXT = extern struct {
     s_type: StructureType = .video_decode_h265_capabilities_ext,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     max_level: u32,
     std_extension_version: ExtensionProperties,
 };
 pub const VideoDecodeH265SessionCreateInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h265_session_create_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoDecodeH265CreateFlagsEXT,
     p_std_extension_version: *const ExtensionProperties,
 };
 pub const VideoDecodeH265SessionParametersAddInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h265_session_parameters_add_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     sps_std_count: u32,
     p_sps_std: ?[*]const StdVideoH265SequenceParameterSet,
     pps_std_count: u32,
@@ -5269,26 +5266,26 @@ pub const VideoDecodeH265SessionParametersAddInfoEXT = extern struct {
 };
 pub const VideoDecodeH265SessionParametersCreateInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h265_session_parameters_create_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     max_sps_std_count: u32,
     max_pps_std_count: u32,
     p_parameters_add_info: ?*const VideoDecodeH265SessionParametersAddInfoEXT,
 };
 pub const VideoDecodeH265PictureInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h265_picture_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     p_std_picture_info: *StdVideoDecodeH265PictureInfo,
     slices_count: u32,
     p_slices_data_offsets: [*]const u32,
 };
 pub const VideoDecodeH265DpbSlotInfoEXT = extern struct {
     s_type: StructureType = .video_decode_h265_dpb_slot_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     p_std_reference_info: *const StdVideoDecodeH265ReferenceInfo,
 };
 pub const VideoSessionCreateInfoKHR = extern struct {
     s_type: StructureType = .video_session_create_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     queue_family_index: u32,
     flags: VideoSessionCreateFlagsKHR,
     p_video_profile: *const VideoProfileKHR,
@@ -5300,18 +5297,18 @@ pub const VideoSessionCreateInfoKHR = extern struct {
 };
 pub const VideoSessionParametersCreateInfoKHR = extern struct {
     s_type: StructureType = .video_session_parameters_create_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     video_session_parameters_template: VideoSessionParametersKHR,
     video_session: VideoSessionKHR,
 };
 pub const VideoSessionParametersUpdateInfoKHR = extern struct {
     s_type: StructureType = .video_session_parameters_update_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     update_sequence_count: u32,
 };
 pub const VideoBeginCodingInfoKHR = extern struct {
     s_type: StructureType = .video_begin_coding_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoBeginCodingFlagsKHR,
     codec_quality_preset: VideoCodingQualityPresetFlagsKHR,
     video_session: VideoSessionKHR,
@@ -5321,17 +5318,17 @@ pub const VideoBeginCodingInfoKHR = extern struct {
 };
 pub const VideoEndCodingInfoKHR = extern struct {
     s_type: StructureType = .video_end_coding_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoEndCodingFlagsKHR,
 };
 pub const VideoCodingControlInfoKHR = extern struct {
     s_type: StructureType = .video_coding_control_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoCodingControlFlagsKHR,
 };
 pub const VideoEncodeInfoKHR = extern struct {
     s_type: StructureType = .video_encode_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoEncodeFlagsKHR,
     quality_level: u32,
     coded_extent: Extent2D,
@@ -5345,7 +5342,7 @@ pub const VideoEncodeInfoKHR = extern struct {
 };
 pub const VideoEncodeRateControlInfoKHR = extern struct {
     s_type: StructureType = .video_encode_rate_control_info_khr,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoEncodeRateControlFlagsKHR,
     rate_control_mode: VideoEncodeRateControlModeFlagsKHR,
     average_bitrate: u32,
@@ -5356,7 +5353,7 @@ pub const VideoEncodeRateControlInfoKHR = extern struct {
 };
 pub const VideoEncodeH264CapabilitiesEXT = extern struct {
     s_type: StructureType = .video_encode_h264_capabilities_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoEncodeH264CapabilitiesFlagsEXT,
     input_mode_flags: VideoEncodeH264InputModeFlagsEXT,
     output_mode_flags: VideoEncodeH264OutputModeFlagsEXT,
@@ -5371,7 +5368,7 @@ pub const VideoEncodeH264CapabilitiesEXT = extern struct {
 };
 pub const VideoEncodeH264SessionCreateInfoEXT = extern struct {
     s_type: StructureType = .video_encode_h264_session_create_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     flags: VideoEncodeH264CreateFlagsEXT,
     max_picture_size_in_mbs: Extent2D,
     p_std_extension_version: *const ExtensionProperties,
@@ -5380,7 +5377,7 @@ pub const StdVideoEncodeH264SliceHeader = if (@hasDecl(root, "StdVideoEncodeH264
 pub const StdVideoEncodeH264PictureInfo = if (@hasDecl(root, "StdVideoEncodeH264PictureInfo")) root.StdVideoEncodeH264PictureInfo else @compileError("Missing type definition of 'StdVideoEncodeH264PictureInfo'");
 pub const VideoEncodeH264SessionParametersAddInfoEXT = extern struct {
     s_type: StructureType = .video_encode_h264_session_parameters_add_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     sps_std_count: u32,
     p_sps_std: ?[*]const StdVideoH264SequenceParameterSet,
     pps_std_count: u32,
@@ -5388,20 +5385,20 @@ pub const VideoEncodeH264SessionParametersAddInfoEXT = extern struct {
 };
 pub const VideoEncodeH264SessionParametersCreateInfoEXT = extern struct {
     s_type: StructureType = .video_encode_h264_session_parameters_create_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     max_sps_std_count: u32,
     max_pps_std_count: u32,
     p_parameters_add_info: ?*const VideoEncodeH264SessionParametersAddInfoEXT,
 };
 pub const VideoEncodeH264DpbSlotInfoEXT = extern struct {
     s_type: StructureType = .video_encode_h264_dpb_slot_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     slot_index: i8,
     p_std_picture_info: *const StdVideoEncodeH264PictureInfo,
 };
 pub const VideoEncodeH264VclFrameInfoEXT = extern struct {
     s_type: StructureType = .video_encode_h264_vcl_frame_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     ref_default_final_list_0_entry_count: u8,
     p_ref_default_final_list_0_entries: [*]const VideoEncodeH264DpbSlotInfoEXT,
     ref_default_final_list_1_entry_count: u8,
@@ -5412,7 +5409,7 @@ pub const VideoEncodeH264VclFrameInfoEXT = extern struct {
 };
 pub const VideoEncodeH264EmitPictureParametersEXT = extern struct {
     s_type: StructureType = .video_encode_h264_emit_picture_parameters_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     sps_id: u8,
     emit_sps_enable: Bool32,
     pps_id_entry_count: u32,
@@ -5420,12 +5417,12 @@ pub const VideoEncodeH264EmitPictureParametersEXT = extern struct {
 };
 pub const VideoEncodeH264ProfileEXT = extern struct {
     s_type: StructureType = .video_encode_h264_profile_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     std_profile_idc: StdVideoH264ProfileIdc,
 };
 pub const VideoEncodeH264NaluSliceEXT = extern struct {
     s_type: StructureType = .video_encode_h264_nalu_slice_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     p_slice_header_std: *const StdVideoEncodeH264SliceHeader,
     mb_count: u32,
     ref_final_list_0_entry_count: u8,
@@ -5438,39 +5435,39 @@ pub const VideoEncodeH264NaluSliceEXT = extern struct {
 };
 pub const PhysicalDeviceInheritedViewportScissorFeaturesNV = extern struct {
     s_type: StructureType = .physical_device_inherited_viewport_scissor_features_nv,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     inherited_viewport_scissor_2d: Bool32,
 };
 pub const CommandBufferInheritanceViewportScissorInfoNV = extern struct {
     s_type: StructureType = .command_buffer_inheritance_viewport_scissor_info_nv,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     viewport_scissor_2d: Bool32,
     viewport_depth_count: u32,
     p_viewport_depths: *const Viewport,
 };
 pub const PhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_ycbcr_2_plane_444_formats_features_ext,
-    p_next: ?*c_void = null,
+    p_next: ?*anyopaque = null,
     ycbcr_2plane_444_formats: Bool32,
 };
 pub const PhysicalDeviceProvokingVertexFeaturesEXT = extern struct {
     s_type: StructureType = .physical_device_provoking_vertex_features_ext,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     provoking_vertex_last: Bool32,
     transform_feedback_preserves_provoking_vertex: Bool32,
 };
 pub const PhysicalDeviceProvokingVertexPropertiesEXT = extern struct {
     s_type: StructureType = .physical_device_provoking_vertex_properties_ext,
-    p_next: *c_void = null,
+    p_next: *anyopaque = null,
     provoking_vertex_mode_per_pipeline: Bool32,
     transform_feedback_preserves_triangle_fan_provoking_vertex: Bool32,
 };
 pub const PipelineRasterizationProvokingVertexStateCreateInfoEXT = extern struct {
     s_type: StructureType = .pipeline_rasterization_provoking_vertex_state_create_info_ext,
-    p_next: *const c_void = null,
+    p_next: *const anyopaque = null,
     provoking_vertex_mode: ProvokingVertexModeEXT,
 };
-pub const ImageLayout = extern enum(i32) {
+pub const ImageLayout = enum(i32) {
     @"undefined" = 0,
     general = 1,
     color_attachment_optimal = 2,
@@ -5494,44 +5491,44 @@ pub const ImageLayout = extern enum(i32) {
     video_encode_src_khr = 1000299001,
     video_encode_dpb_khr = 1000299002,
     shared_present_khr = 1000111000,
-    depth_read_only_stencil_attachment_optimal_khr = 1000117000, // alias of depth_read_only_stencil_attachment_optimal
-    depth_attachment_stencil_read_only_optimal_khr = 1000117001, // alias of depth_attachment_stencil_read_only_optimal
+    //depth_read_only_stencil_attachment_optimal_khr = 1000117000, // alias of depth_read_only_stencil_attachment_optimal
+    //depth_attachment_stencil_read_only_optimal_khr = 1000117001, // alias of depth_attachment_stencil_read_only_optimal
     shading_rate_optimal_nv = 1000164003,
     fragment_density_map_optimal_ext = 1000218000,
-    fragment_shading_rate_attachment_optimal_khr = 1000164003, // alias of shading_rate_optimal_nv
-    depth_attachment_optimal_khr = 1000241000, // alias of depth_attachment_optimal
-    depth_read_only_optimal_khr = 1000241001, // alias of depth_read_only_optimal
-    stencil_attachment_optimal_khr = 1000241002, // alias of stencil_attachment_optimal
-    stencil_read_only_optimal_khr = 1000241003, // alias of stencil_read_only_optimal
+    //fragment_shading_rate_attachment_optimal_khr = 1000164003, // alias of shading_rate_optimal_nv
+    //depth_attachment_optimal_khr = 1000241000, // alias of depth_attachment_optimal
+    //depth_read_only_optimal_khr = 1000241001, // alias of depth_read_only_optimal
+    //stencil_attachment_optimal_khr = 1000241002, // alias of stencil_attachment_optimal
+    //stencil_read_only_optimal_khr = 1000241003, // alias of stencil_read_only_optimal
     read_only_optimal_khr = 1000314000,
     attachment_optimal_khr = 1000314001,
     _,
 };
-pub const AttachmentLoadOp = extern enum(i32) {
+pub const AttachmentLoadOp = enum(i32) {
     load = 0,
     clear = 1,
     dont_care = 2,
     _,
 };
-pub const AttachmentStoreOp = extern enum(i32) {
+pub const AttachmentStoreOp = enum(i32) {
     store = 0,
     dont_care = 1,
     none_qcom = 1000301000,
     _,
 };
-pub const ImageType = extern enum(i32) {
+pub const ImageType = enum(i32) {
     @"1d" = 0,
     @"2d" = 1,
     @"3d" = 2,
     _,
 };
-pub const ImageTiling = extern enum(i32) {
+pub const ImageTiling = enum(i32) {
     optimal = 0,
     linear = 1,
     drm_format_modifier_ext = 1000158000,
     _,
 };
-pub const ImageViewType = extern enum(i32) {
+pub const ImageViewType = enum(i32) {
     @"1d" = 0,
     @"2d" = 1,
     @"3d" = 2,
@@ -5541,12 +5538,12 @@ pub const ImageViewType = extern enum(i32) {
     cube_array = 6,
     _,
 };
-pub const CommandBufferLevel = extern enum(i32) {
+pub const CommandBufferLevel = enum(i32) {
     primary = 0,
     secondary = 1,
     _,
 };
-pub const ComponentSwizzle = extern enum(i32) {
+pub const ComponentSwizzle = enum(i32) {
     identity = 0,
     zero = 1,
     one = 2,
@@ -5556,7 +5553,7 @@ pub const ComponentSwizzle = extern enum(i32) {
     a = 6,
     _,
 };
-pub const DescriptorType = extern enum(i32) {
+pub const DescriptorType = enum(i32) {
     sampler = 0,
     combined_image_sampler = 1,
     sampled_image = 2,
@@ -5574,7 +5571,7 @@ pub const DescriptorType = extern enum(i32) {
     mutable_valve = 1000351000,
     _,
 };
-pub const QueryType = extern enum(i32) {
+pub const QueryType = enum(i32) {
     occlusion = 0,
     pipeline_statistics = 1,
     timestamp = 2,
@@ -5588,7 +5585,7 @@ pub const QueryType = extern enum(i32) {
     performance_query_intel = 1000210000,
     _,
 };
-pub const BorderColor = extern enum(i32) {
+pub const BorderColor = enum(i32) {
     float_transparent_black = 0,
     int_transparent_black = 1,
     float_opaque_black = 2,
@@ -5599,14 +5596,14 @@ pub const BorderColor = extern enum(i32) {
     int_custom_ext = 1000287004,
     _,
 };
-pub const PipelineBindPoint = extern enum(i32) {
+pub const PipelineBindPoint = enum(i32) {
     graphics = 0,
     compute = 1,
     ray_tracing_khr = 1000165000,
-    ray_tracing_nv = 1000165000, // alias of ray_tracing_khr
+    //ray_tracing_nv = 1000165000, // alias of ray_tracing_khr
     _,
 };
-pub const PipelineCacheHeaderVersion = extern enum(i32) {
+pub const PipelineCacheHeaderVersion = enum(i32) {
     one = 1,
     _,
 };
@@ -5645,7 +5642,7 @@ pub const PipelineCacheCreateFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(PipelineCacheCreateFlags, Flags);
 };
-pub const PrimitiveTopology = extern enum(i32) {
+pub const PrimitiveTopology = enum(i32) {
     point_list = 0,
     line_list = 1,
     line_strip = 2,
@@ -5659,41 +5656,41 @@ pub const PrimitiveTopology = extern enum(i32) {
     patch_list = 10,
     _,
 };
-pub const SharingMode = extern enum(i32) {
+pub const SharingMode = enum(i32) {
     exclusive = 0,
     concurrent = 1,
     _,
 };
-pub const IndexType = extern enum(i32) {
+pub const IndexType = enum(i32) {
     uint16 = 0,
     uint32 = 1,
     none_khr = 1000165000,
-    none_nv = 1000165000, // alias of none_khr
+    //none_nv = 1000165000, // alias of none_khr
     uint8_ext = 1000265000,
     _,
 };
-pub const Filter = extern enum(i32) {
+pub const Filter = enum(i32) {
     nearest = 0,
     linear = 1,
     cubic_img = 1000015000,
-    cubic_ext = 1000015000, // alias of cubic_img
+    //cubic_ext = 1000015000, // alias of cubic_img
     _,
 };
-pub const SamplerMipmapMode = extern enum(i32) {
+pub const SamplerMipmapMode = enum(i32) {
     nearest = 0,
     linear = 1,
     _,
 };
-pub const SamplerAddressMode = extern enum(i32) {
+pub const SamplerAddressMode = enum(i32) {
     repeat = 0,
     mirrored_repeat = 1,
     clamp_to_edge = 2,
     clamp_to_border = 3,
     mirror_clamp_to_edge = 4,
-    mirror_clamp_to_edge_khr = 4, // alias of mirror_clamp_to_edge
+    //mirror_clamp_to_edge_khr = 4, // alias of mirror_clamp_to_edge
     _,
 };
-pub const CompareOp = extern enum(i32) {
+pub const CompareOp = enum(i32) {
     never = 0,
     less = 1,
     equal = 2,
@@ -5704,19 +5701,19 @@ pub const CompareOp = extern enum(i32) {
     always = 7,
     _,
 };
-pub const PolygonMode = extern enum(i32) {
+pub const PolygonMode = enum(i32) {
     fill = 0,
     line = 1,
     point = 2,
     fill_rectangle_nv = 1000153000,
     _,
 };
-pub const FrontFace = extern enum(i32) {
+pub const FrontFace = enum(i32) {
     counter_clockwise = 0,
     clockwise = 1,
     _,
 };
-pub const BlendFactor = extern enum(i32) {
+pub const BlendFactor = enum(i32) {
     zero = 0,
     one = 1,
     src_color = 2,
@@ -5738,7 +5735,7 @@ pub const BlendFactor = extern enum(i32) {
     one_minus_src1_alpha = 18,
     _,
 };
-pub const BlendOp = extern enum(i32) {
+pub const BlendOp = enum(i32) {
     add = 0,
     subtract = 1,
     reverse_subtract = 2,
@@ -5792,7 +5789,7 @@ pub const BlendOp = extern enum(i32) {
     blue_ext = 1000148045,
     _,
 };
-pub const StencilOp = extern enum(i32) {
+pub const StencilOp = enum(i32) {
     keep = 0,
     zero = 1,
     replace = 2,
@@ -5803,7 +5800,7 @@ pub const StencilOp = extern enum(i32) {
     decrement_and_wrap = 7,
     _,
 };
-pub const LogicOp = extern enum(i32) {
+pub const LogicOp = enum(i32) {
     clear = 0,
     @"and" = 1,
     and_reverse = 2,
@@ -5822,11 +5819,11 @@ pub const LogicOp = extern enum(i32) {
     set = 15,
     _,
 };
-pub const InternalAllocationType = extern enum(i32) {
+pub const InternalAllocationType = enum(i32) {
     executable = 0,
     _,
 };
-pub const SystemAllocationScope = extern enum(i32) {
+pub const SystemAllocationScope = enum(i32) {
     command = 0,
     object = 1,
     cache = 2,
@@ -5834,7 +5831,7 @@ pub const SystemAllocationScope = extern enum(i32) {
     instance = 4,
     _,
 };
-pub const PhysicalDeviceType = extern enum(i32) {
+pub const PhysicalDeviceType = enum(i32) {
     other = 0,
     integrated_gpu = 1,
     discrete_gpu = 2,
@@ -5842,12 +5839,12 @@ pub const PhysicalDeviceType = extern enum(i32) {
     cpu = 4,
     _,
 };
-pub const VertexInputRate = extern enum(i32) {
+pub const VertexInputRate = enum(i32) {
     vertex = 0,
     instance = 1,
     _,
 };
-pub const Format = extern enum(i32) {
+pub const Format = enum(i32) {
     @"undefined" = 0,
     r4g4_unorm_pack8 = 1,
     r4g4b4a4_unorm_pack16 = 2,
@@ -6089,40 +6086,40 @@ pub const Format = extern enum(i32) {
     astc_1_0x_10_sfloat_block_ext = 1000066011,
     astc_1_2x_10_sfloat_block_ext = 1000066012,
     astc_1_2x_12_sfloat_block_ext = 1000066013,
-    g8b8g8r8_422_unorm_khr = 1000156000, // alias of g8b8g8r8_422_unorm
-    b8g8r8g8_422_unorm_khr = 1000156001, // alias of b8g8r8g8_422_unorm
-    g8_b8_r8_3plane_420_unorm_khr = 1000156002, // alias of g8_b8_r8_3plane_420_unorm
-    g8_b8r8_2plane_420_unorm_khr = 1000156003, // alias of g8_b8r8_2plane_420_unorm
-    g8_b8_r8_3plane_422_unorm_khr = 1000156004, // alias of g8_b8_r8_3plane_422_unorm
-    g8_b8r8_2plane_422_unorm_khr = 1000156005, // alias of g8_b8r8_2plane_422_unorm
-    g8_b8_r8_3plane_444_unorm_khr = 1000156006, // alias of g8_b8_r8_3plane_444_unorm
-    r10x6_unorm_pack16_khr = 1000156007, // alias of r10x6_unorm_pack16
-    r10x6g10x6_unorm_2pack16_khr = 1000156008, // alias of r10x6g10x6_unorm_2pack16
-    r10x6g10x6b10x6a10x6_unorm_4pack16_khr = 1000156009, // alias of r10x6g10x6b10x6a10x6_unorm_4pack16
-    g10x6b10x6g10x6r10x6_422_unorm_4pack16_khr = 1000156010, // alias of g10x6b10x6g10x6r10x6_422_unorm_4pack16
-    b10x6g10x6r10x6g10x6_422_unorm_4pack16_khr = 1000156011, // alias of b10x6g10x6r10x6g10x6_422_unorm_4pack16
-    g10x6_b10x6_r10x6_3plane_420_unorm_3pack16_khr = 1000156012, // alias of g10x6_b10x6_r10x6_3plane_420_unorm_3pack16
-    g10x6_b10x6r10x6_2plane_420_unorm_3pack16_khr = 1000156013, // alias of g10x6_b10x6r10x6_2plane_420_unorm_3pack16
-    g10x6_b10x6_r10x6_3plane_422_unorm_3pack16_khr = 1000156014, // alias of g10x6_b10x6_r10x6_3plane_422_unorm_3pack16
-    g10x6_b10x6r10x6_2plane_422_unorm_3pack16_khr = 1000156015, // alias of g10x6_b10x6r10x6_2plane_422_unorm_3pack16
-    g10x6_b10x6_r10x6_3plane_444_unorm_3pack16_khr = 1000156016, // alias of g10x6_b10x6_r10x6_3plane_444_unorm_3pack16
-    r12x4_unorm_pack16_khr = 1000156017, // alias of r12x4_unorm_pack16
-    r12x4g12x4_unorm_2pack16_khr = 1000156018, // alias of r12x4g12x4_unorm_2pack16
-    r12x4g12x4b12x4a12x4_unorm_4pack16_khr = 1000156019, // alias of r12x4g12x4b12x4a12x4_unorm_4pack16
-    g12x4b12x4g12x4r12x4_422_unorm_4pack16_khr = 1000156020, // alias of g12x4b12x4g12x4r12x4_422_unorm_4pack16
-    b12x4g12x4r12x4g12x4_422_unorm_4pack16_khr = 1000156021, // alias of b12x4g12x4r12x4g12x4_422_unorm_4pack16
-    g12x4_b12x4_r12x4_3plane_420_unorm_3pack16_khr = 1000156022, // alias of g12x4_b12x4_r12x4_3plane_420_unorm_3pack16
-    g12x4_b12x4r12x4_2plane_420_unorm_3pack16_khr = 1000156023, // alias of g12x4_b12x4r12x4_2plane_420_unorm_3pack16
-    g12x4_b12x4_r12x4_3plane_422_unorm_3pack16_khr = 1000156024, // alias of g12x4_b12x4_r12x4_3plane_422_unorm_3pack16
-    g12x4_b12x4r12x4_2plane_422_unorm_3pack16_khr = 1000156025, // alias of g12x4_b12x4r12x4_2plane_422_unorm_3pack16
-    g12x4_b12x4_r12x4_3plane_444_unorm_3pack16_khr = 1000156026, // alias of g12x4_b12x4_r12x4_3plane_444_unorm_3pack16
-    g16b16g16r16_422_unorm_khr = 1000156027, // alias of g16b16g16r16_422_unorm
-    b16g16r16g16_422_unorm_khr = 1000156028, // alias of b16g16r16g16_422_unorm
-    g16_b16_r16_3plane_420_unorm_khr = 1000156029, // alias of g16_b16_r16_3plane_420_unorm
-    g16_b16r16_2plane_420_unorm_khr = 1000156030, // alias of g16_b16r16_2plane_420_unorm
-    g16_b16_r16_3plane_422_unorm_khr = 1000156031, // alias of g16_b16_r16_3plane_422_unorm
-    g16_b16r16_2plane_422_unorm_khr = 1000156032, // alias of g16_b16r16_2plane_422_unorm
-    g16_b16_r16_3plane_444_unorm_khr = 1000156033, // alias of g16_b16_r16_3plane_444_unorm
+    //g8b8g8r8_422_unorm_khr = 1000156000, // alias of g8b8g8r8_422_unorm
+    //b8g8r8g8_422_unorm_khr = 1000156001, // alias of b8g8r8g8_422_unorm
+    //g8_b8_r8_3plane_420_unorm_khr = 1000156002, // alias of g8_b8_r8_3plane_420_unorm
+    //g8_b8r8_2plane_420_unorm_khr = 1000156003, // alias of g8_b8r8_2plane_420_unorm
+    //g8_b8_r8_3plane_422_unorm_khr = 1000156004, // alias of g8_b8_r8_3plane_422_unorm
+    //g8_b8r8_2plane_422_unorm_khr = 1000156005, // alias of g8_b8r8_2plane_422_unorm
+    //g8_b8_r8_3plane_444_unorm_khr = 1000156006, // alias of g8_b8_r8_3plane_444_unorm
+    //r10x6_unorm_pack16_khr = 1000156007, // alias of r10x6_unorm_pack16
+    //r10x6g10x6_unorm_2pack16_khr = 1000156008, // alias of r10x6g10x6_unorm_2pack16
+    //r10x6g10x6b10x6a10x6_unorm_4pack16_khr = 1000156009, // alias of r10x6g10x6b10x6a10x6_unorm_4pack16
+    //g10x6b10x6g10x6r10x6_422_unorm_4pack16_khr = 1000156010, // alias of g10x6b10x6g10x6r10x6_422_unorm_4pack16
+    //b10x6g10x6r10x6g10x6_422_unorm_4pack16_khr = 1000156011, // alias of b10x6g10x6r10x6g10x6_422_unorm_4pack16
+    //g10x6_b10x6_r10x6_3plane_420_unorm_3pack16_khr = 1000156012, // alias of g10x6_b10x6_r10x6_3plane_420_unorm_3pack16
+    //g10x6_b10x6r10x6_2plane_420_unorm_3pack16_khr = 1000156013, // alias of g10x6_b10x6r10x6_2plane_420_unorm_3pack16
+    //g10x6_b10x6_r10x6_3plane_422_unorm_3pack16_khr = 1000156014, // alias of g10x6_b10x6_r10x6_3plane_422_unorm_3pack16
+    //g10x6_b10x6r10x6_2plane_422_unorm_3pack16_khr = 1000156015, // alias of g10x6_b10x6r10x6_2plane_422_unorm_3pack16
+    //g10x6_b10x6_r10x6_3plane_444_unorm_3pack16_khr = 1000156016, // alias of g10x6_b10x6_r10x6_3plane_444_unorm_3pack16
+    //r12x4_unorm_pack16_khr = 1000156017, // alias of r12x4_unorm_pack16
+    //r12x4g12x4_unorm_2pack16_khr = 1000156018, // alias of r12x4g12x4_unorm_2pack16
+    //r12x4g12x4b12x4a12x4_unorm_4pack16_khr = 1000156019, // alias of r12x4g12x4b12x4a12x4_unorm_4pack16
+    //g12x4b12x4g12x4r12x4_422_unorm_4pack16_khr = 1000156020, // alias of g12x4b12x4g12x4r12x4_422_unorm_4pack16
+    //b12x4g12x4r12x4g12x4_422_unorm_4pack16_khr = 1000156021, // alias of b12x4g12x4r12x4g12x4_422_unorm_4pack16
+    //g12x4_b12x4_r12x4_3plane_420_unorm_3pack16_khr = 1000156022, // alias of g12x4_b12x4_r12x4_3plane_420_unorm_3pack16
+    //g12x4_b12x4r12x4_2plane_420_unorm_3pack16_khr = 1000156023, // alias of g12x4_b12x4r12x4_2plane_420_unorm_3pack16
+    //g12x4_b12x4_r12x4_3plane_422_unorm_3pack16_khr = 1000156024, // alias of g12x4_b12x4_r12x4_3plane_422_unorm_3pack16
+    //g12x4_b12x4r12x4_2plane_422_unorm_3pack16_khr = 1000156025, // alias of g12x4_b12x4r12x4_2plane_422_unorm_3pack16
+    //g12x4_b12x4_r12x4_3plane_444_unorm_3pack16_khr = 1000156026, // alias of g12x4_b12x4_r12x4_3plane_444_unorm_3pack16
+    //g16b16g16r16_422_unorm_khr = 1000156027, // alias of g16b16g16r16_422_unorm
+    //b16g16r16g16_422_unorm_khr = 1000156028, // alias of b16g16r16g16_422_unorm
+    //g16_b16_r16_3plane_420_unorm_khr = 1000156029, // alias of g16_b16_r16_3plane_420_unorm
+    //g16_b16r16_2plane_420_unorm_khr = 1000156030, // alias of g16_b16r16_2plane_420_unorm
+    //g16_b16_r16_3plane_422_unorm_khr = 1000156031, // alias of g16_b16_r16_3plane_422_unorm
+    //g16_b16r16_2plane_422_unorm_khr = 1000156032, // alias of g16_b16r16_2plane_422_unorm
+    //g16_b16_r16_3plane_444_unorm_khr = 1000156033, // alias of g16_b16_r16_3plane_444_unorm
     g8_b8r8_2plane_444_unorm_ext = 1000330000,
     g10x6_b10x6r10x6_2plane_444_unorm_3pack16_ext = 1000330001,
     g12x4_b12x4r12x4_2plane_444_unorm_3pack16_ext = 1000330002,
@@ -6131,7 +6128,7 @@ pub const Format = extern enum(i32) {
     a4b4g4r4_unorm_pack16_ext = 1000340001,
     _,
 };
-pub const StructureType = extern enum(i32) {
+pub const StructureType = enum(i32) {
     application_info = 0,
     instance_create_info = 1,
     device_queue_create_info = 2,
@@ -6218,7 +6215,7 @@ pub const StructureType = extern enum(i32) {
     physical_device_multiview_features = 1000053001,
     physical_device_multiview_properties = 1000053002,
     physical_device_variable_pointers_features = 1000120000,
-    physical_device_variable_pointer_features = 1000120000, // alias of physical_device_variable_pointers_features
+    //physical_device_variable_pointer_features = 1000120000, // alias of physical_device_variable_pointers_features
     protected_submit_info = 1000145000,
     physical_device_protected_memory_features = 1000145001,
     physical_device_protected_memory_properties = 1000145002,
@@ -6247,7 +6244,7 @@ pub const StructureType = extern enum(i32) {
     physical_device_maintenance_3_properties = 1000168000,
     descriptor_set_layout_support = 1000168001,
     physical_device_shader_draw_parameters_features = 1000063000,
-    physical_device_shader_draw_parameter_features = 1000063000, // alias of physical_device_shader_draw_parameters_features
+    //physical_device_shader_draw_parameter_features = 1000063000, // alias of physical_device_shader_draw_parameters_features
     physical_device_vulkan_1_1_features = 49,
     physical_device_vulkan_1_1_properties = 50,
     physical_device_vulkan_1_2_features = 51,
@@ -6366,45 +6363,45 @@ pub const StructureType = extern enum(i32) {
     texture_lod_gather_format_properties_amd = 1000041000,
     stream_descriptor_surface_create_info_ggp = 1000049000,
     physical_device_corner_sampled_image_features_nv = 1000050000,
-    render_pass_multiview_create_info_khr = 1000053000, // alias of render_pass_multiview_create_info
-    physical_device_multiview_features_khr = 1000053001, // alias of physical_device_multiview_features
-    physical_device_multiview_properties_khr = 1000053002, // alias of physical_device_multiview_properties
+    //render_pass_multiview_create_info_khr = 1000053000, // alias of render_pass_multiview_create_info
+    //physical_device_multiview_features_khr = 1000053001, // alias of physical_device_multiview_features
+    //physical_device_multiview_properties_khr = 1000053002, // alias of physical_device_multiview_properties
     external_memory_image_create_info_nv = 1000056000,
     export_memory_allocate_info_nv = 1000056001,
     import_memory_win32_handle_info_nv = 1000057000,
     export_memory_win32_handle_info_nv = 1000057001,
     win32_keyed_mutex_acquire_release_info_nv = 1000058000,
-    physical_device_features_2_khr = 1000059000, // alias of physical_device_features_2
-    physical_device_properties_2_khr = 1000059001, // alias of physical_device_properties_2
-    format_properties_2_khr = 1000059002, // alias of format_properties_2
-    image_format_properties_2_khr = 1000059003, // alias of image_format_properties_2
-    physical_device_image_format_info_2_khr = 1000059004, // alias of physical_device_image_format_info_2
-    queue_family_properties_2_khr = 1000059005, // alias of queue_family_properties_2
-    physical_device_memory_properties_2_khr = 1000059006, // alias of physical_device_memory_properties_2
-    sparse_image_format_properties_2_khr = 1000059007, // alias of sparse_image_format_properties_2
-    physical_device_sparse_image_format_info_2_khr = 1000059008, // alias of physical_device_sparse_image_format_info_2
-    memory_allocate_flags_info_khr = 1000060000, // alias of memory_allocate_flags_info
-    device_group_render_pass_begin_info_khr = 1000060003, // alias of device_group_render_pass_begin_info
-    device_group_command_buffer_begin_info_khr = 1000060004, // alias of device_group_command_buffer_begin_info
-    device_group_submit_info_khr = 1000060005, // alias of device_group_submit_info
-    device_group_bind_sparse_info_khr = 1000060006, // alias of device_group_bind_sparse_info
-    bind_buffer_memory_device_group_info_khr = 1000060013, // alias of bind_buffer_memory_device_group_info
-    bind_image_memory_device_group_info_khr = 1000060014, // alias of bind_image_memory_device_group_info
+    //physical_device_features_2_khr = 1000059000, // alias of physical_device_features_2
+    //physical_device_properties_2_khr = 1000059001, // alias of physical_device_properties_2
+    //format_properties_2_khr = 1000059002, // alias of format_properties_2
+    //image_format_properties_2_khr = 1000059003, // alias of image_format_properties_2
+    //physical_device_image_format_info_2_khr = 1000059004, // alias of physical_device_image_format_info_2
+    //queue_family_properties_2_khr = 1000059005, // alias of queue_family_properties_2
+    //physical_device_memory_properties_2_khr = 1000059006, // alias of physical_device_memory_properties_2
+    //sparse_image_format_properties_2_khr = 1000059007, // alias of sparse_image_format_properties_2
+    //physical_device_sparse_image_format_info_2_khr = 1000059008, // alias of physical_device_sparse_image_format_info_2
+    //memory_allocate_flags_info_khr = 1000060000, // alias of memory_allocate_flags_info
+    //device_group_render_pass_begin_info_khr = 1000060003, // alias of device_group_render_pass_begin_info
+    //device_group_command_buffer_begin_info_khr = 1000060004, // alias of device_group_command_buffer_begin_info
+    //device_group_submit_info_khr = 1000060005, // alias of device_group_submit_info
+    //device_group_bind_sparse_info_khr = 1000060006, // alias of device_group_bind_sparse_info
+    //bind_buffer_memory_device_group_info_khr = 1000060013, // alias of bind_buffer_memory_device_group_info
+    //bind_image_memory_device_group_info_khr = 1000060014, // alias of bind_image_memory_device_group_info
     validation_flags_ext = 1000061000,
     vi_surface_create_info_nn = 1000062000,
     physical_device_texture_compression_astc_hdr_features_ext = 1000066000,
     image_view_astc_decode_mode_ext = 1000067000,
     physical_device_astc_decode_features_ext = 1000067001,
-    physical_device_group_properties_khr = 1000070000, // alias of physical_device_group_properties
-    device_group_device_create_info_khr = 1000070001, // alias of device_group_device_create_info
-    physical_device_external_image_format_info_khr = 1000071000, // alias of physical_device_external_image_format_info
-    external_image_format_properties_khr = 1000071001, // alias of external_image_format_properties
-    physical_device_external_buffer_info_khr = 1000071002, // alias of physical_device_external_buffer_info
-    external_buffer_properties_khr = 1000071003, // alias of external_buffer_properties
-    physical_device_id_properties_khr = 1000071004, // alias of physical_device_id_properties
-    external_memory_buffer_create_info_khr = 1000072000, // alias of external_memory_buffer_create_info
-    external_memory_image_create_info_khr = 1000072001, // alias of external_memory_image_create_info
-    export_memory_allocate_info_khr = 1000072002, // alias of export_memory_allocate_info
+    //physical_device_group_properties_khr = 1000070000, // alias of physical_device_group_properties
+    //device_group_device_create_info_khr = 1000070001, // alias of device_group_device_create_info
+    //physical_device_external_image_format_info_khr = 1000071000, // alias of physical_device_external_image_format_info
+    //external_image_format_properties_khr = 1000071001, // alias of external_image_format_properties
+    //physical_device_external_buffer_info_khr = 1000071002, // alias of physical_device_external_buffer_info
+    //external_buffer_properties_khr = 1000071003, // alias of external_buffer_properties
+    //physical_device_id_properties_khr = 1000071004, // alias of physical_device_id_properties
+    //external_memory_buffer_create_info_khr = 1000072000, // alias of external_memory_buffer_create_info
+    //external_memory_image_create_info_khr = 1000072001, // alias of external_memory_image_create_info
+    //export_memory_allocate_info_khr = 1000072002, // alias of export_memory_allocate_info
     import_memory_win32_handle_info_khr = 1000073000,
     export_memory_win32_handle_info_khr = 1000073001,
     memory_win32_handle_properties_khr = 1000073002,
@@ -6413,9 +6410,9 @@ pub const StructureType = extern enum(i32) {
     memory_fd_properties_khr = 1000074001,
     memory_get_fd_info_khr = 1000074002,
     win32_keyed_mutex_acquire_release_info_khr = 1000075000,
-    physical_device_external_semaphore_info_khr = 1000076000, // alias of physical_device_external_semaphore_info
-    external_semaphore_properties_khr = 1000076001, // alias of external_semaphore_properties
-    export_semaphore_create_info_khr = 1000077000, // alias of export_semaphore_create_info
+    //physical_device_external_semaphore_info_khr = 1000076000, // alias of physical_device_external_semaphore_info
+    //external_semaphore_properties_khr = 1000076001, // alias of external_semaphore_properties
+    //export_semaphore_create_info_khr = 1000077000, // alias of export_semaphore_create_info
     import_semaphore_win32_handle_info_khr = 1000078000,
     export_semaphore_win32_handle_info_khr = 1000078001,
     d3d12_fence_submit_info_khr = 1000078002,
@@ -6426,11 +6423,11 @@ pub const StructureType = extern enum(i32) {
     command_buffer_inheritance_conditional_rendering_info_ext = 1000081000,
     physical_device_conditional_rendering_features_ext = 1000081001,
     conditional_rendering_begin_info_ext = 1000081002,
-    physical_device_shader_float16_int8_features_khr = 1000082000, // alias of physical_device_shader_float16_int8_features
-    physical_device_float16_int8_features_khr = 1000082000, // alias of physical_device_shader_float16_int8_features
-    physical_device_16bit_storage_features_khr = 1000083000, // alias of physical_device_16bit_storage_features
+    //physical_device_shader_float16_int8_features_khr = 1000082000, // alias of physical_device_shader_float16_int8_features
+    //physical_device_float16_int8_features_khr = 1000082000, // alias of physical_device_shader_float16_int8_features
+    //physical_device_16bit_storage_features_khr = 1000083000, // alias of physical_device_16bit_storage_features
     present_regions_khr = 1000084000,
-    descriptor_update_template_create_info_khr = 1000085000, // alias of descriptor_update_template_create_info
+    //descriptor_update_template_create_info_khr = 1000085000, // alias of descriptor_update_template_create_info
     pipeline_viewport_w_scaling_state_create_info_nv = 1000087000,
     surface_capabilities_2_ext = 1000090000,
     display_power_info_ext = 1000091000,
@@ -6447,21 +6444,21 @@ pub const StructureType = extern enum(i32) {
     physical_device_depth_clip_enable_features_ext = 1000102000,
     pipeline_rasterization_depth_clip_state_create_info_ext = 1000102001,
     hdr_metadata_ext = 1000105000,
-    physical_device_imageless_framebuffer_features_khr = 1000108000, // alias of physical_device_imageless_framebuffer_features
-    framebuffer_attachments_create_info_khr = 1000108001, // alias of framebuffer_attachments_create_info
-    framebuffer_attachment_image_info_khr = 1000108002, // alias of framebuffer_attachment_image_info
-    render_pass_attachment_begin_info_khr = 1000108003, // alias of render_pass_attachment_begin_info
-    attachment_description_2_khr = 1000109000, // alias of attachment_description_2
-    attachment_reference_2_khr = 1000109001, // alias of attachment_reference_2
-    subpass_description_2_khr = 1000109002, // alias of subpass_description_2
-    subpass_dependency_2_khr = 1000109003, // alias of subpass_dependency_2
-    render_pass_create_info_2_khr = 1000109004, // alias of render_pass_create_info_2
-    subpass_begin_info_khr = 1000109005, // alias of subpass_begin_info
-    subpass_end_info_khr = 1000109006, // alias of subpass_end_info
+    //physical_device_imageless_framebuffer_features_khr = 1000108000, // alias of physical_device_imageless_framebuffer_features
+    //framebuffer_attachments_create_info_khr = 1000108001, // alias of framebuffer_attachments_create_info
+    //framebuffer_attachment_image_info_khr = 1000108002, // alias of framebuffer_attachment_image_info
+    //render_pass_attachment_begin_info_khr = 1000108003, // alias of render_pass_attachment_begin_info
+    //attachment_description_2_khr = 1000109000, // alias of attachment_description_2
+    //attachment_reference_2_khr = 1000109001, // alias of attachment_reference_2
+    //subpass_description_2_khr = 1000109002, // alias of subpass_description_2
+    //subpass_dependency_2_khr = 1000109003, // alias of subpass_dependency_2
+    //render_pass_create_info_2_khr = 1000109004, // alias of render_pass_create_info_2
+    //subpass_begin_info_khr = 1000109005, // alias of subpass_begin_info
+    //subpass_end_info_khr = 1000109006, // alias of subpass_end_info
     shared_present_surface_capabilities_khr = 1000111000,
-    physical_device_external_fence_info_khr = 1000112000, // alias of physical_device_external_fence_info
-    external_fence_properties_khr = 1000112001, // alias of external_fence_properties
-    export_fence_create_info_khr = 1000113000, // alias of export_fence_create_info
+    //physical_device_external_fence_info_khr = 1000112000, // alias of physical_device_external_fence_info
+    //external_fence_properties_khr = 1000112001, // alias of external_fence_properties
+    //export_fence_create_info_khr = 1000113000, // alias of export_fence_create_info
     import_fence_win32_handle_info_khr = 1000114000,
     export_fence_win32_handle_info_khr = 1000114001,
     fence_get_win32_handle_info_khr = 1000114002,
@@ -6474,15 +6471,15 @@ pub const StructureType = extern enum(i32) {
     acquire_profiling_lock_info_khr = 1000116004,
     performance_counter_khr = 1000116005,
     performance_counter_description_khr = 1000116006,
-    physical_device_point_clipping_properties_khr = 1000117000, // alias of physical_device_point_clipping_properties
-    render_pass_input_attachment_aspect_create_info_khr = 1000117001, // alias of render_pass_input_attachment_aspect_create_info
-    image_view_usage_create_info_khr = 1000117002, // alias of image_view_usage_create_info
-    pipeline_tessellation_domain_origin_state_create_info_khr = 1000117003, // alias of pipeline_tessellation_domain_origin_state_create_info
+    //physical_device_point_clipping_properties_khr = 1000117000, // alias of physical_device_point_clipping_properties
+    //render_pass_input_attachment_aspect_create_info_khr = 1000117001, // alias of render_pass_input_attachment_aspect_create_info
+    //image_view_usage_create_info_khr = 1000117002, // alias of image_view_usage_create_info
+    //pipeline_tessellation_domain_origin_state_create_info_khr = 1000117003, // alias of pipeline_tessellation_domain_origin_state_create_info
     physical_device_surface_info_2_khr = 1000119000,
     surface_capabilities_2_khr = 1000119001,
     surface_format_2_khr = 1000119002,
-    physical_device_variable_pointers_features_khr = 1000120000, // alias of physical_device_variable_pointers_features
-    physical_device_variable_pointer_features_khr = 1000120000, // alias of physical_device_variable_pointers_features
+    //physical_device_variable_pointers_features_khr = 1000120000, // alias of physical_device_variable_pointers_features
+    //physical_device_variable_pointer_features_khr = 1000120000, // alias of physical_device_variable_pointers_features
     display_properties_2_khr = 1000121000,
     display_plane_properties_2_khr = 1000121001,
     display_mode_properties_2_khr = 1000121002,
@@ -6490,8 +6487,8 @@ pub const StructureType = extern enum(i32) {
     display_plane_capabilities_2_khr = 1000121004,
     ios_surface_create_info_mvk = 1000122000,
     macos_surface_create_info_mvk = 1000123000,
-    memory_dedicated_requirements_khr = 1000127000, // alias of memory_dedicated_requirements
-    memory_dedicated_allocate_info_khr = 1000127001, // alias of memory_dedicated_allocate_info
+    //memory_dedicated_requirements_khr = 1000127000, // alias of memory_dedicated_requirements
+    //memory_dedicated_allocate_info_khr = 1000127001, // alias of memory_dedicated_allocate_info
     debug_utils_object_name_info_ext = 1000128000,
     debug_utils_object_tag_info_ext = 1000128001,
     debug_utils_label_ext = 1000128002,
@@ -6503,8 +6500,8 @@ pub const StructureType = extern enum(i32) {
     import_android_hardware_buffer_info_android = 1000129003,
     memory_get_android_hardware_buffer_info_android = 1000129004,
     external_format_android = 1000129005,
-    physical_device_sampler_filter_minmax_properties_ext = 1000130000, // alias of physical_device_sampler_filter_minmax_properties
-    sampler_reduction_mode_create_info_ext = 1000130001, // alias of sampler_reduction_mode_create_info
+    //physical_device_sampler_filter_minmax_properties_ext = 1000130000, // alias of physical_device_sampler_filter_minmax_properties
+    //sampler_reduction_mode_create_info_ext = 1000130001, // alias of sampler_reduction_mode_create_info
     physical_device_inline_uniform_block_features_ext = 1000138000,
     physical_device_inline_uniform_block_properties_ext = 1000138001,
     write_descriptor_set_inline_uniform_block_ext = 1000138002,
@@ -6514,12 +6511,12 @@ pub const StructureType = extern enum(i32) {
     pipeline_sample_locations_state_create_info_ext = 1000143002,
     physical_device_sample_locations_properties_ext = 1000143003,
     multisample_properties_ext = 1000143004,
-    buffer_memory_requirements_info_2_khr = 1000146000, // alias of buffer_memory_requirements_info_2
-    image_memory_requirements_info_2_khr = 1000146001, // alias of image_memory_requirements_info_2
-    image_sparse_memory_requirements_info_2_khr = 1000146002, // alias of image_sparse_memory_requirements_info_2
-    memory_requirements_2_khr = 1000146003, // alias of memory_requirements_2
-    sparse_image_memory_requirements_2_khr = 1000146004, // alias of sparse_image_memory_requirements_2
-    image_format_list_create_info_khr = 1000147000, // alias of image_format_list_create_info
+    //buffer_memory_requirements_info_2_khr = 1000146000, // alias of buffer_memory_requirements_info_2
+    //image_memory_requirements_info_2_khr = 1000146001, // alias of image_memory_requirements_info_2
+    //image_sparse_memory_requirements_info_2_khr = 1000146002, // alias of image_sparse_memory_requirements_info_2
+    //memory_requirements_2_khr = 1000146003, // alias of memory_requirements_2
+    //sparse_image_memory_requirements_2_khr = 1000146004, // alias of sparse_image_memory_requirements_2
+    //image_format_list_create_info_khr = 1000147000, // alias of image_format_list_create_info
     physical_device_blend_operation_advanced_features_ext = 1000148000,
     physical_device_blend_operation_advanced_properties_ext = 1000148001,
     pipeline_color_blend_advanced_state_create_info_ext = 1000148002,
@@ -6548,14 +6545,14 @@ pub const StructureType = extern enum(i32) {
     pipeline_coverage_modulation_state_create_info_nv = 1000152000,
     physical_device_shader_sm_builtins_features_nv = 1000154000,
     physical_device_shader_sm_builtins_properties_nv = 1000154001,
-    sampler_ycbcr_conversion_create_info_khr = 1000156000, // alias of sampler_ycbcr_conversion_create_info
-    sampler_ycbcr_conversion_info_khr = 1000156001, // alias of sampler_ycbcr_conversion_info
-    bind_image_plane_memory_info_khr = 1000156002, // alias of bind_image_plane_memory_info
-    image_plane_memory_requirements_info_khr = 1000156003, // alias of image_plane_memory_requirements_info
-    physical_device_sampler_ycbcr_conversion_features_khr = 1000156004, // alias of physical_device_sampler_ycbcr_conversion_features
-    sampler_ycbcr_conversion_image_format_properties_khr = 1000156005, // alias of sampler_ycbcr_conversion_image_format_properties
-    bind_buffer_memory_info_khr = 1000157000, // alias of bind_buffer_memory_info
-    bind_image_memory_info_khr = 1000157001, // alias of bind_image_memory_info
+    //sampler_ycbcr_conversion_create_info_khr = 1000156000, // alias of sampler_ycbcr_conversion_create_info
+    //sampler_ycbcr_conversion_info_khr = 1000156001, // alias of sampler_ycbcr_conversion_info
+    //bind_image_plane_memory_info_khr = 1000156002, // alias of bind_image_plane_memory_info
+    //image_plane_memory_requirements_info_khr = 1000156003, // alias of image_plane_memory_requirements_info
+    //physical_device_sampler_ycbcr_conversion_features_khr = 1000156004, // alias of physical_device_sampler_ycbcr_conversion_features
+    //sampler_ycbcr_conversion_image_format_properties_khr = 1000156005, // alias of sampler_ycbcr_conversion_image_format_properties
+    //bind_buffer_memory_info_khr = 1000157000, // alias of bind_buffer_memory_info
+    //bind_image_memory_info_khr = 1000157001, // alias of bind_image_memory_info
     drm_format_modifier_properties_list_ext = 1000158000,
     physical_device_image_drm_format_modifier_info_ext = 1000158002,
     image_drm_format_modifier_list_create_info_ext = 1000158003,
@@ -6563,11 +6560,11 @@ pub const StructureType = extern enum(i32) {
     image_drm_format_modifier_properties_ext = 1000158005,
     validation_cache_create_info_ext = 1000160000,
     shader_module_validation_cache_create_info_ext = 1000160001,
-    descriptor_set_layout_binding_flags_create_info_ext = 1000161000, // alias of descriptor_set_layout_binding_flags_create_info
-    physical_device_descriptor_indexing_features_ext = 1000161001, // alias of physical_device_descriptor_indexing_features
-    physical_device_descriptor_indexing_properties_ext = 1000161002, // alias of physical_device_descriptor_indexing_properties
-    descriptor_set_variable_descriptor_count_allocate_info_ext = 1000161003, // alias of descriptor_set_variable_descriptor_count_allocate_info
-    descriptor_set_variable_descriptor_count_layout_support_ext = 1000161004, // alias of descriptor_set_variable_descriptor_count_layout_support
+    //descriptor_set_layout_binding_flags_create_info_ext = 1000161000, // alias of descriptor_set_layout_binding_flags_create_info
+    //physical_device_descriptor_indexing_features_ext = 1000161001, // alias of physical_device_descriptor_indexing_features
+    //physical_device_descriptor_indexing_properties_ext = 1000161002, // alias of physical_device_descriptor_indexing_properties
+    //descriptor_set_variable_descriptor_count_allocate_info_ext = 1000161003, // alias of descriptor_set_variable_descriptor_count_allocate_info
+    //descriptor_set_variable_descriptor_count_layout_support_ext = 1000161004, // alias of descriptor_set_variable_descriptor_count_layout_support
     physical_device_portability_subset_features_khr = 1000163000,
     physical_device_portability_subset_properties_khr = 1000163001,
     pipeline_viewport_shading_rate_image_state_create_info_nv = 1000164000,
@@ -6587,17 +6584,17 @@ pub const StructureType = extern enum(i32) {
     acceleration_structure_info_nv = 1000165012,
     physical_device_representative_fragment_test_features_nv = 1000166000,
     pipeline_representative_fragment_test_state_create_info_nv = 1000166001,
-    physical_device_maintenance_3_properties_khr = 1000168000, // alias of physical_device_maintenance_3_properties
-    descriptor_set_layout_support_khr = 1000168001, // alias of descriptor_set_layout_support
+    //physical_device_maintenance_3_properties_khr = 1000168000, // alias of physical_device_maintenance_3_properties
+    //descriptor_set_layout_support_khr = 1000168001, // alias of descriptor_set_layout_support
     physical_device_image_view_image_format_info_ext = 1000170000,
     filter_cubic_image_view_image_format_properties_ext = 1000170001,
     device_queue_global_priority_create_info_ext = 1000174000,
-    physical_device_shader_subgroup_extended_types_features_khr = 1000175000, // alias of physical_device_shader_subgroup_extended_types_features
-    physical_device_8bit_storage_features_khr = 1000177000, // alias of physical_device_8bit_storage_features
+    //physical_device_shader_subgroup_extended_types_features_khr = 1000175000, // alias of physical_device_shader_subgroup_extended_types_features
+    //physical_device_8bit_storage_features_khr = 1000177000, // alias of physical_device_8bit_storage_features
     import_memory_host_pointer_info_ext = 1000178000,
     memory_host_pointer_properties_ext = 1000178001,
     physical_device_external_memory_host_properties_ext = 1000178002,
-    physical_device_shader_atomic_int64_features_khr = 1000180000, // alias of physical_device_shader_atomic_int64_features
+    //physical_device_shader_atomic_int64_features_khr = 1000180000, // alias of physical_device_shader_atomic_int64_features
     physical_device_shader_clock_features_khr = 1000181000,
     pipeline_compiler_control_create_info_amd = 1000183000,
     calibrated_timestamp_info_ext = 1000184000,
@@ -6615,10 +6612,10 @@ pub const StructureType = extern enum(i32) {
     physical_device_vertex_attribute_divisor_features_ext = 1000190002,
     present_frame_token_ggp = 1000191000,
     pipeline_creation_feedback_create_info_ext = 1000192000,
-    physical_device_driver_properties_khr = 1000196000, // alias of physical_device_driver_properties
-    physical_device_float_controls_properties_khr = 1000197000, // alias of physical_device_float_controls_properties
-    physical_device_depth_stencil_resolve_properties_khr = 1000199000, // alias of physical_device_depth_stencil_resolve_properties
-    subpass_description_depth_stencil_resolve_khr = 1000199001, // alias of subpass_description_depth_stencil_resolve
+    //physical_device_driver_properties_khr = 1000196000, // alias of physical_device_driver_properties
+    //physical_device_float_controls_properties_khr = 1000197000, // alias of physical_device_float_controls_properties
+    //physical_device_depth_stencil_resolve_properties_khr = 1000199000, // alias of physical_device_depth_stencil_resolve_properties
+    //subpass_description_depth_stencil_resolve_khr = 1000199001, // alias of subpass_description_depth_stencil_resolve
     physical_device_compute_shader_derivatives_features_nv = 1000201000,
     physical_device_mesh_shader_features_nv = 1000202000,
     physical_device_mesh_shader_properties_nv = 1000202001,
@@ -6628,21 +6625,21 @@ pub const StructureType = extern enum(i32) {
     physical_device_exclusive_scissor_features_nv = 1000205002,
     checkpoint_data_nv = 1000206000,
     queue_family_checkpoint_properties_nv = 1000206001,
-    physical_device_timeline_semaphore_features_khr = 1000207000, // alias of physical_device_timeline_semaphore_features
-    physical_device_timeline_semaphore_properties_khr = 1000207001, // alias of physical_device_timeline_semaphore_properties
-    semaphore_type_create_info_khr = 1000207002, // alias of semaphore_type_create_info
-    timeline_semaphore_submit_info_khr = 1000207003, // alias of timeline_semaphore_submit_info
-    semaphore_wait_info_khr = 1000207004, // alias of semaphore_wait_info
-    semaphore_signal_info_khr = 1000207005, // alias of semaphore_signal_info
+    //physical_device_timeline_semaphore_features_khr = 1000207000, // alias of physical_device_timeline_semaphore_features
+    //physical_device_timeline_semaphore_properties_khr = 1000207001, // alias of physical_device_timeline_semaphore_properties
+    //semaphore_type_create_info_khr = 1000207002, // alias of semaphore_type_create_info
+    //timeline_semaphore_submit_info_khr = 1000207003, // alias of timeline_semaphore_submit_info
+    //semaphore_wait_info_khr = 1000207004, // alias of semaphore_wait_info
+    //semaphore_signal_info_khr = 1000207005, // alias of semaphore_signal_info
     physical_device_shader_integer_functions_2_features_intel = 1000209000,
     query_pool_performance_query_create_info_intel = 1000210000,
-    query_pool_create_info_intel = 1000210000, // alias of query_pool_performance_query_create_info_intel
+    //query_pool_create_info_intel = 1000210000, // alias of query_pool_performance_query_create_info_intel
     initialize_performance_api_info_intel = 1000210001,
     performance_marker_info_intel = 1000210002,
     performance_stream_marker_info_intel = 1000210003,
     performance_override_info_intel = 1000210004,
     performance_configuration_acquire_info_intel = 1000210005,
-    physical_device_vulkan_memory_model_features_khr = 1000211000, // alias of physical_device_vulkan_memory_model_features
+    //physical_device_vulkan_memory_model_features_khr = 1000211000, // alias of physical_device_vulkan_memory_model_features
     physical_device_pci_bus_info_properties_ext = 1000212000,
     display_native_hdr_surface_capabilities_amd = 1000213000,
     swapchain_display_native_hdr_create_info_amd = 1000213001,
@@ -6652,7 +6649,7 @@ pub const StructureType = extern enum(i32) {
     physical_device_fragment_density_map_features_ext = 1000218000,
     physical_device_fragment_density_map_properties_ext = 1000218001,
     render_pass_fragment_density_map_create_info_ext = 1000218002,
-    physical_device_scalar_block_layout_features_ext = 1000221000, // alias of physical_device_scalar_block_layout_features
+    //physical_device_scalar_block_layout_features_ext = 1000221000, // alias of physical_device_scalar_block_layout_features
     physical_device_subgroup_size_control_properties_ext = 1000225000,
     pipeline_shader_stage_required_subgroup_size_create_info_ext = 1000225001,
     physical_device_subgroup_size_control_features_ext = 1000225002,
@@ -6669,15 +6666,15 @@ pub const StructureType = extern enum(i32) {
     memory_priority_allocate_info_ext = 1000238001,
     surface_protected_capabilities_khr = 1000239000,
     physical_device_dedicated_allocation_image_aliasing_features_nv = 1000240000,
-    physical_device_separate_depth_stencil_layouts_features_khr = 1000241000, // alias of physical_device_separate_depth_stencil_layouts_features
-    attachment_reference_stencil_layout_khr = 1000241001, // alias of attachment_reference_stencil_layout
-    attachment_description_stencil_layout_khr = 1000241002, // alias of attachment_description_stencil_layout
+    //physical_device_separate_depth_stencil_layouts_features_khr = 1000241000, // alias of physical_device_separate_depth_stencil_layouts_features
+    //attachment_reference_stencil_layout_khr = 1000241001, // alias of attachment_reference_stencil_layout
+    //attachment_description_stencil_layout_khr = 1000241002, // alias of attachment_description_stencil_layout
     physical_device_buffer_device_address_features_ext = 1000244000,
-    physical_device_buffer_address_features_ext = 1000244000, // alias of physical_device_buffer_device_address_features_ext
-    buffer_device_address_info_ext = 1000244001, // alias of buffer_device_address_info
+    //physical_device_buffer_address_features_ext = 1000244000, // alias of physical_device_buffer_device_address_features_ext
+    //buffer_device_address_info_ext = 1000244001, // alias of buffer_device_address_info
     buffer_device_address_create_info_ext = 1000244002,
     physical_device_tool_properties_ext = 1000245000,
-    image_stencil_usage_create_info_ext = 1000246000, // alias of image_stencil_usage_create_info
+    //image_stencil_usage_create_info_ext = 1000246000, // alias of image_stencil_usage_create_info
     validation_features_ext = 1000247000,
     physical_device_cooperative_matrix_features_nv = 1000249000,
     cooperative_matrix_properties_nv = 1000249001,
@@ -6687,7 +6684,7 @@ pub const StructureType = extern enum(i32) {
     framebuffer_mixed_samples_combination_nv = 1000250002,
     physical_device_fragment_shader_interlock_features_ext = 1000251000,
     physical_device_ycbcr_image_arrays_features_ext = 1000252000,
-    physical_device_uniform_buffer_standard_layout_features_khr = 1000253000, // alias of physical_device_uniform_buffer_standard_layout_features
+    //physical_device_uniform_buffer_standard_layout_features_khr = 1000253000, // alias of physical_device_uniform_buffer_standard_layout_features
     physical_device_provoking_vertex_features_ext = 1000254000,
     pipeline_rasterization_provoking_vertex_state_create_info_ext = 1000254001,
     physical_device_provoking_vertex_properties_ext = 1000254002,
@@ -6695,16 +6692,16 @@ pub const StructureType = extern enum(i32) {
     surface_capabilities_full_screen_exclusive_ext = 1000255002,
     surface_full_screen_exclusive_win32_info_ext = 1000255001,
     headless_surface_create_info_ext = 1000256000,
-    physical_device_buffer_device_address_features_khr = 1000257000, // alias of physical_device_buffer_device_address_features
-    buffer_device_address_info_khr = 1000244001, // alias of buffer_device_address_info
-    buffer_opaque_capture_address_create_info_khr = 1000257002, // alias of buffer_opaque_capture_address_create_info
-    memory_opaque_capture_address_allocate_info_khr = 1000257003, // alias of memory_opaque_capture_address_allocate_info
-    device_memory_opaque_capture_address_info_khr = 1000257004, // alias of device_memory_opaque_capture_address_info
+    //physical_device_buffer_device_address_features_khr = 1000257000, // alias of physical_device_buffer_device_address_features
+    //buffer_device_address_info_khr = 1000244001, // alias of buffer_device_address_info
+    //buffer_opaque_capture_address_create_info_khr = 1000257002, // alias of buffer_opaque_capture_address_create_info
+    //memory_opaque_capture_address_allocate_info_khr = 1000257003, // alias of memory_opaque_capture_address_allocate_info
+    //device_memory_opaque_capture_address_info_khr = 1000257004, // alias of device_memory_opaque_capture_address_info
     physical_device_line_rasterization_features_ext = 1000259000,
     pipeline_rasterization_line_state_create_info_ext = 1000259001,
     physical_device_line_rasterization_properties_ext = 1000259002,
     physical_device_shader_atomic_float_features_ext = 1000260000,
-    physical_device_host_query_reset_features_ext = 1000261000, // alias of physical_device_host_query_reset_features
+    ////physical_device_host_query_reset_features_ext = 1000261000, // alias of physical_device_host_query_reset_features
     physical_device_index_type_uint8_features_ext = 1000265000,
     physical_device_extended_dynamic_state_features_ext = 1000267000,
     physical_device_pipeline_executable_properties_features_khr = 1000269000,
@@ -6792,12 +6789,12 @@ pub const StructureType = extern enum(i32) {
     pipeline_color_write_create_info_ext = 1000381001,
     _,
 };
-pub const SubpassContents = extern enum(i32) {
+pub const SubpassContents = enum(i32) {
     @"inline" = 0,
     secondary_command_buffers = 1,
     _,
 };
-pub const Result = extern enum(i32) {
+pub const Result = enum(i32) {
     success = 0,
     not_ready = 1,
     timeout = 2,
@@ -6828,23 +6825,23 @@ pub const Result = extern enum(i32) {
     error_incompatible_display_khr = -1000003001,
     error_validation_failed_ext = -1000011001,
     error_invalid_shader_nv = -1000012000,
-    error_out_of_pool_memory_khr = -1000069000, // alias of error_out_of_pool_memory
-    error_invalid_external_handle_khr = -1000072003, // alias of error_invalid_external_handle
+    //error_out_of_pool_memory_khr = -1000069000, // alias of error_out_of_pool_memory
+    //error_invalid_external_handle_khr = -1000072003, // alias of error_invalid_external_handle
     error_invalid_drm_format_modifier_plane_layout_ext = -1000158000,
-    error_fragmentation_ext = -1000161000, // alias of error_fragmentation
+    //error_fragmentation_ext = -1000161000, // alias of error_fragmentation
     error_not_permitted_ext = -1000174001,
-    error_invalid_device_address_ext = -1000257000, // alias of error_invalid_opaque_capture_address
+    //error_invalid_device_address_ext = -1000257000, // alias of error_invalid_opaque_capture_address
     error_full_screen_exclusive_mode_lost_ext = -1000255000,
-    error_invalid_opaque_capture_address_khr = -1000257000, // alias of error_invalid_opaque_capture_address
+    //error_invalid_opaque_capture_address_khr = -1000257000, // alias of error_invalid_opaque_capture_address
     thread_idle_khr = 1000268000,
     thread_done_khr = 1000268001,
     operation_deferred_khr = 1000268002,
     operation_not_deferred_khr = 1000268003,
     pipeline_compile_required_ext = 1000297000,
-    error_pipeline_compile_required_ext = 1000297000, // alias of pipeline_compile_required_ext
+    //error_pipeline_compile_required_ext = 1000297000, // alias of pipeline_compile_required_ext
     _,
 };
-pub const DynamicState = extern enum(i32) {
+pub const DynamicState = enum(i32) {
     viewport = 0,
     scissor = 1,
     line_width = 2,
@@ -6884,13 +6881,13 @@ pub const DynamicState = extern enum(i32) {
     color_write_enable_ext = 1000381000,
     _,
 };
-pub const DescriptorUpdateTemplateType = extern enum(i32) {
+pub const DescriptorUpdateTemplateType = enum(i32) {
     descriptor_set = 0,
     push_descriptors_khr = 1,
-    descriptor_set_khr = 0, // alias of descriptor_set
+    //descriptor_set_khr = 0, // alias of descriptor_set
     _,
 };
-pub const ObjectType = extern enum(i32) {
+pub const ObjectType = enum(i32) {
     unknown = 0,
     instance = 1,
     physical_device = 2,
@@ -6926,10 +6923,10 @@ pub const ObjectType = extern enum(i32) {
     debug_report_callback_ext = 1000011000,
     video_session_khr = 1000023000,
     video_session_parameters_khr = 1000023001,
-    descriptor_update_template_khr = 1000085000, // alias of descriptor_update_template
+    //descriptor_update_template_khr = 1000085000, // alias of descriptor_update_template
     debug_utils_messenger_ext = 1000128000,
     acceleration_structure_khr = 1000150000,
-    sampler_ycbcr_conversion_khr = 1000156000, // alias of sampler_ycbcr_conversion
+    //sampler_ycbcr_conversion_khr = 1000156000, // alias of sampler_ycbcr_conversion
     validation_cache_ext = 1000160000,
     acceleration_structure_nv = 1000165000,
     performance_configuration_intel = 1000210000,
@@ -8163,11 +8160,11 @@ pub const DependencyFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(DependencyFlags, Flags);
 };
-pub const SemaphoreType = extern enum(i32) {
+pub const SemaphoreType = enum(i32) {
     binary = 0,
     timeline = 1,
-    binary_khr = 0, // alias of binary
-    timeline_khr = 1, // alias of timeline
+    //binary_khr = 0, // alias of binary
+    //timeline_khr = 1, // alias of timeline
     _,
 };
 pub const SemaphoreWaitFlags = packed struct {
@@ -8205,7 +8202,7 @@ pub const SemaphoreWaitFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(SemaphoreWaitFlags, Flags);
 };
-pub const PresentModeKHR = extern enum(i32) {
+pub const PresentModeKHR = enum(i32) {
     immediate_khr = 0,
     mailbox_khr = 1,
     fifo_khr = 2,
@@ -8214,7 +8211,7 @@ pub const PresentModeKHR = extern enum(i32) {
     shared_continuous_refresh_khr = 1000111001,
     _,
 };
-pub const ColorSpaceKHR = extern enum(i32) {
+pub const ColorSpaceKHR = enum(i32) {
     srgb_nonlinear_khr = 0,
     display_p3_nonlinear_ext = 1000104001,
     extended_srgb_linear_ext = 1000104002,
@@ -8373,7 +8370,7 @@ pub const SwapchainImageUsageFlagsANDROID = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(SwapchainImageUsageFlagsANDROID, Flags);
 };
-pub const TimeDomainEXT = extern enum(i32) {
+pub const TimeDomainEXT = enum(i32) {
     device_ext = 0,
     clock_monotonic_ext = 1,
     clock_monotonic_raw_ext = 2,
@@ -8415,7 +8412,7 @@ pub const DebugReportFlagsEXT = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(DebugReportFlagsEXT, Flags);
 };
-pub const DebugReportObjectTypeEXT = extern enum(i32) {
+pub const DebugReportObjectTypeEXT = enum(i32) {
     unknown_ext = 0,
     instance_ext = 1,
     physical_device_ext = 2,
@@ -8450,13 +8447,13 @@ pub const DebugReportObjectTypeEXT = extern enum(i32) {
     validation_cache_ext_ext = 33,
     sampler_ycbcr_conversion_ext = 1000156000,
     descriptor_update_template_ext = 1000085000,
-    descriptor_update_template_khr_ext = 1000085000, // alias of descriptor_update_template_ext
+    //descriptor_update_template_khr_ext = 1000085000, // alias of descriptor_update_template_ext
     acceleration_structure_khr_ext = 1000150000,
-    sampler_ycbcr_conversion_khr_ext = 1000156000, // alias of sampler_ycbcr_conversion_ext
+    //sampler_ycbcr_conversion_khr_ext = 1000156000, // alias of sampler_ycbcr_conversion_ext
     acceleration_structure_nv_ext = 1000165000,
     _,
 };
-pub const DeviceMemoryReportEventTypeEXT = extern enum(i32) {
+pub const DeviceMemoryReportEventTypeEXT = enum(i32) {
     allocate_ext = 0,
     free_ext = 1,
     import_ext = 2,
@@ -8464,7 +8461,7 @@ pub const DeviceMemoryReportEventTypeEXT = extern enum(i32) {
     allocation_failed_ext = 4,
     _,
 };
-pub const RasterizationOrderAMD = extern enum(i32) {
+pub const RasterizationOrderAMD = enum(i32) {
     strict_amd = 0,
     relaxed_amd = 1,
     _,
@@ -8539,12 +8536,12 @@ pub const ExternalMemoryFeatureFlagsNV = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(ExternalMemoryFeatureFlagsNV, Flags);
 };
-pub const ValidationCheckEXT = extern enum(i32) {
+pub const ValidationCheckEXT = enum(i32) {
     all_ext = 0,
     shaders_ext = 1,
     _,
 };
-pub const ValidationFeatureEnableEXT = extern enum(i32) {
+pub const ValidationFeatureEnableEXT = enum(i32) {
     gpu_assisted_ext = 0,
     gpu_assisted_reserve_binding_slot_ext = 1,
     best_practices_ext = 2,
@@ -8552,7 +8549,7 @@ pub const ValidationFeatureEnableEXT = extern enum(i32) {
     synchronization_validation_ext = 4,
     _,
 };
-pub const ValidationFeatureDisableEXT = extern enum(i32) {
+pub const ValidationFeatureDisableEXT = enum(i32) {
     all_ext = 0,
     shaders_ext = 1,
     thread_safety_ext = 2,
@@ -8667,7 +8664,7 @@ pub const IndirectStateFlagsNV = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(IndirectStateFlagsNV, Flags);
 };
-pub const IndirectCommandsTokenTypeNV = extern enum(i32) {
+pub const IndirectCommandsTokenTypeNV = enum(i32) {
     shader_group_nv = 0,
     state_flags_nv = 1,
     index_buffer_nv = 2,
@@ -9032,17 +9029,17 @@ pub const SurfaceCounterFlagsEXT = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(SurfaceCounterFlagsEXT, Flags);
 };
-pub const DisplayPowerStateEXT = extern enum(i32) {
+pub const DisplayPowerStateEXT = enum(i32) {
     off_ext = 0,
     suspend_ext = 1,
     on_ext = 2,
     _,
 };
-pub const DeviceEventTypeEXT = extern enum(i32) {
+pub const DeviceEventTypeEXT = enum(i32) {
     display_hotplug_ext = 0,
     _,
 };
-pub const DisplayEventTypeEXT = extern enum(i32) {
+pub const DisplayEventTypeEXT = enum(i32) {
     first_pixel_out_ext = 0,
     _,
 };
@@ -9186,7 +9183,7 @@ pub const SwapchainCreateFlagsKHR = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(SwapchainCreateFlagsKHR, Flags);
 };
-pub const ViewportCoordinateSwizzleNV = extern enum(i32) {
+pub const ViewportCoordinateSwizzleNV = enum(i32) {
     positive_x_nv = 0,
     negative_x_nv = 1,
     positive_y_nv = 2,
@@ -9197,7 +9194,7 @@ pub const ViewportCoordinateSwizzleNV = extern enum(i32) {
     negative_w_nv = 7,
     _,
 };
-pub const DiscardRectangleModeEXT = extern enum(i32) {
+pub const DiscardRectangleModeEXT = enum(i32) {
     inclusive_ext = 0,
     exclusive_ext = 1,
     _,
@@ -9237,85 +9234,85 @@ pub const SubpassDescriptionFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(SubpassDescriptionFlags, Flags);
 };
-pub const PointClippingBehavior = extern enum(i32) {
+pub const PointClippingBehavior = enum(i32) {
     all_clip_planes = 0,
     user_clip_planes_only = 1,
-    all_clip_planes_khr = 0, // alias of all_clip_planes
-    user_clip_planes_only_khr = 1, // alias of user_clip_planes_only
+    //all_clip_planes_khr = 0, // alias of all_clip_planes
+    //user_clip_planes_only_khr = 1, // alias of user_clip_planes_only
     _,
 };
-pub const SamplerReductionMode = extern enum(i32) {
+pub const SamplerReductionMode = enum(i32) {
     weighted_average = 0,
     min = 1,
     max = 2,
-    weighted_average_ext = 0, // alias of weighted_average
-    min_ext = 1, // alias of min
-    max_ext = 2, // alias of max
+    //weighted_average_ext = 0, // alias of weighted_average
+    //min_ext = 1, // alias of min
+    //max_ext = 2, // alias of max
     _,
 };
-pub const TessellationDomainOrigin = extern enum(i32) {
+pub const TessellationDomainOrigin = enum(i32) {
     upper_left = 0,
     lower_left = 1,
-    upper_left_khr = 0, // alias of upper_left
-    lower_left_khr = 1, // alias of lower_left
+    //upper_left_khr = 0, // alias of upper_left
+    //lower_left_khr = 1, // alias of lower_left
     _,
 };
-pub const SamplerYcbcrModelConversion = extern enum(i32) {
+pub const SamplerYcbcrModelConversion = enum(i32) {
     rgb_identity = 0,
     ycbcr_identity = 1,
     ycbcr_709 = 2,
     ycbcr_601 = 3,
     ycbcr_2020 = 4,
-    rgb_identity_khr = 0, // alias of rgb_identity
-    ycbcr_identity_khr = 1, // alias of ycbcr_identity
-    ycbcr_709_khr = 2, // alias of ycbcr_709
-    ycbcr_601_khr = 3, // alias of ycbcr_601
-    ycbcr_2020_khr = 4, // alias of ycbcr_2020
+    //rgb_identity_khr = 0, // alias of rgb_identity
+    //ycbcr_identity_khr = 1, // alias of ycbcr_identity
+    //ycbcr_709_khr = 2, // alias of ycbcr_709
+    //ycbcr_601_khr = 3, // alias of ycbcr_601
+    //ycbcr_2020_khr = 4, // alias of ycbcr_2020
     _,
 };
-pub const SamplerYcbcrRange = extern enum(i32) {
+pub const SamplerYcbcrRange = enum(i32) {
     itu_full = 0,
     itu_narrow = 1,
-    itu_full_khr = 0, // alias of itu_full
-    itu_narrow_khr = 1, // alias of itu_narrow
+    //itu_full_khr = 0, // alias of itu_full
+    //itu_narrow_khr = 1, // alias of itu_narrow
     _,
 };
-pub const ChromaLocation = extern enum(i32) {
+pub const ChromaLocation = enum(i32) {
     cosited_even = 0,
     midpoint = 1,
-    cosited_even_khr = 0, // alias of cosited_even
-    midpoint_khr = 1, // alias of midpoint
+    //cosited_even_khr = 0, // alias of cosited_even
+    //midpoint_khr = 1, // alias of midpoint
     _,
 };
-pub const BlendOverlapEXT = extern enum(i32) {
+pub const BlendOverlapEXT = enum(i32) {
     uncorrelated_ext = 0,
     disjoint_ext = 1,
     conjoint_ext = 2,
     _,
 };
-pub const CoverageModulationModeNV = extern enum(i32) {
+pub const CoverageModulationModeNV = enum(i32) {
     none_nv = 0,
     rgb_nv = 1,
     alpha_nv = 2,
     rgba_nv = 3,
     _,
 };
-pub const CoverageReductionModeNV = extern enum(i32) {
+pub const CoverageReductionModeNV = enum(i32) {
     merge_nv = 0,
     truncate_nv = 1,
     _,
 };
-pub const ValidationCacheHeaderVersionEXT = extern enum(i32) {
+pub const ValidationCacheHeaderVersionEXT = enum(i32) {
     one_ext = 1,
     _,
 };
-pub const ShaderInfoTypeAMD = extern enum(i32) {
+pub const ShaderInfoTypeAMD = enum(i32) {
     statistics_amd = 0,
     binary_amd = 1,
     disassembly_amd = 2,
     _,
 };
-pub const QueueGlobalPriorityEXT = extern enum(i32) {
+pub const QueueGlobalPriorityEXT = enum(i32) {
     low_ext = 128,
     medium_ext = 256,
     high_ext = 512,
@@ -9392,7 +9389,7 @@ pub const DebugUtilsMessageTypeFlagsEXT = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(DebugUtilsMessageTypeFlagsEXT, Flags);
 };
-pub const ConservativeRasterizationModeEXT = extern enum(i32) {
+pub const ConservativeRasterizationModeEXT = enum(i32) {
     disabled_ext = 0,
     overestimate_ext = 1,
     underestimate_ext = 2,
@@ -9433,7 +9430,7 @@ pub const DescriptorBindingFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(DescriptorBindingFlags, Flags);
 };
-pub const VendorId = extern enum(i32) {
+pub const VendorId = enum(i32) {
     _viv = 0x10001,
     _vsi = 0x10002,
     kazan = 0x10003,
@@ -9442,7 +9439,7 @@ pub const VendorId = extern enum(i32) {
     pocl = 0x10006,
     _,
 };
-pub const DriverId = extern enum(i32) {
+pub const DriverId = enum(i32) {
     amd_proprietary = 1,
     amd_open_source = 2,
     mesa_radv = 3,
@@ -9458,18 +9455,18 @@ pub const DriverId = extern enum(i32) {
     mesa_llvmpipe = 13,
     moltenvk = 14,
     coreavi_proprietary = 15,
-    amd_proprietary_khr = 1, // alias of amd_proprietary
-    amd_open_source_khr = 2, // alias of amd_open_source
-    mesa_radv_khr = 3, // alias of mesa_radv
-    nvidia_proprietary_khr = 4, // alias of nvidia_proprietary
-    intel_proprietary_windows_khr = 5, // alias of intel_proprietary_windows
-    intel_open_source_mesa_khr = 6, // alias of intel_open_source_mesa
-    imagination_proprietary_khr = 7, // alias of imagination_proprietary
-    qualcomm_proprietary_khr = 8, // alias of qualcomm_proprietary
-    arm_proprietary_khr = 9, // alias of arm_proprietary
-    google_swiftshader_khr = 10, // alias of google_swiftshader
-    ggp_proprietary_khr = 11, // alias of ggp_proprietary
-    broadcom_proprietary_khr = 12, // alias of broadcom_proprietary
+    //amd_proprietary_khr = 1, // alias of amd_proprietary
+    //amd_open_source_khr = 2, // alias of amd_open_source
+    //mesa_radv_khr = 3, // alias of mesa_radv
+    //nvidia_proprietary_khr = 4, // alias of nvidia_proprietary
+    //intel_proprietary_windows_khr = 5, // alias of intel_proprietary_windows
+    //intel_open_source_mesa_khr = 6, // alias of intel_open_source_mesa
+    //imagination_proprietary_khr = 7, // alias of imagination_proprietary
+    //qualcomm_proprietary_khr = 8, // alias of qualcomm_proprietary
+    //arm_proprietary_khr = 9, // alias of arm_proprietary
+    //google_swiftshader_khr = 10, // alias of google_swiftshader
+    //ggp_proprietary_khr = 11, // alias of ggp_proprietary
+    //broadcom_proprietary_khr = 12, // alias of broadcom_proprietary
     _,
 };
 pub const ConditionalRenderingFlagsEXT = packed struct {
@@ -9542,7 +9539,7 @@ pub const ResolveModeFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(ResolveModeFlags, Flags);
 };
-pub const ShadingRatePaletteEntryNV = extern enum(i32) {
+pub const ShadingRatePaletteEntryNV = enum(i32) {
     no_invocations_nv = 0,
     @"16_invocations_per_pixel_nv" = 1,
     @"8_invocations_per_pixel_nv" = 2,
@@ -9557,7 +9554,7 @@ pub const ShadingRatePaletteEntryNV = extern enum(i32) {
     @"1_invocation_per_4x4_pixels_nv" = 11,
     _,
 };
-pub const CoarseSampleOrderTypeNV = extern enum(i32) {
+pub const CoarseSampleOrderTypeNV = enum(i32) {
     default_nv = 0,
     custom_nv = 1,
     pixel_major_nv = 2,
@@ -9704,70 +9701,70 @@ pub const AccelerationStructureCreateFlagsKHR = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(AccelerationStructureCreateFlagsKHR, Flags);
 };
-pub const CopyAccelerationStructureModeKHR = extern enum(i32) {
+pub const CopyAccelerationStructureModeKHR = enum(i32) {
     clone_khr = 0,
     compact_khr = 1,
     serialize_khr = 2,
     deserialize_khr = 3,
-    clone_nv = 0, // alias of clone_khr
-    compact_nv = 1, // alias of compact_khr
+    //clone_nv = 0, // alias of clone_khr
+    //compact_nv = 1, // alias of compact_khr
     _,
 };
-pub const BuildAccelerationStructureModeKHR = extern enum(i32) {
+pub const BuildAccelerationStructureModeKHR = enum(i32) {
     build_khr = 0,
     update_khr = 1,
     _,
 };
-pub const AccelerationStructureTypeKHR = extern enum(i32) {
+pub const AccelerationStructureTypeKHR = enum(i32) {
     top_level_khr = 0,
     bottom_level_khr = 1,
     generic_khr = 2,
-    top_level_nv = 0, // alias of top_level_khr
-    bottom_level_nv = 1, // alias of bottom_level_khr
+    //top_level_nv = 0, // alias of top_level_khr
+    //bottom_level_nv = 1, // alias of bottom_level_khr
     _,
 };
-pub const GeometryTypeKHR = extern enum(i32) {
+pub const GeometryTypeKHR = enum(i32) {
     triangles_khr = 0,
     aabbs_khr = 1,
     instances_khr = 2,
-    triangles_nv = 0, // alias of triangles_khr
-    aabbs_nv = 1, // alias of aabbs_khr
+    //triangles_nv = 0, // alias of triangles_khr
+    //aabbs_nv = 1, // alias of aabbs_khr
     _,
 };
-pub const AccelerationStructureMemoryRequirementsTypeNV = extern enum(i32) {
+pub const AccelerationStructureMemoryRequirementsTypeNV = enum(i32) {
     object_nv = 0,
     build_scratch_nv = 1,
     update_scratch_nv = 2,
     _,
 };
-pub const AccelerationStructureBuildTypeKHR = extern enum(i32) {
+pub const AccelerationStructureBuildTypeKHR = enum(i32) {
     host_khr = 0,
     device_khr = 1,
     host_or_device_khr = 2,
     _,
 };
-pub const RayTracingShaderGroupTypeKHR = extern enum(i32) {
+pub const RayTracingShaderGroupTypeKHR = enum(i32) {
     general_khr = 0,
     triangles_hit_group_khr = 1,
     procedural_hit_group_khr = 2,
-    general_nv = 0, // alias of general_khr
-    triangles_hit_group_nv = 1, // alias of triangles_hit_group_khr
-    procedural_hit_group_nv = 2, // alias of procedural_hit_group_khr
+    //general_nv = 0, // alias of general_khr
+    //triangles_hit_group_nv = 1, // alias of triangles_hit_group_khr
+    //procedural_hit_group_nv = 2, // alias of procedural_hit_group_khr
     _,
 };
-pub const AccelerationStructureCompatibilityKHR = extern enum(i32) {
+pub const AccelerationStructureCompatibilityKHR = enum(i32) {
     compatible_khr = 0,
     incompatible_khr = 1,
     _,
 };
-pub const ShaderGroupShaderKHR = extern enum(i32) {
+pub const ShaderGroupShaderKHR = enum(i32) {
     general_khr = 0,
     closest_hit_khr = 1,
     any_hit_khr = 2,
     intersection_khr = 3,
     _,
 };
-pub const MemoryOverallocationBehaviorAMD = extern enum(i32) {
+pub const MemoryOverallocationBehaviorAMD = enum(i32) {
     default_amd = 0,
     allowed_amd = 1,
     disallowed_amd = 2,
@@ -9808,14 +9805,14 @@ pub const FramebufferCreateFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(FramebufferCreateFlags, Flags);
 };
-pub const ScopeNV = extern enum(i32) {
+pub const ScopeNV = enum(i32) {
     device_nv = 1,
     workgroup_nv = 2,
     subgroup_nv = 3,
     queue_family_nv = 5,
     _,
 };
-pub const ComponentTypeNV = extern enum(i32) {
+pub const ComponentTypeNV = enum(i32) {
     float16_nv = 0,
     float32_nv = 1,
     float64_nv = 2,
@@ -9899,23 +9896,23 @@ pub const PipelineCreationFeedbackFlagsEXT = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(PipelineCreationFeedbackFlagsEXT, Flags);
 };
-pub const FullScreenExclusiveEXT = extern enum(i32) {
+pub const FullScreenExclusiveEXT = enum(i32) {
     default_ext = 0,
     allowed_ext = 1,
     disallowed_ext = 2,
     application_controlled_ext = 3,
     _,
 };
-pub const PerformanceCounterScopeKHR = extern enum(i32) {
+pub const PerformanceCounterScopeKHR = enum(i32) {
     command_buffer_khr = 0,
     render_pass_khr = 1,
     command_khr = 2,
-    query_scope_command_buffer_khr = 0, // alias of command_buffer_khr
-    query_scope_render_pass_khr = 1, // alias of render_pass_khr
-    query_scope_command_khr = 2, // alias of command_khr
+    //query_scope_command_buffer_khr = 0, // alias of command_buffer_khr
+    //query_scope_render_pass_khr = 1, // alias of render_pass_khr
+    //query_scope_command_khr = 2, // alias of command_khr
     _,
 };
-pub const PerformanceCounterUnitKHR = extern enum(i32) {
+pub const PerformanceCounterUnitKHR = enum(i32) {
     generic_khr = 0,
     percentage_khr = 1,
     nanoseconds_khr = 2,
@@ -9929,7 +9926,7 @@ pub const PerformanceCounterUnitKHR = extern enum(i32) {
     cycles_khr = 10,
     _,
 };
-pub const PerformanceCounterStorageKHR = extern enum(i32) {
+pub const PerformanceCounterStorageKHR = enum(i32) {
     int32_khr = 0,
     int64_khr = 1,
     uint32_khr = 2,
@@ -9981,25 +9978,25 @@ pub const ShaderCorePropertiesFlagsAMD = packed struct {
     _reserved_bits: Flags = 0,
     pub usingnamespace FlagsMixin(ShaderCorePropertiesFlagsAMD, Flags);
 };
-pub const PerformanceConfigurationTypeINTEL = extern enum(i32) {
+pub const PerformanceConfigurationTypeINTEL = enum(i32) {
     command_queue_metrics_discovery_activated_intel = 0,
     _,
 };
-pub const QueryPoolSamplingModeINTEL = extern enum(i32) {
+pub const QueryPoolSamplingModeINTEL = enum(i32) {
     manual_intel = 0,
     _,
 };
-pub const PerformanceOverrideTypeINTEL = extern enum(i32) {
+pub const PerformanceOverrideTypeINTEL = enum(i32) {
     null_hardware_intel = 0,
     flush_gpu_caches_intel = 1,
     _,
 };
-pub const PerformanceParameterTypeINTEL = extern enum(i32) {
+pub const PerformanceParameterTypeINTEL = enum(i32) {
     hw_counters_supported_intel = 0,
     stream_marker_valid_bits_intel = 1,
     _,
 };
-pub const PerformanceValueTypeINTEL = extern enum(i32) {
+pub const PerformanceValueTypeINTEL = enum(i32) {
     uint32_intel = 0,
     uint64_intel = 1,
     float_intel = 2,
@@ -10007,23 +10004,23 @@ pub const PerformanceValueTypeINTEL = extern enum(i32) {
     string_intel = 4,
     _,
 };
-pub const ShaderFloatControlsIndependence = extern enum(i32) {
+pub const ShaderFloatControlsIndependence = enum(i32) {
     @"32_bit_only" = 0,
     all = 1,
     none = 2,
-    @"32_bit_only_khr" = 0, // alias of @"32_bit_only"
-    all_khr = 1, // alias of all
-    none_khr = 2, // alias of none
+    //@"32_bit_only_khr" = 0, // alias of @"32_bit_only"
+    //all_khr = 1, // alias of all
+    //none_khr = 2, // alias of none
     _,
 };
-pub const PipelineExecutableStatisticFormatKHR = extern enum(i32) {
+pub const PipelineExecutableStatisticFormatKHR = enum(i32) {
     bool32_khr = 0,
     int64_khr = 1,
     uint64_khr = 2,
     float64_khr = 3,
     _,
 };
-pub const LineRasterizationModeEXT = extern enum(i32) {
+pub const LineRasterizationModeEXT = enum(i32) {
     default_ext = 0,
     rectangular_ext = 1,
     bresenham_ext = 2,
@@ -10073,7 +10070,7 @@ pub const ToolPurposeFlagsEXT = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(ToolPurposeFlagsEXT, Flags);
 };
-pub const FragmentShadingRateCombinerOpKHR = extern enum(i32) {
+pub const FragmentShadingRateCombinerOpKHR = enum(i32) {
     keep_khr = 0,
     replace_khr = 1,
     min_khr = 2,
@@ -10081,7 +10078,7 @@ pub const FragmentShadingRateCombinerOpKHR = extern enum(i32) {
     mul_khr = 4,
     _,
 };
-pub const FragmentShadingRateNV = extern enum(i32) {
+pub const FragmentShadingRateNV = enum(i32) {
     @"1_invocation_per_pixel_nv" = 0,
     @"1_invocation_per_1x2_pixels_nv" = 1,
     @"1_invocation_per_2x1_pixels_nv" = 4,
@@ -10096,7 +10093,7 @@ pub const FragmentShadingRateNV = extern enum(i32) {
     no_invocations_nv = 15,
     _,
 };
-pub const FragmentShadingRateTypeNV = extern enum(i32) {
+pub const FragmentShadingRateTypeNV = enum(i32) {
     fragment_size_nv = 0,
     enums_nv = 1,
     _,
@@ -10305,7 +10302,7 @@ pub const EventCreateFlags = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(EventCreateFlags, Flags);
 };
-pub const ProvokingVertexModeEXT = extern enum(i32) {
+pub const ProvokingVertexModeEXT = enum(i32) {
     first_vertex_ext = 0,
     last_vertex_ext = 1,
     _,
@@ -10590,7 +10587,7 @@ pub const VideoCodingControlFlagsKHR = packed struct {
     _reserved_bit_31: bool = false,
     pub usingnamespace FlagsMixin(VideoCodingControlFlagsKHR, Flags);
 };
-pub const QueryResultStatusKHR = extern enum(i32) {
+pub const QueryResultStatusKHR = enum(i32) {
     error_khr = -1,
     not_ready_khr = 0,
     complete_khr = 1,
@@ -10997,7 +10994,7 @@ pub const PfnMapMemory = fn (
     offset: DeviceSize,
     size: DeviceSize,
     flags: MemoryMapFlags.IntType,
-    pp_data: *?*c_void,
+    pp_data: *?*anyopaque,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnUnmapMemory = fn (
     device: Device,
@@ -11140,7 +11137,7 @@ pub const PfnGetQueryPoolResults = fn (
     first_query: u32,
     query_count: u32,
     data_size: usize,
-    p_data: *c_void,
+    p_data: *anyopaque,
     stride: DeviceSize,
     flags: QueryResultFlags.IntType,
 ) callconv(vulkan_call_conv) Result;
@@ -11226,7 +11223,7 @@ pub const PfnGetPipelineCacheData = fn (
     device: Device,
     pipeline_cache: PipelineCache,
     p_data_size: *usize,
-    p_data: ?*c_void,
+    p_data: ?*anyopaque,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnMergePipelineCaches = fn (
     device: Device,
@@ -11548,7 +11545,7 @@ pub const PfnCmdUpdateBuffer = fn (
     dst_buffer: Buffer,
     dst_offset: DeviceSize,
     data_size: DeviceSize,
-    p_data: *const c_void,
+    p_data: *const anyopaque,
 ) callconv(vulkan_call_conv) void;
 pub const PfnCmdFillBuffer = fn (
     command_buffer: CommandBuffer,
@@ -11670,7 +11667,7 @@ pub const PfnCmdPushConstants = fn (
     stage_flags: ShaderStageFlags.IntType,
     offset: u32,
     size: u32,
-    p_values: *const c_void,
+    p_values: *const anyopaque,
 ) callconv(vulkan_call_conv) void;
 pub const PfnCmdBeginRenderPass = fn (
     command_buffer: CommandBuffer,
@@ -12234,14 +12231,14 @@ pub const PfnUpdateDescriptorSetWithTemplate = fn (
     device: Device,
     descriptor_set: DescriptorSet,
     descriptor_update_template: DescriptorUpdateTemplate,
-    p_data: *const c_void,
+    p_data: *const anyopaque,
 ) callconv(vulkan_call_conv) void;
 pub const PfnCmdPushDescriptorSetWithTemplateKHR = fn (
     command_buffer: CommandBuffer,
     descriptor_update_template: DescriptorUpdateTemplate,
     layout: PipelineLayout,
     set: u32,
-    p_data: *const c_void,
+    p_data: *const anyopaque,
 ) callconv(vulkan_call_conv) void;
 pub const PfnSetHdrMetadataEXT = fn (
     device: Device,
@@ -12382,7 +12379,7 @@ pub const PfnGetValidationCacheDataEXT = fn (
     device: Device,
     validation_cache: ValidationCacheEXT,
     p_data_size: *usize,
-    p_data: ?*c_void,
+    p_data: ?*anyopaque,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnMergeValidationCachesEXT = fn (
     device: Device,
@@ -12429,7 +12426,7 @@ pub const PfnGetShaderInfoAMD = fn (
     shader_stage: ShaderStageFlags.IntType,
     info_type: ShaderInfoTypeAMD,
     p_info_size: *usize,
-    p_info: ?*c_void,
+    p_info: ?*anyopaque,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnSetLocalDimmingAMD = fn (
     device: Device,
@@ -12498,7 +12495,7 @@ pub const PfnSubmitDebugUtilsMessageEXT = fn (
 pub const PfnGetMemoryHostPointerPropertiesEXT = fn (
     device: Device,
     handle_type: ExternalMemoryHandleTypeFlags.IntType,
-    p_host_pointer: *const c_void,
+    p_host_pointer: *const anyopaque,
     p_memory_host_pointer_properties: *MemoryHostPointerPropertiesEXT,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnCmdWriteBufferMarkerAMD = fn (
@@ -12572,7 +12569,7 @@ pub const PfnCmdDrawIndexedIndirectCount = fn (
 ) callconv(vulkan_call_conv) void;
 pub const PfnCmdSetCheckpointNV = fn (
     command_buffer: CommandBuffer,
-    p_checkpoint_marker: *const c_void,
+    p_checkpoint_marker: *const anyopaque,
 ) callconv(vulkan_call_conv) void;
 pub const PfnGetQueueCheckpointDataNV = fn (
     queue: Queue,
@@ -12764,7 +12761,7 @@ pub const PfnWriteAccelerationStructuresPropertiesKHR = fn (
     p_acceleration_structures: [*]const AccelerationStructureKHR,
     query_type: QueryType,
     data_size: usize,
-    p_data: *c_void,
+    p_data: *anyopaque,
     stride: usize,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnCmdTraceRaysKHR = fn (
@@ -12800,7 +12797,7 @@ pub const PfnGetRayTracingShaderGroupHandlesKHR = fn (
     first_group: u32,
     group_count: u32,
     data_size: usize,
-    p_data: *c_void,
+    p_data: *anyopaque,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnGetRayTracingCaptureReplayShaderGroupHandlesKHR = fn (
     device: Device,
@@ -12808,13 +12805,13 @@ pub const PfnGetRayTracingCaptureReplayShaderGroupHandlesKHR = fn (
     first_group: u32,
     group_count: u32,
     data_size: usize,
-    p_data: *c_void,
+    p_data: *anyopaque,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnGetAccelerationStructureHandleNV = fn (
     device: Device,
     acceleration_structure: AccelerationStructureNV,
     data_size: usize,
-    p_data: *c_void,
+    p_data: *anyopaque,
 ) callconv(vulkan_call_conv) Result;
 pub const PfnCreateRayTracingPipelinesNV = fn (
     device: Device,
@@ -14538,7 +14535,7 @@ pub fn InstanceWrapper(comptime Self: type) type {
             self: Self,
             physical_device: PhysicalDevice,
             format: Format,
-            type: ImageType,
+            @"type": ImageType,
             tiling: ImageTiling,
             usage: ImageUsageFlags,
             flags: ImageCreateFlags,
@@ -14548,6 +14545,7 @@ pub fn InstanceWrapper(comptime Self: type) type {
             FormatNotSupported,
             Unknown,
         }!ImageFormatProperties {
+            _ = @"type";
             var image_format_properties: ImageFormatProperties = undefined;
             const result = self.vkGetPhysicalDeviceImageFormatProperties(
                 physical_device,
@@ -14658,13 +14656,14 @@ pub fn InstanceWrapper(comptime Self: type) type {
             self: Self,
             physical_device: PhysicalDevice,
             format: Format,
-            type: ImageType,
+            @"type": ImageType,
             samples: SampleCountFlags,
             usage: ImageUsageFlags,
             tiling: ImageTiling,
             p_property_count: *u32,
             p_properties: ?[*]SparseImageFormatProperties,
         ) void {
+            _ = @"type";
             self.vkGetPhysicalDeviceSparseImageFormatProperties(
                 physical_device,
                 format,
@@ -15366,7 +15365,7 @@ pub fn InstanceWrapper(comptime Self: type) type {
             self: Self,
             physical_device: PhysicalDevice,
             format: Format,
-            type: ImageType,
+            @"type": ImageType,
             tiling: ImageTiling,
             usage: ImageUsageFlags,
             flags: ImageCreateFlags,
@@ -15377,6 +15376,7 @@ pub fn InstanceWrapper(comptime Self: type) type {
             FormatNotSupported,
             Unknown,
         }!ExternalImageFormatPropertiesNV {
+            _ = @"type";
             var external_image_format_properties: ExternalImageFormatPropertiesNV = undefined;
             const result = self.vkGetPhysicalDeviceExternalImageFormatPropertiesNV(
                 physical_device,
@@ -16393,7 +16393,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
                 .error_out_of_host_memory => return error.OutOfHostMemory,
                 .error_out_of_device_memory => return error.OutOfDeviceMemory,
                 .error_invalid_external_handle => return error.InvalidExternalHandle,
-                .error_invalid_opaque_capture_address_khr => return error.InvalidOpaqueCaptureAddressKHR,
+                //.error_invalid_opaque_capture_address_khr => return error.InvalidOpaqueCaptureAddressKHR,
                 else => return error.Unknown,
             }
             return memory;
@@ -16422,8 +16422,8 @@ pub fn DeviceWrapper(comptime Self: type) type {
             OutOfDeviceMemory,
             MemoryMapFailed,
             Unknown,
-        }!?*c_void {
-            var pp_data: ?*c_void = undefined;
+        }!?*anyopaque {
+            var pp_data: ?*anyopaque = undefined;
             const result = self.vkMapMemory(
                 device,
                 memory,
@@ -16543,7 +16543,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
                 .success => {},
                 .error_out_of_host_memory => return error.OutOfHostMemory,
                 .error_out_of_device_memory => return error.OutOfDeviceMemory,
-                .error_invalid_opaque_capture_address_khr => return error.InvalidOpaqueCaptureAddressKHR,
+                //.error_invalid_opaque_capture_address_khr => return error.InvalidOpaqueCaptureAddressKHR,
                 else => return error.Unknown,
             }
         }
@@ -16915,7 +16915,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             first_query: u32,
             query_count: u32,
             data_size: usize,
-            p_data: *c_void,
+            p_data: *anyopaque,
             stride: DeviceSize,
             flags: QueryResultFlags,
         ) error{
@@ -16980,7 +16980,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
                 .success => {},
                 .error_out_of_host_memory => return error.OutOfHostMemory,
                 .error_out_of_device_memory => return error.OutOfDeviceMemory,
-                .error_invalid_opaque_capture_address_khr => return error.InvalidOpaqueCaptureAddressKHR,
+                .error_invalid_opaque_capture_address => return error.InvalidOpaqueCaptureAddressKHR,
                 else => return error.Unknown,
             }
             return buffer;
@@ -17204,7 +17204,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             device: Device,
             pipeline_cache: PipelineCache,
             p_data_size: *usize,
-            p_data: ?*c_void,
+            p_data: ?*anyopaque,
         ) error{
             OutOfHostMemory,
             OutOfDeviceMemory,
@@ -17458,7 +17458,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
                 .success => {},
                 .error_out_of_host_memory => return error.OutOfHostMemory,
                 .error_out_of_device_memory => return error.OutOfDeviceMemory,
-                .error_fragmentation_ext => return error.FragmentationEXT,
+                .error_fragmentation => return error.FragmentationEXT,
                 else => return error.Unknown,
             }
             return descriptor_pool;
@@ -18157,7 +18157,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             dst_buffer: Buffer,
             dst_offset: DeviceSize,
             data_size: DeviceSize,
-            p_data: *const c_void,
+            p_data: *const anyopaque,
         ) void {
             self.vkCmdUpdateBuffer(
                 command_buffer,
@@ -18434,7 +18434,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             stage_flags: ShaderStageFlags,
             offset: u32,
             size: u32,
-            p_values: *const c_void,
+            p_values: *const anyopaque,
         ) void {
             self.vkCmdPushConstants(
                 command_buffer,
@@ -19353,7 +19353,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
                 .success => {},
                 .error_out_of_host_memory => return error.OutOfHostMemory,
                 .error_out_of_device_memory => return error.OutOfDeviceMemory,
-                .error_invalid_opaque_capture_address_khr => return error.InvalidOpaqueCaptureAddressKHR,
+                .error_invalid_opaque_capture_address => return error.InvalidOpaqueCaptureAddressKHR,
                 else => return error.Unknown,
             }
         }
@@ -19535,7 +19535,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             device: Device,
             descriptor_set: DescriptorSet,
             descriptor_update_template: DescriptorUpdateTemplate,
-            p_data: *const c_void,
+            p_data: *const anyopaque,
         ) void {
             self.vkUpdateDescriptorSetWithTemplate(
                 device,
@@ -19550,7 +19550,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             descriptor_update_template: DescriptorUpdateTemplate,
             layout: PipelineLayout,
             set: u32,
-            p_data: *const c_void,
+            p_data: *const anyopaque,
         ) void {
             self.vkCmdPushDescriptorSetWithTemplateKHR(
                 command_buffer,
@@ -19825,7 +19825,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             device: Device,
             validation_cache: ValidationCacheEXT,
             p_data_size: *usize,
-            p_data: ?*c_void,
+            p_data: ?*anyopaque,
         ) error{
             OutOfHostMemory,
             OutOfDeviceMemory,
@@ -19979,7 +19979,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             shader_stage: ShaderStageFlags,
             info_type: ShaderInfoTypeAMD,
             p_info_size: *usize,
-            p_info: ?*c_void,
+            p_info: ?*anyopaque,
         ) error{
             FeatureNotPresent,
             OutOfHostMemory,
@@ -20141,7 +20141,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             self: Self,
             device: Device,
             handle_type: ExternalMemoryHandleTypeFlags,
-            p_host_pointer: *const c_void,
+            p_host_pointer: *const anyopaque,
             p_memory_host_pointer_properties: *MemoryHostPointerPropertiesEXT,
         ) error{
             OutOfHostMemory,
@@ -20395,7 +20395,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
         pub fn cmdSetCheckpointNV(
             self: Self,
             command_buffer: CommandBuffer,
-            p_checkpoint_marker: *const c_void,
+            p_checkpoint_marker: *const anyopaque,
         ) void {
             self.vkCmdSetCheckpointNV(
                 command_buffer,
@@ -20905,7 +20905,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             p_acceleration_structures: [*]const AccelerationStructureKHR,
             query_type: QueryType,
             data_size: usize,
-            p_data: *c_void,
+            p_data: *anyopaque,
             stride: usize,
         ) error{
             OutOfHostMemory,
@@ -20993,7 +20993,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             first_group: u32,
             group_count: u32,
             data_size: usize,
-            p_data: *c_void,
+            p_data: *anyopaque,
         ) error{
             OutOfHostMemory,
             OutOfDeviceMemory,
@@ -21021,7 +21021,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             first_group: u32,
             group_count: u32,
             data_size: usize,
-            p_data: *c_void,
+            p_data: *anyopaque,
         ) error{
             OutOfHostMemory,
             OutOfDeviceMemory,
@@ -21047,7 +21047,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             device: Device,
             acceleration_structure: AccelerationStructureNV,
             data_size: usize,
-            p_data: *c_void,
+            p_data: *anyopaque,
         ) error{
             OutOfHostMemory,
             OutOfDeviceMemory,
@@ -21654,7 +21654,7 @@ pub fn DeviceWrapper(comptime Self: type) type {
             switch (result) {
                 .success => {},
                 .error_out_of_host_memory => return error.OutOfHostMemory,
-                .error_invalid_opaque_capture_address_khr => return error.InvalidOpaqueCaptureAddressKHR,
+                .error_invalid_opaque_capture_address => return error.InvalidOpaqueCaptureAddressKHR,
                 else => return error.Unknown,
             }
             return acceleration_structure;

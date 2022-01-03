@@ -1,9 +1,9 @@
-usingnamespace @import("types.zig");
+const math = @import("math.zig");
 
-pub fn dot(a: vec2, b: vec2) f32 {
+pub fn dot(a: math.vec2, b: math.vec2) f32 {
     return a[0] * b[0] + a[1] * b[1];
 }
 
-pub fn norm2(a: vec2) f32 {
+pub fn norm2(a: math.vec2) f32 {
     return dot(a, a);
 }

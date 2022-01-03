@@ -1,3 +1,5 @@
+pub const nyancore_options = @import("nyancore_options");
+
 pub usingnamespace @import("application/application.zig");
 pub usingnamespace @import("application/print_error.zig");
 pub usingnamespace @import("renderer/render_graph/render_graph.zig");
@@ -6,7 +8,7 @@ pub usingnamespace @import("renderer/render_graph/resources/resources.zig");
 
 pub const c = @import("c.zig");
 pub const vk = @import("vk.zig");
-pub const vkw = @import("vulkan_wrapper/vulkan_wrapper.zig");
+pub const vkw = @import("vulkan_wrapper/vulkan_context.zig");
 
 pub const DefaultRenderer = @import("renderer/default_renderer.zig").DefaultRenderer;
 pub const UI = @import("ui/ui.zig").UI;

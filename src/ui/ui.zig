@@ -1,6 +1,8 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
+const Global = @import("../global.zig");
+
 const Application = @import("../application/application.zig").Application;
 const Config = @import("../application/config.zig");
 const System = @import("../system/system.zig").System;
@@ -12,7 +14,7 @@ const RGPass = @import("../renderer/render_graph/render_graph_pass.zig").RGPass;
 const rg = @import("../renderer/render_graph/render_graph.zig");
 const RenderGraph = rg.RenderGraph;
 
-pub const paletteValues = [_]c_int{
+pub const paletteValues = [_]c_uint{
     c.ImGuiCol_Text,
     c.ImGuiCol_TextDisabled,
     c.ImGuiCol_WindowBg,
@@ -82,7 +84,7 @@ pub const UI = struct {
 
     context: *c.ImGuiContext,
 
-    pub fn init(self: *UI, comptime name: []const u8, allocator: *std.mem.Allocator) void {
+    pub fn init(self: *UI, comptime name: []const u8, allocator: std.mem.Allocator) void {
         self.dockspace = null;
 
         self.name = name;
@@ -98,10 +100,10 @@ pub const UI = struct {
 
         var style: *c.ImGuiStyle = c.igGetStyle();
         for (paletteValues) |p|
-            style.Colors[@intCast(usize, p)] = self.paletteFn.?(@intToEnum(c.ImGuiCol_, p));
+            style.Colors[@intCast(usize, p)] = self.paletteFn.?(p);
     }
 
-    fn initScaling(self: *UI, app: *Application) void {
+    fn initScaling(app: *Application) void {
         var width: c_int = undefined;
         var height: c_int = undefined;
         c.glfwGetWindowSize(app.window, &width, &height);
@@ -135,9 +137,9 @@ pub const UI = struct {
         const self: *UI = @fieldParentPtr(UI, "system", system);
 
         self.app = app;
-        const temp_path = Config.global_config.getValidConfigPath("imgui.ini") catch unreachable;
-        self.imgui_config_path = Config.global_config.allocator.dupeZ(u8, temp_path) catch unreachable;
-        Config.global_config.allocator.free(temp_path);
+        const temp_path = Global.config.getValidConfigPath("imgui.ini") catch unreachable;
+        self.imgui_config_path = Global.config.allocator.dupeZ(u8, temp_path) catch unreachable;
+        Global.config.allocator.free(temp_path);
 
         self.context = c.igCreateContext(null);
 
@@ -148,7 +150,7 @@ pub const UI = struct {
         io.IniFilename = self.imgui_config_path.ptr;
 
         self.initPalette();
-        self.initScaling(app);
+        initScaling(app);
     }
 
     fn systemDeinit(system: *System) void {
@@ -157,10 +159,12 @@ pub const UI = struct {
         c.igDestroyContext(self.context);
         self.vulkan_context.deinit();
 
-        Config.global_config.allocator.free(self.imgui_config_path);
+        Global.config.allocator.free(self.imgui_config_path);
     }
 
     fn systemUpdate(system: *System, elapsed_time: f64) void {
+        _ = elapsed_time;
+
         const self: *UI = @fieldParentPtr(UI, "system", system);
 
         self.checkFramebufferResized();

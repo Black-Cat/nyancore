@@ -1,5 +1,5 @@
 const SdfInfo = @import("../sdf_info.zig").SdfInfo;
-usingnamespace @import("../../math/math.zig");
+const math = @import("../../math/math.zig");
 
 pub const info: SdfInfo = .{
     .name = "Capped Cylinder",
@@ -7,8 +7,8 @@ pub const info: SdfInfo = .{
 };
 
 pub const Data = struct {
-    start: vec3,
-    end: vec3,
+    start: math.vec3,
+    end: math.vec3,
     radius: f32,
 
     enter_index: usize,

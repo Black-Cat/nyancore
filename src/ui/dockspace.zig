@@ -10,7 +10,9 @@ pub const DockSpace = struct {
         self.init_layout_fnc = init_layout_fnc;
     }
 
-    pub fn deinit(self: *DockSpace) void {}
+    pub fn deinit(self: *DockSpace) void {
+        _ = self;
+    }
 
     pub fn drawBegin(self: *DockSpace) void {
         const viewport: *c.ImGuiViewport = c.igGetMainViewport();
@@ -46,6 +48,8 @@ pub const DockSpace = struct {
     }
 
     pub fn drawEnd(self: *DockSpace) void {
+        _ = self;
+
         c.igEnd();
     }
 };

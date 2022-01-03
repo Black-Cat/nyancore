@@ -1,5 +1,4 @@
 const std = @import("std");
-const vkgen = @import("third_party/vulkan-zig/generator/index.zig");
 const builtin = @import("builtin");
 
 const Builder = std.build.Builder;
@@ -12,12 +11,15 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
     nyancoreLib.setBuildMode(app.build_mode);
     nyancoreLib.setTarget(app.target);
 
-    nyancoreLib.addBuildOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
+    const nyancore_options = b.addOptions();
+    nyancore_options.addOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
+    nyancoreLib.addOptions("nyancore_options", nyancore_options);
+    app.addOptions("nyancore_options", nyancore_options);
 
     // Vulkan
     const vulkanPackage: std.build.Pkg = .{
         .name = "vulkan",
-        .path = path ++ "src/vk.zig",
+        .path = .{ .path = path ++ "src/vk.zig" },
     };
 
     nyancoreLib.addPackage(vulkanPackage);

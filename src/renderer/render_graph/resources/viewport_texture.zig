@@ -1,8 +1,6 @@
 const vk = @import("../../../vk.zig");
 const std = @import("std");
 
-usingnamespace @import("../../../vulkan_wrapper/vulkan_wrapper.zig");
-
 const printError = @import("../../../application/print_error.zig").printError;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 const RenderGraph = @import("../render_graph.zig").RenderGraph;
@@ -12,7 +10,7 @@ const Texture = @import("texture.zig").Texture;
 pub const ViewportTexture = struct {
     rg_resource: RGResource,
 
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     textures: []Texture,
 
     width: u32,
@@ -26,7 +24,7 @@ pub const ViewportTexture = struct {
     usage: vk.ImageUsageFlags,
     image_layout: vk.ImageLayout,
 
-    pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, image_format: vk.Format, allocator: *std.mem.Allocator) void {
+    pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, image_format: vk.Format, allocator: std.mem.Allocator) void {
         self.width = width;
         self.height = height;
         self.image_format = image_format;

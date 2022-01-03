@@ -1,5 +1,5 @@
 const SdfInfo = @import("../sdf_info.zig").SdfInfo;
-usingnamespace @import("../../math/math.zig");
+const math = @import("../../math/math.zig");
 
 pub const info: SdfInfo = .{
     .name = "Transform",
@@ -7,7 +7,7 @@ pub const info: SdfInfo = .{
 };
 
 pub const Data = struct {
-    rotation: vec3,
-    translation: vec3,
-    transform_matrix: mat4x4,
+    rotation: math.vec3,
+    translation: math.vec3,
+    transform_matrix: math.mat4x4,
 };

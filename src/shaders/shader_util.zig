@@ -5,7 +5,7 @@ const c = struct {
         @cInclude("glslang_c_interface.h");
     });
 };
-usingnamespace @import("../vulkan_wrapper/vulkan_wrapper.zig");
+const vkctxt = @import("../vulkan_wrapper/vulkan_context.zig");
 
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
@@ -124,16 +124,16 @@ const default_resources: c.glslang_resource_s = .{
 };
 
 var input: c.glslang_input_t = .{
-    .language = .GLSLANG_SOURCE_GLSL,
-    .client = .GLSLANG_CLIENT_VULKAN,
-    .client_version = .GLSLANG_TARGET_VULKAN_1_2,
-    .target_language = .GLSLANG_TARGET_SPV,
-    .target_language_version = .GLSLANG_TARGET_SPV_1_0,
+    .language = c.GLSLANG_SOURCE_GLSL,
+    .client = c.GLSLANG_CLIENT_VULKAN,
+    .client_version = c.GLSLANG_TARGET_VULKAN_1_2,
+    .target_language = c.GLSLANG_TARGET_SPV,
+    .target_language_version = c.GLSLANG_TARGET_SPV_1_0,
     .default_version = 100,
-    .default_profile = .GLSLANG_NO_PROFILE,
+    .default_profile = c.GLSLANG_NO_PROFILE,
     .force_default_version_and_profile = 0,
     .forward_compatible = 0,
-    .messages = .GLSLANG_MSG_DEFAULT_BIT,
+    .messages = c.GLSLANG_MSG_DEFAULT_BIT,
     .resource = &default_resources,
 
     .stage = undefined,
@@ -163,8 +163,8 @@ pub fn initShaderCompilation() void {
 pub fn compileShader(code: [*:0]const u8, stage: ShaderStage) CompiledShader {
     input.code = code;
     input.stage = switch (stage) {
-        .vertex => .GLSLANG_STAGE_VERTEX,
-        .fragment => .GLSLANG_STAGE_FRAGMENT,
+        .vertex => c.GLSLANG_STAGE_VERTEX,
+        .fragment => c.GLSLANG_STAGE_FRAGMENT,
     };
 
     var shader: *c.glslang_shader_t = c.glslang_shader_create(&input) orelse unreachable;
@@ -205,8 +205,8 @@ pub fn loadShader(shader_code: [*:0]const u8, stage: ShaderStage) vk.ShaderModul
         .flags = .{},
     };
 
-    var shader_module: vk.ShaderModule = vkd.createShaderModule(vkc.device, module_create_info, null) catch |err| {
-        printVulkanError("Can't create shader module", err, vkc.allocator);
+    var shader_module: vk.ShaderModule = vkctxt.vkd.createShaderModule(vkctxt.vkc.device, module_create_info, null) catch |err| {
+        vkctxt.printVulkanError("Can't create shader module", err, vkctxt.vkc.allocator);
         @panic("Can't create shader module");
     };
 

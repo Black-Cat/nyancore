@@ -7,9 +7,9 @@ const Window = @import("window.zig").Window;
 
 pub const DummyWindow = struct {
     window: Window,
-    allocator: *Allocator,
+    allocator: Allocator,
 
-    pub fn init(self: *DummyWindow, name: []const u8, allocator: *Allocator) void {
+    pub fn init(self: *DummyWindow, name: []const u8, allocator: Allocator) void {
         self.allocator = allocator;
         self.window = .{
             .widget = .{
@@ -26,8 +26,12 @@ pub const DummyWindow = struct {
         self.allocator.free(self.window.strId);
     }
 
-    fn windowInit(widget: *Widget) void {}
-    fn windowDeinit(widget: *Widget) void {}
+    fn windowInit(widget: *Widget) void {
+        _ = widget;
+    }
+    fn windowDeinit(widget: *Widget) void {
+        _ = widget;
+    }
     fn windowDraw(widget: *Widget) void {
         const window: *Window = @fieldParentPtr(Window, "widget", widget);
         const self: *DummyWindow = @fieldParentPtr(DummyWindow, "window", window);

@@ -8,9 +8,8 @@ const Application = @import("../application/application.zig").Application;
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
 
-usingnamespace @import("memory/buffer.zig");
-usingnamespace @import("memory/chunk.zig");
-usingnamespace @import("memory/image.zig");
+pub extern fn glfwGetInstanceProcAddress(instance: vk.Instance, procname: [*:0]const u8) vk.PfnVoidFunction;
+pub extern fn glfwCreateWindowSurface(instance: vk.Instance, window: *c.GLFWwindow, alocation_callback: ?*const vk.AllocationCallbacks, surface: *vk.SurfaceKHR) vk.Result;
 
 const required_device_extensions: [1][:0]const u8 = [_][:0]const u8{
     "VK_KHR_swapchain",
@@ -187,7 +186,7 @@ const VulkanError = error{
     ValidationLayerNotSupported,
 };
 
-pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allocator: *Allocator) void {
+pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allocator: Allocator) void {
     @setCold(true);
 
     const vulkan_error_message: []const u8 = switch (err) {
@@ -223,7 +222,7 @@ pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allo
 pub var vkc: VulkanContext = undefined;
 
 pub const VulkanContext = struct {
-    allocator: *Allocator,
+    allocator: Allocator,
 
     instance: vk.Instance,
     surface: vk.SurfaceKHR,
@@ -237,17 +236,17 @@ pub const VulkanContext = struct {
     present_queue: vk.Queue,
     compute_queue: vk.Queue,
 
-    pub fn init(self: *VulkanContext, allocator: *Allocator, app: *Application) !void {
+    pub fn init(self: *VulkanContext, allocator: Allocator, app: *Application) !void {
         self.allocator = allocator;
 
-        vkb = try BaseDispatch.load(c.glfwGetInstanceProcAddress);
+        vkb = try BaseDispatch.load(glfwGetInstanceProcAddress);
 
         self.createInstance(app.name) catch |err| {
             printVulkanError("Error during instance creation", err, self.allocator);
             return err;
         };
         errdefer vki.destroyInstance(self.instance, null);
-        vki = try InstanceDispatch.load(self.instance, c.glfwGetInstanceProcAddress);
+        vki = try InstanceDispatch.load(self.instance, glfwGetInstanceProcAddress);
 
         self.createSurface(app.window) catch |err| {
             printVulkanError("Error during surface creation", err, self.allocator);
@@ -357,7 +356,7 @@ pub const VulkanContext = struct {
     }
 
     fn createSurface(self: *VulkanContext, window: *c.GLFWwindow) !void {
-        const res: vk.Result = c.glfwCreateWindowSurface(self.instance, window, null, &self.surface);
+        const res: vk.Result = glfwCreateWindowSurface(self.instance, window, null, &self.surface);
         if (res != .success) {
             printError("Vulkan", "Glfw couldn't create window surface for vulkan context");
             return error.Unknown;
@@ -368,8 +367,11 @@ pub const VulkanContext = struct {
         message_severity: vk.DebugUtilsMessageSeverityFlagsEXT.IntType,
         message_types: vk.DebugUtilsMessageTypeFlagsEXT.IntType,
         p_callback_data: *const vk.DebugUtilsMessengerCallbackDataEXT,
-        p_user_data: *c_void,
+        p_user_data: *anyopaque,
     ) callconv(vk.vulkan_call_conv) vk.Bool32 {
+        _ = message_severity;
+        _ = message_types;
+        _ = p_user_data;
         printErrorNoPanic("Vulkan Validation Layer", std.mem.span(p_callback_data.p_message));
         return 1;
     }

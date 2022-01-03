@@ -17,7 +17,7 @@ pub const RGResource = struct {
 
     on_change_callbacks: std.ArrayList(OnChangeCallback),
 
-    pub fn init(self: *RGResource, name: []const u8, allocator: *std.mem.Allocator) void {
+    pub fn init(self: *RGResource, name: []const u8, allocator: std.mem.Allocator) void {
         self.name = name;
 
         self.writers = PassList.init(allocator);
