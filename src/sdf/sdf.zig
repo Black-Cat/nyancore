@@ -11,6 +11,7 @@ pub const Union = @import("combinators/union.zig");
 
 // Materials
 pub const CustomMaterial = @import("materials/custom_material.zig");
+pub const Discard = @import("materials/discard.zig");
 pub const Lambert = @import("materials/lambert.zig");
 pub const OrenNayar = @import("materials/oren_nayar.zig");
 
