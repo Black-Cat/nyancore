@@ -1,11 +1,23 @@
-const SdfInfo = @import("../sdf_info.zig").SdfInfo;
+const util = @import("../sdf_util.zig");
 
-pub const info: SdfInfo = .{
+pub const info: util.SdfInfo = .{
     .name = "Custom Material",
     .data_size = @sizeOf(Data),
+
+    .function_definition = "",
+    .enter_command_fn = enterCommand,
 };
 
 pub const Data = struct {
     pub const max_func_len: usize = 1024;
     material_function: [max_func_len]u8,
 };
+
+fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
+    _ = iter;
+    _ = mat_offset;
+
+    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+
+    return util.std.fmt.allocPrint(ctxt.allocator, "{s}", .{@ptrCast([*c]const u8, &data.material_function)}) catch unreachable;
+}
