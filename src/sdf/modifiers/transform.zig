@@ -18,9 +18,9 @@ pub const Data = struct {
 pub fn initZero(buffer: *[]u8) void {
     const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
 
-    data.rotation = util.nm.Vec3.zeros();
-    data.translation = util.nm.Vec3.zeros();
-    data.transform_matrix = util.nm.Mat4x4.identity();
+    data.rotation = util.math.Vec3.zeros();
+    data.translation = util.math.Vec3.zeros();
+    data.transform_matrix = util.math.Mat4x4.identity();
 }
 
 pub fn translate(buffer: *[]u8, v: util.math.vec3) void {
