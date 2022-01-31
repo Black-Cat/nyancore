@@ -15,6 +15,30 @@ pub const Data = struct {
     transform_matrix: util.math.mat4x4,
 };
 
+pub fn initZero(buffer: *[]u8) void {
+    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+
+    data.rotation = util.nm.Vec3.zeros();
+    data.translation = util.nm.Vec3.zeros();
+    data.transform_matrix = util.nm.Mat4x4.identity();
+}
+
+pub fn translate(buffer: *[]u8, v: util.math.vec3) void {
+    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+
+    data.translation += v;
+}
+
+pub fn updateMatrix(buffer: *[]u8) void {
+    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+
+    data.transform_matrix = util.math.Mat4x4.identity();
+    util.math.Transform.rotateX(&data.transform_matrix, -data.rotation[0]);
+    util.math.Transform.rotateY(&data.transform_matrix, -data.rotation[1]);
+    util.math.Transform.rotateZ(&data.transform_matrix, -data.rotation[2]);
+    util.math.Transform.translate(&data.transform_matrix, -data.translation);
+}
+
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     _ = mat_offset;
 
