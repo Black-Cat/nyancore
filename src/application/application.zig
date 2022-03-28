@@ -90,6 +90,8 @@ pub const Application = struct {
         for (self.systems) |system|
             system.init(system, self);
 
+        rg.global_render_graph.initPasses();
+
         glfwInitKeymap();
 
         _ = c.glfwSetFramebufferSizeCallback(self.window, framebufferResizeCallback);

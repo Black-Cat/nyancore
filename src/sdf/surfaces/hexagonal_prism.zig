@@ -50,7 +50,7 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
     const res: []const u8 = util.std.fmt.allocPrint(ctxt.allocator, format, .{
         data.enter_index,
         ctxt.cur_point_name,
-        2.0 * data.radius,
+        data.radius,
         data.height,
     }) catch unreachable;
 

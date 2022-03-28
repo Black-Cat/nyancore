@@ -92,6 +92,9 @@ pub const UI = struct {
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
 
         self.render_pass.init("UI Render Pass", allocator, renderPassInit, renderPassDeinit, renderPassRender);
+
+        self.render_pass.pipeline_start = .{ .fragment_shader_bit = true };
+        self.render_pass.pipeline_end = .{ .transfer_bit = true };
     }
 
     fn initPalette(self: *UI) void {

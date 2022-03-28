@@ -7,103 +7,57 @@ const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
 
 const RGPass = @import("../render_graph_pass.zig").RGPass;
 const Swapchain = @import("../resources/swapchain.zig").Swapchain;
-const ViewportTexture = @import("../resources/viewport_texture.zig").ViewportTexture;
 
-pub const ScreenRenderPass = struct {
-    const VertPushConstBlock = struct {
-        aspect_ratio: [4]f32,
-    };
-
+pub const ClearRenderPass = struct {
     rg_pass: RGPass,
     allocator: std.mem.Allocator,
 
     render_pass: vk.RenderPass,
-
-    alloc_framebuffers: bool,
     framebuffers: []vk.Framebuffer,
-    framebuffer_index: *u32,
 
     target_image_format: vk.Format,
     target_width: u32,
     target_height: u32,
-    target_viewport_texture: *ViewportTexture,
 
     pipeline_cache: vk.PipelineCache,
     pipeline_layout: vk.PipelineLayout,
     pipeline: vk.Pipeline,
 
-    vert_shader: vk.ShaderModule,
+    clear_color: vk.ClearValue,
 
-    frag_shader: *vk.ShaderModule,
-    frag_push_const_size: usize,
-    frag_push_const_block: *const anyopaque,
-
-    custom_scissors: ?*vk.Rect2D,
-
-    // Accepts *ViewportTexture or *Swapchain as target
     pub fn init(
-        self: *ScreenRenderPass,
+        self: *ClearRenderPass,
         comptime name: []const u8,
         allocator: std.mem.Allocator,
-        target: anytype,
-        frag_shader: *vk.ShaderModule,
-        frag_push_const_size: usize,
-        frag_push_const_block: *const anyopaque,
+        target: *Swapchain,
+        color: vk.ClearValue,
     ) void {
-        if (@TypeOf(target) != *ViewportTexture and @TypeOf(target) != *Swapchain)
-            @compileError("ScreenRenderPass only accepts *ViewportTexture or *Swapchain as target");
-        self.alloc_framebuffers = @TypeOf(target) == *ViewportTexture;
-
-        if (@TypeOf(target) == *ViewportTexture) {
-            self.target_image_format = target.image_format;
-            self.target_width = target.width;
-            self.target_height = target.height;
-            self.target_viewport_texture = target;
-            self.framebuffer_index = &rg.global_render_graph.frame_index;
-        } else {
-            self.target_image_format = target.image_format;
-            self.target_width = target.image_extent.width;
-            self.target_height = target.image_extent.height;
-            self.framebuffer_index = &rg.global_render_graph.image_index;
-        }
+        self.target_image_format = target.image_format;
+        self.target_width = target.image_extent.width;
+        self.target_height = target.image_extent.height;
+        self.framebuffers = target.framebuffers;
 
         self.allocator = allocator;
-
-        self.frag_shader = frag_shader;
-        self.frag_push_const_size = frag_push_const_size;
-        self.frag_push_const_block = frag_push_const_block;
+        self.clear_color = color;
 
         self.rg_pass.init(name, allocator, passInit, passDeinit, passRender);
         self.rg_pass.appendWriteResource(&target.rg_resource);
 
-        if (@TypeOf(target) == *ViewportTexture) {
-            self.framebuffers = allocator.alloc(vk.Framebuffer, target.textures.len) catch unreachable;
-            target.rg_resource.registerOnChangeCallback(&self.rg_pass, reinitFramebuffer);
-        } else {
-            self.framebuffers = target.framebuffers;
-        }
-
-        self.custom_scissors = null;
-
-        self.rg_pass.pipeline_start = .{ .fragment_shader_bit = true };
+        self.rg_pass.pipeline_start = .{ .draw_indirect_bit = true };
         self.rg_pass.pipeline_end = .{ .color_attachment_output_bit = true };
     }
 
-    pub fn deinit(self: *ScreenRenderPass) void {
-        if (self.alloc_framebuffers)
-            self.allocator.free(self.framebuffers);
+    pub fn deinit(self: *ClearRenderPass) void {
+        _ = self;
     }
 
     fn passInit(render_pass: *RGPass) void {
-        const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
-
-        const vert_code = @embedFile("screen_render_pass.vert");
-        self.vert_shader = shader_util.loadShader(vert_code, .vertex);
+        const self: *ClearRenderPass = @fieldParentPtr(ClearRenderPass, "rg_pass", render_pass);
 
         const color_attachment: vk.AttachmentDescription = .{
             .format = self.target_image_format,
             .samples = .{ .@"1_bit" = true },
-            .load_op = self.rg_pass.load_op,
+            .load_op = .clear,
             .store_op = .store,
             .stencil_load_op = .dont_care,
             .stencil_store_op = .dont_care,
@@ -156,36 +110,29 @@ pub const ScreenRenderPass = struct {
             return;
         };
 
-        if (self.alloc_framebuffers)
-            self.createFramebuffers();
         self.createPipelineCache();
         self.createPipelineLayout();
         self.createPipeline();
     }
 
     fn passDeinit(render_pass: *RGPass) void {
-        const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
+        const self: *ClearRenderPass = @fieldParentPtr(ClearRenderPass, "rg_pass", render_pass);
+
         vkctxt.vkd.destroyRenderPass(vkctxt.vkc.device, self.render_pass, null);
 
         vkctxt.vkd.destroyPipeline(vkctxt.vkc.device, self.pipeline, null);
         vkctxt.vkd.destroyPipelineLayout(vkctxt.vkc.device, self.pipeline_layout, null);
         vkctxt.vkd.destroyPipelineCache(vkctxt.vkc.device, self.pipeline_cache, null);
-
-        if (self.alloc_framebuffers)
-            self.destroyFramebuffers();
-
-        vkctxt.vkd.destroyShaderModule(vkctxt.vkc.device, self.vert_shader, null);
     }
 
     fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void {
         _ = frame_index;
 
-        const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
+        const self: *ClearRenderPass = @fieldParentPtr(ClearRenderPass, "rg_pass", render_pass);
 
-        const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } };
         const render_pass_info: vk.RenderPassBeginInfo = .{
             .render_pass = self.render_pass,
-            .framebuffer = self.framebuffers[@intCast(usize, self.framebuffer_index.*)],
+            .framebuffer = self.framebuffers[rg.global_render_graph.image_index],
             .render_area = .{
                 .offset = .{ .x = 0, .y = 0 },
                 .extent = .{
@@ -194,13 +141,11 @@ pub const ScreenRenderPass = struct {
                 },
             },
             .clear_value_count = 1,
-            .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
+            .p_clear_values = @ptrCast([*]const vk.ClearValue, &self.clear_color),
         };
 
         vkctxt.vkd.cmdBeginRenderPass(command_buffer, render_pass_info, .@"inline");
         defer vkctxt.vkd.cmdEndRenderPass(command_buffer);
-
-        vkctxt.vkd.cmdBindPipeline(command_buffer, .graphics, self.pipeline);
 
         const viewport_info: vk.Viewport = .{
             .width = @intToFloat(f32, self.target_width),
@@ -210,7 +155,6 @@ pub const ScreenRenderPass = struct {
             .x = 0,
             .y = 0,
         };
-
         vkctxt.vkd.cmdSetViewport(command_buffer, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
 
         var scissor_rect: vk.Rect2D = .{
@@ -220,73 +164,10 @@ pub const ScreenRenderPass = struct {
                 .height = self.target_height,
             },
         };
-
-        const scissor_rect_ptr: *vk.Rect2D = if (self.custom_scissors) |custom_scissors| custom_scissors else &scissor_rect;
-        vkctxt.vkd.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
-
-        var push_const_block: VertPushConstBlock = .{
-            .aspect_ratio = [4]f32{ 1.0, 1.0, 0.0, 0.0 },
-        };
-
-        if (self.target_width > self.target_height) {
-            push_const_block.aspect_ratio[0] = viewport_info.width / viewport_info.height;
-        } else {
-            push_const_block.aspect_ratio[1] = viewport_info.height / viewport_info.width;
-        }
-
-        vkctxt.vkd.cmdPushConstants(
-            command_buffer,
-            self.pipeline_layout,
-            .{ .vertex_bit = true },
-            0,
-            @sizeOf(VertPushConstBlock),
-            @ptrCast([*]const VertPushConstBlock, &push_const_block),
-        );
-
-        vkctxt.vkd.cmdPushConstants(
-            command_buffer,
-            self.pipeline_layout,
-            .{ .fragment_bit = true },
-            @sizeOf(VertPushConstBlock),
-            @intCast(u32, self.frag_push_const_size),
-            self.frag_push_const_block,
-        );
-
-        vkctxt.vkd.cmdDraw(command_buffer, 3, 1, 0, 0);
+        vkctxt.vkd.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
     }
 
-    fn createFramebuffers(self: *ScreenRenderPass) void {
-        for (self.framebuffers) |*framebuffer, i| {
-            const create_info: vk.FramebufferCreateInfo = .{
-                .flags = .{},
-                .render_pass = self.render_pass,
-                .attachment_count = 1,
-                .p_attachments = @ptrCast([*]const vk.ImageView, &self.target_viewport_texture.textures[i].view),
-                .width = self.target_width,
-                .height = self.target_height,
-                .layers = 1,
-            };
-
-            framebuffer.* = vkctxt.vkd.createFramebuffer(vkctxt.vkc.device, create_info, null) catch |err| {
-                vkctxt.printVulkanError("Can't create framebuffer for screen render pass", err, vkctxt.vkc.allocator);
-                return;
-            };
-        }
-    }
-
-    fn destroyFramebuffers(self: *ScreenRenderPass) void {
-        for (self.framebuffers) |f|
-            vkctxt.vkd.destroyFramebuffer(vkctxt.vkc.device, f, null);
-    }
-
-    fn reinitFramebuffer(render_pass: *RGPass) void {
-        const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
-
-        self.destroyFramebuffers();
-        self.createFramebuffers();
-    }
-
-    fn createPipelineCache(self: *ScreenRenderPass) void {
+    fn createPipelineCache(self: *ClearRenderPass) void {
         const pipeline_cache_create_info: vk.PipelineCacheCreateInfo = .{
             .flags = .{},
             .initial_data_size = 0,
@@ -299,25 +180,12 @@ pub const ScreenRenderPass = struct {
         };
     }
 
-    fn createPipelineLayout(self: *ScreenRenderPass) void {
-        const push_constant_range: [2]vk.PushConstantRange = [_]vk.PushConstantRange{
-            .{
-                .stage_flags = .{ .vertex_bit = true },
-                .offset = 0,
-                .size = @sizeOf(VertPushConstBlock),
-            },
-            .{
-                .stage_flags = .{ .fragment_bit = true },
-                .offset = @sizeOf(VertPushConstBlock),
-                .size = @intCast(u32, self.frag_push_const_size),
-            },
-        };
-
+    fn createPipelineLayout(self: *ClearRenderPass) void {
         const pipeline_layout_create_info: vk.PipelineLayoutCreateInfo = .{
             .set_layout_count = 0,
             .p_set_layouts = undefined,
-            .push_constant_range_count = 2,
-            .p_push_constant_ranges = @ptrCast([*]const vk.PushConstantRange, &push_constant_range),
+            .push_constant_range_count = 0,
+            .p_push_constant_ranges = undefined,
             .flags = .{},
         };
 
@@ -327,17 +195,7 @@ pub const ScreenRenderPass = struct {
         };
     }
 
-    fn recreatePipeline(self: *ScreenRenderPass) void {
-        vkctxt.vkd.destroyPipeline(vkctxt.vkc.device, self.pipeline, null);
-        self.createPipeline();
-    }
-
-    pub fn recreatePipelineOnShaderChange(pass: *RGPass) void {
-        const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", pass);
-        self.recreatePipeline();
-    }
-
-    fn createPipeline(self: *ScreenRenderPass) void {
+    fn createPipeline(self: *ClearRenderPass) void {
         const input_assembly_state: vk.PipelineInputAssemblyStateCreateInfo = .{
             .topology = .triangle_list,
             .flags = .{},
@@ -444,23 +302,19 @@ pub const ScreenRenderPass = struct {
             .flags = .{},
         };
 
+        const vert_code = @embedFile("clear_render_pass.vert");
+        const vert_shader = shader_util.loadShader(vert_code, .vertex);
+        defer vkctxt.vkd.destroyShaderModule(vkctxt.vkc.device, vert_shader, null);
+
         const ui_vert_shader_stage: vk.PipelineShaderStageCreateInfo = .{
             .stage = .{ .vertex_bit = true },
-            .module = self.vert_shader,
+            .module = vert_shader,
             .p_name = "main",
             .flags = .{},
             .p_specialization_info = null,
         };
 
-        const ui_frag_shader_stage: vk.PipelineShaderStageCreateInfo = .{
-            .stage = .{ .fragment_bit = true },
-            .module = self.frag_shader.*,
-            .p_name = "main",
-            .flags = .{},
-            .p_specialization_info = null,
-        };
-
-        const shader_stages = [_]vk.PipelineShaderStageCreateInfo{ ui_vert_shader_stage, ui_frag_shader_stage };
+        const shader_stages = [_]vk.PipelineShaderStageCreateInfo{ui_vert_shader_stage};
 
         const pipeline_create_info: vk.GraphicsPipelineCreateInfo = .{
             .layout = self.pipeline_layout,
@@ -478,7 +332,7 @@ pub const ScreenRenderPass = struct {
             .p_dynamic_state = &dynamic_state,
             .p_vertex_input_state = &vertex_input_state,
 
-            .stage_count = 2,
+            .stage_count = 1,
             .p_stages = @ptrCast([*]const vk.PipelineShaderStageCreateInfo, &shader_stages),
 
             .p_tessellation_state = null,

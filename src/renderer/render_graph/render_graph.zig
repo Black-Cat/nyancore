@@ -10,6 +10,7 @@ const PassList = std.ArrayList(*RGPass);
 const RGResource = @import("render_graph_resource.zig").RGResource;
 const ResourceList = std.ArrayList(*RGResource);
 
+const SyncPass = @import("passes/sync_pass.zig").SyncPass;
 const Swapchain = @import("resources/swapchain.zig").Swapchain;
 const Texture = @import("resources/texture.zig").Texture;
 const ViewportTexture = @import("resources/viewport_texture.zig").ViewportTexture;
@@ -41,6 +42,7 @@ pub const RenderGraph = struct {
     culled_resources: ResourceList,
 
     sorted_passes: PassList,
+    sync_passes: std.ArrayList(*SyncPass),
 
     resource_changes: std.ArrayList(ResourceChangeFn),
 
@@ -57,6 +59,7 @@ pub const RenderGraph = struct {
         self.culled_resources = ResourceList.init(allocator);
 
         self.sorted_passes = PassList.init(allocator);
+        self.sync_passes = std.ArrayList(*SyncPass).init(allocator);
 
         self.resource_changes = std.ArrayList(ResourceChangeFn).init(allocator);
 
@@ -112,6 +115,7 @@ pub const RenderGraph = struct {
         self.culled_resources.deinit();
 
         self.sorted_passes.deinit();
+        self.sync_passes.deinit();
 
         self.allocator.free(self.command_buffers);
     }
@@ -160,6 +164,7 @@ pub const RenderGraph = struct {
 
     pub fn build(self: *RenderGraph) void {
         self.cull();
+        updateSyncPasses(self.culled_passes, self.culled_resources, &self.sync_passes);
         self.topology_sort();
 
         self.needs_rebuilding = false;
@@ -200,6 +205,37 @@ pub const RenderGraph = struct {
                 queue_resources.append(r) catch unreachable;
                 self.culled_resources.append(r) catch unreachable;
             }
+        }
+    }
+
+    fn updateSyncPasses(passes: PassList, resources: ResourceList, sync_passes: *std.ArrayList(*SyncPass)) void {
+        for (passes.items) |pass| {
+            const is_culled: bool = !(for (resources.items) |res| {
+                if (res == &pass.sync_point.rg_resource) break true;
+            } else false);
+
+            if (is_culled)
+                continue;
+
+            const sync_pass: ?*SyncPass = for (sync_passes.items) |sp| {
+                if (&sp.rg_pass == pass)
+                    break sp;
+            } else null;
+
+            if (sync_pass == null)
+                continue;
+
+            var barrier_start: u32 = vk.PipelineStageFlags.toInt(.{ .top_of_pipe_bit = true });
+            var barrier_end: u32 = vk.PipelineStageFlags.toInt(.{ .bottom_of_pipe_bit = true });
+
+            for (sync_pass.?.input_sync_point.rg_resource.writers.items) |synced_pass|
+                barrier_end = @maximum(barrier_end, vk.PipelineStageFlags.toInt(synced_pass.pipeline_end));
+
+            for (sync_pass.?.output_sync_point.rg_resource.readers.items) |synced_pass|
+                barrier_end = @minimum(barrier_end, vk.PipelineStageFlags.toInt(synced_pass.pipeline_start));
+
+            sync_pass.?.rg_pass.pipeline_start = vk.PipelineStageFlags.fromInt(barrier_start);
+            sync_pass.?.rg_pass.pipeline_end = vk.PipelineStageFlags.fromInt(barrier_end);
         }
     }
 
@@ -301,5 +337,12 @@ pub const RenderGraph = struct {
         };
 
         vkctxt.vkd.freeCommandBuffers(vkctxt.vkc.device, self.command_pool, 1, @ptrCast([*]const vk.CommandBuffer, &command_buffer));
+    }
+
+    pub fn initPasses(self: *RenderGraph) void {
+        for (self.passes.items) |pass|
+            pass.initFn(pass);
+
+        self.build();
     }
 };

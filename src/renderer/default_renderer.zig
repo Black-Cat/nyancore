@@ -37,6 +37,8 @@ pub const DefaultRenderer = struct {
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
 
         rg.global_render_graph.init(self.allocator);
+
+        rg.global_render_graph.final_swapchain.rg_resource.init("Final Swapchain", self.allocator);
     }
 
     fn systemInit(system: *System, app: *Application) void {
@@ -50,17 +52,11 @@ pub const DefaultRenderer = struct {
         var height: i32 = undefined;
         c.glfwGetFramebufferSize(app.window, &width, &height);
 
-        rg.global_render_graph.final_swapchain.rg_resource.init("Final Swapchain", app.allocator);
         rg.global_render_graph.final_swapchain.init(@intCast(u32, width), @intCast(u32, height), frames_in_flight) catch @panic("Error during swapchain creation");
 
         rg.global_render_graph.initVulkan(frames_in_flight);
 
         self.createSyncObjects() catch @panic("Can't create sync objects");
-
-        for (rg.global_render_graph.passes.items) |pass|
-            pass.initFn(pass);
-
-        rg.global_render_graph.build();
     }
 
     fn systemDeinit(system: *System) void {

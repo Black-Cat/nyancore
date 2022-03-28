@@ -74,6 +74,7 @@ const DeviceDispatch = struct {
     vkCmdBindIndexBuffer: vk.PfnCmdBindIndexBuffer,
     vkCmdBindPipeline: vk.PfnCmdBindPipeline,
     vkCmdBindVertexBuffers: vk.PfnCmdBindVertexBuffers,
+    vkCmdClearAttachments: vk.PfnCmdClearAttachments,
     vkCmdCopyBufferToImage: vk.PfnCmdCopyBufferToImage,
     vkCmdCopyImageToBuffer: vk.PfnCmdCopyImageToBuffer,
     vkCmdDraw: vk.PfnCmdDraw,

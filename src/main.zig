@@ -16,6 +16,7 @@ pub const Math = @import("math/math.zig");
 pub const Sdf = @import("sdf/sdf.zig");
 
 pub const RGResource = @import("renderer/render_graph/render_graph_resource.zig").RGResource;
+pub const RGPass = @import("renderer/render_graph/render_graph_pass.zig").RGPass;
 
 pub const Widgets = struct {
     pub const DockSpace = @import("ui/dockspace.zig").DockSpace;

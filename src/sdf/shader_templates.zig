@@ -121,6 +121,9 @@ pub const shader_main =
     \\
     \\      col *= dif;
     \\  }
+    \\#ifdef DISCARD_ENVIRONMENT
+    \\  else discard;
+    \\#endif
     \\  tot += col;
     \\
     \\  outColor = vec4(tot, 1.);

@@ -302,12 +302,12 @@ pub const UIVulkanContext = struct {
         const color_attachment: vk.AttachmentDescription = .{
             .format = rg.global_render_graph.final_swapchain.image_format,
             .samples = .{ .@"1_bit" = true },
-            .load_op = .clear,
+            .load_op = self.parent.render_pass.load_op,
             .store_op = .store,
             .stencil_load_op = .dont_care,
             .stencil_store_op = .dont_care,
-            .initial_layout = .@"undefined",
-            .final_layout = .present_src_khr,
+            .initial_layout = self.parent.render_pass.initial_layout,
+            .final_layout = self.parent.render_pass.final_layout,
             .flags = .{},
         };
 

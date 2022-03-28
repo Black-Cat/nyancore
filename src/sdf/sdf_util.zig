@@ -9,8 +9,10 @@ pub fn combinatorExitCommand(comptime command: []const u8, enter_stack: usize, e
     const broken_stack: []const u8 = "float d{d} = 1e10;";
 
     var res: []const u8 = undefined;
-    if (enter_stack + 2 >= ctxt.value_indexes.items.len) {
+    if (enter_stack + 1 >= ctxt.value_indexes.items.len) {
         res = std.fmt.allocPrint(ctxt.allocator, broken_stack, .{enter_index}) catch unreachable;
+    } else if (enter_stack + 2 >= ctxt.value_indexes.items.len) {
+        res = std.fmt.allocPrint(ctxt.allocator, "float d{d} = d{d};", .{ enter_index, ctxt.value_indexes.items[enter_stack + 1].index }) catch unreachable;
     } else {
         res = std.fmt.allocPrint(ctxt.allocator, define_command, .{
             enter_index,
