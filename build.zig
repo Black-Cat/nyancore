@@ -202,22 +202,3 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
 
     return nyancoreLib;
 }
-
-pub fn build(b: *Builder) void {
-    var test_app = b.addExecutable("test_app", "src/test_app.zig");
-
-    var nyancoreLib = addStaticLibrary(b, test_app, "", true);
-
-    const mode = b.standardReleaseOptions();
-    test_app.setBuildMode(mode);
-    test_app.linkLibrary(nyancoreLib);
-    test_app.linkSystemLibrary("c");
-    test_app.linkSystemLibrary("glfw");
-    test_app.step.dependOn(&nyancoreLib.step);
-    test_app.install();
-
-    const run_target = b.step("run", "Run test app");
-    const run = test_app.run();
-    run.step.dependOn(b.getInstallStep());
-    run_target.dependOn(&run.step);
-}
