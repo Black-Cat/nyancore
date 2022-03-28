@@ -24,8 +24,8 @@ pub const ScreenRenderPass = struct {
     framebuffer_index: *u32,
 
     target_image_format: vk.Format,
-    target_width: u32,
-    target_height: u32,
+    target_width: *u32,
+    target_height: *u32,
     target_viewport_texture: *ViewportTexture,
 
     pipeline_cache: vk.PipelineCache,
@@ -56,14 +56,14 @@ pub const ScreenRenderPass = struct {
 
         if (@TypeOf(target) == *ViewportTexture) {
             self.target_image_format = target.image_format;
-            self.target_width = target.width;
-            self.target_height = target.height;
+            self.target_width = &target.width;
+            self.target_height = &target.height;
             self.target_viewport_texture = target;
             self.framebuffer_index = &rg.global_render_graph.frame_index;
         } else {
             self.target_image_format = target.image_format;
-            self.target_width = target.image_extent.width;
-            self.target_height = target.image_extent.height;
+            self.target_width = &target.image_extent.width;
+            self.target_height = &target.image_extent.height;
             self.framebuffer_index = &rg.global_render_graph.image_index;
         }
 
@@ -189,8 +189,8 @@ pub const ScreenRenderPass = struct {
             .render_area = .{
                 .offset = .{ .x = 0, .y = 0 },
                 .extent = .{
-                    .width = self.target_width,
-                    .height = self.target_height,
+                    .width = self.target_width.*,
+                    .height = self.target_height.*,
                 },
             },
             .clear_value_count = 1,
@@ -203,8 +203,8 @@ pub const ScreenRenderPass = struct {
         vkctxt.vkd.cmdBindPipeline(command_buffer, .graphics, self.pipeline);
 
         const viewport_info: vk.Viewport = .{
-            .width = @intToFloat(f32, self.target_width),
-            .height = @intToFloat(f32, self.target_height),
+            .width = @intToFloat(f32, self.target_width.*),
+            .height = @intToFloat(f32, self.target_height.*),
             .min_depth = 0.0,
             .max_depth = 1.0,
             .x = 0,
@@ -216,8 +216,8 @@ pub const ScreenRenderPass = struct {
         var scissor_rect: vk.Rect2D = .{
             .offset = .{ .x = 0, .y = 0 },
             .extent = .{
-                .width = self.target_width,
-                .height = self.target_height,
+                .width = self.target_width.*,
+                .height = self.target_height.*,
             },
         };
 
@@ -228,7 +228,7 @@ pub const ScreenRenderPass = struct {
             .aspect_ratio = [4]f32{ 1.0, 1.0, 0.0, 0.0 },
         };
 
-        if (self.target_width > self.target_height) {
+        if (self.target_width.* > self.target_height.*) {
             push_const_block.aspect_ratio[0] = viewport_info.width / viewport_info.height;
         } else {
             push_const_block.aspect_ratio[1] = viewport_info.height / viewport_info.width;
@@ -262,8 +262,8 @@ pub const ScreenRenderPass = struct {
                 .render_pass = self.render_pass,
                 .attachment_count = 1,
                 .p_attachments = @ptrCast([*]const vk.ImageView, &self.target_viewport_texture.textures[i].view),
-                .width = self.target_width,
-                .height = self.target_height,
+                .width = self.target_width.*,
+                .height = self.target_height.*,
                 .layers = 1,
             };
 
