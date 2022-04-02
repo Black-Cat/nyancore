@@ -13,6 +13,7 @@ const printErrorNoPanic = @import("../application/print_error.zig").printErrorNo
 pub const ShaderStage = enum {
     vertex,
     fragment,
+    compute,
 };
 
 const default_resources: c.glslang_resource_s = .{
@@ -165,6 +166,7 @@ pub fn compileShader(code: [*:0]const u8, stage: ShaderStage) CompiledShader {
     input.stage = switch (stage) {
         .vertex => c.GLSLANG_STAGE_VERTEX,
         .fragment => c.GLSLANG_STAGE_FRAGMENT,
+        .compute => c.GLSLANG_STAGE_COMPUTE,
     };
 
     var shader: *c.glslang_shader_t = c.glslang_shader_create(&input) orelse unreachable;

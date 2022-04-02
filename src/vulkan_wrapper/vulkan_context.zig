@@ -19,6 +19,69 @@ const validation_layers: [1][:0]const u8 = [_][:0]const u8{
     "VK_LAYER_KHRONOS_validation",
 };
 
+pub const Buffer = struct {
+    size: vk.DeviceSize,
+    buffer: vk.Buffer,
+    memory: vk.DeviceMemory,
+    mapped_memory: *anyopaque,
+
+    pub fn init(self: *Buffer, size: vk.DeviceSize, usage: vk.BufferUsageFlags, properties: vk.MemoryPropertyFlags) void {
+        const buffer_info: vk.BufferCreateInfo = .{
+            .size = size,
+            .usage = usage,
+            .sharing_mode = .exclusive,
+            .flags = .{},
+            .queue_family_index_count = 0,
+            .p_queue_family_indices = undefined,
+        };
+
+        self.buffer = vkd.createBuffer(vkc.device, buffer_info, null) catch |err| {
+            printVulkanError("Can't create buffer for ui", err, vkc.allocator);
+            return;
+        };
+
+        var mem_req: vk.MemoryRequirements = vkd.getBufferMemoryRequirements(vkc.device, self.buffer);
+
+        const alloc_info: vk.MemoryAllocateInfo = .{
+            .allocation_size = mem_req.size,
+            .memory_type_index = vkc.getMemoryType(mem_req.memory_type_bits, properties),
+        };
+
+        self.memory = vkd.allocateMemory(vkc.device, alloc_info, null) catch |err| {
+            printVulkanError("Can't allocate buffer for ui", err, vkc.allocator);
+            return;
+        };
+
+        vkd.bindBufferMemory(vkc.device, self.buffer, self.memory, 0) catch |err| {
+            printVulkanError("Can't bind buffer memory for ui", err, vkc.allocator);
+            return;
+        };
+
+        self.mapped_memory = vkd.mapMemory(vkc.device, self.memory, 0, size, .{}) catch |err| {
+            printVulkanError("Can't map memory for ui", err, vkc.allocator);
+            return;
+        } orelse return;
+    }
+
+    pub fn flush(self: *Buffer) void {
+        const mapped_range: vk.MappedMemoryRange = .{
+            .memory = self.memory,
+            .offset = 0,
+            .size = vk.WHOLE_SIZE,
+        };
+
+        vkd.flushMappedMemoryRanges(vkc.device, 1, @ptrCast([*]const vk.MappedMemoryRange, &mapped_range)) catch |err| {
+            printVulkanError("Can't flush buffer for ui", err, vkc.allocator);
+        };
+    }
+
+    pub fn destroy(self: *Buffer) void {
+        vkd.unmapMemory(vkc.device, self.memory);
+        vkd.destroyBuffer(vkc.device, self.buffer, null);
+        vkd.freeMemory(vkc.device, self.memory, null);
+    }
+};
+
 const BaseDispatch = struct {
     vkCreateInstance: vk.PfnCreateInstance,
     vkEnumerateInstanceLayerProperties: vk.PfnEnumerateInstanceLayerProperties,
@@ -77,6 +140,7 @@ const DeviceDispatch = struct {
     vkCmdClearAttachments: vk.PfnCmdClearAttachments,
     vkCmdCopyBufferToImage: vk.PfnCmdCopyBufferToImage,
     vkCmdCopyImageToBuffer: vk.PfnCmdCopyImageToBuffer,
+    vkCmdDispatch: vk.PfnCmdDispatch,
     vkCmdDraw: vk.PfnCmdDraw,
     vkCmdDrawIndexed: vk.PfnCmdDrawIndexed,
     vkCmdEndRenderPass: vk.PfnCmdEndRenderPass,
@@ -86,6 +150,7 @@ const DeviceDispatch = struct {
     vkCmdSetViewport: vk.PfnCmdSetViewport,
     vkCreateBuffer: vk.PfnCreateBuffer,
     vkCreateCommandPool: vk.PfnCreateCommandPool,
+    vkCreateComputePipelines: vk.PfnCreateComputePipelines,
     vkCreateDescriptorPool: vk.PfnCreateDescriptorPool,
     vkCreateDescriptorSetLayout: vk.PfnCreateDescriptorSetLayout,
     vkCreateFence: vk.PfnCreateFence,

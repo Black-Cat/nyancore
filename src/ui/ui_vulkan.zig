@@ -9,6 +9,7 @@ usingnamespace @cImport({
 
 const vkctxt = @import("../vulkan_wrapper/vulkan_context.zig");
 
+const Buffer = vkctxt.Buffer;
 const UI = @import("ui.zig").UI;
 
 const printError = @import("../application/print_error.zig").printError;
@@ -18,69 +19,6 @@ const Texture = @import("../renderer/render_graph/resources/texture.zig").Textur
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
-};
-
-pub const Buffer = struct {
-    size: vk.DeviceSize,
-    buffer: vk.Buffer,
-    memory: vk.DeviceMemory,
-    mapped_memory: *anyopaque,
-
-    pub fn init(self: *Buffer, size: vk.DeviceSize, usage: vk.BufferUsageFlags, properties: vk.MemoryPropertyFlags) void {
-        const buffer_info: vk.BufferCreateInfo = .{
-            .size = size,
-            .usage = usage,
-            .sharing_mode = .exclusive,
-            .flags = .{},
-            .queue_family_index_count = 0,
-            .p_queue_family_indices = undefined,
-        };
-
-        self.buffer = vkctxt.vkd.createBuffer(vkctxt.vkc.device, buffer_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't create buffer for ui", err, vkctxt.vkc.allocator);
-            return;
-        };
-
-        var mem_req: vk.MemoryRequirements = vkctxt.vkd.getBufferMemoryRequirements(vkctxt.vkc.device, self.buffer);
-
-        const alloc_info: vk.MemoryAllocateInfo = .{
-            .allocation_size = mem_req.size,
-            .memory_type_index = vkctxt.vkc.getMemoryType(mem_req.memory_type_bits, properties),
-        };
-
-        self.memory = vkctxt.vkd.allocateMemory(vkctxt.vkc.device, alloc_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't allocate buffer for ui", err, vkctxt.vkc.allocator);
-            return;
-        };
-
-        vkctxt.vkd.bindBufferMemory(vkctxt.vkc.device, self.buffer, self.memory, 0) catch |err| {
-            vkctxt.printVulkanError("Can't bind buffer memory for ui", err, vkctxt.vkc.allocator);
-            return;
-        };
-
-        self.mapped_memory = vkctxt.vkd.mapMemory(vkctxt.vkc.device, self.memory, 0, size, .{}) catch |err| {
-            vkctxt.printVulkanError("Can't map memory for ui", err, vkctxt.vkc.allocator);
-            return;
-        } orelse return;
-    }
-
-    pub fn flush(self: *Buffer) void {
-        const mapped_range: vk.MappedMemoryRange = .{
-            .memory = self.memory,
-            .offset = 0,
-            .size = vk.WHOLE_SIZE,
-        };
-
-        vkctxt.vkd.flushMappedMemoryRanges(vkctxt.vkc.device, 1, @ptrCast([*]const vk.MappedMemoryRange, &mapped_range)) catch |err| {
-            vkctxt.printVulkanError("Can't flush buffer for ui", err, vkctxt.vkc.allocator);
-        };
-    }
-
-    pub fn destroy(self: *Buffer) void {
-        vkctxt.vkd.unmapMemory(vkctxt.vkc.device, self.memory);
-        vkctxt.vkd.destroyBuffer(vkctxt.vkc.device, self.buffer, null);
-        vkctxt.vkd.freeMemory(vkctxt.vkc.device, self.memory, null);
-    }
 };
 
 pub const UIVulkanContext = struct {

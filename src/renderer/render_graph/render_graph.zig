@@ -29,6 +29,7 @@ pub const RenderGraph = struct {
     needs_rebuilding: bool,
 
     command_pool: vk.CommandPool,
+    compute_command_pool: vk.CommandPool,
     command_buffers: []vk.CommandBuffer,
 
     frame_index: u32,
@@ -74,7 +75,7 @@ pub const RenderGraph = struct {
     pub fn initVulkan(self: *RenderGraph, in_flight: u32) void {
         self.in_flight = in_flight;
 
-        const pool_info: vk.CommandPoolCreateInfo = .{
+        var pool_info: vk.CommandPoolCreateInfo = .{
             .queue_family_index = vkctxt.vkc.family_indices.graphics_family,
             .flags = .{
                 .reset_command_buffer_bit = true,
@@ -83,6 +84,13 @@ pub const RenderGraph = struct {
 
         self.command_pool = vkctxt.vkd.createCommandPool(vkctxt.vkc.device, pool_info, null) catch |err| {
             vkctxt.printVulkanError("Can't create command pool for render graph", err, vkctxt.vkc.allocator);
+            return;
+        };
+
+        pool_info.queue_family_index = vkctxt.vkc.family_indices.compute_family;
+
+        self.compute_command_pool = vkctxt.vkd.createCommandPool(vkctxt.vkc.device, pool_info, null) catch |err| {
+            vkctxt.printVulkanError("Can't create compute command pool for render graph", err, vkctxt.vkc.allocator);
             return;
         };
 
@@ -307,6 +315,21 @@ pub const RenderGraph = struct {
         const alloc_info: vk.CommandBufferAllocateInfo = .{
             .level = .primary,
             .command_pool = self.command_pool,
+            .command_buffer_count = 1,
+        };
+
+        var command_buffer: vk.CommandBuffer = undefined;
+        vkctxt.vkd.allocateCommandBuffers(vkctxt.vkc.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &command_buffer)) catch |err| {
+            vkctxt.printVulkanError("Can't allocate command buffer", err, vkctxt.vkc.allocator);
+        };
+        return command_buffer;
+    }
+
+    // Pls don't use, created for special cases
+    pub fn allocateComputeCommandBuffer(self: *RenderGraph) vk.CommandBuffer {
+        const alloc_info: vk.CommandBufferAllocateInfo = .{
+            .level = .primary,
+            .command_pool = self.compute_command_pool,
             .command_buffer_count = 1,
         };
 
