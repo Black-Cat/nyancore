@@ -68,7 +68,6 @@ pub const Application = struct {
         var ind: usize = 1;
         while (ind < args.len) {
             const arg: [:0]u8 = args[ind];
-            std.debug.print("{s} {d}\n", .{ arg, arg[0] });
 
             var offset: usize = 0;
             if (std.mem.startsWith(u8, arg, "--")) {
