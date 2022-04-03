@@ -35,6 +35,7 @@ pub const Application = struct {
     systems: []*System,
     window: *c.GLFWwindow,
     framebuffer_resized: bool,
+    args: std.StringHashMap([]const u8),
 
     pub fn init(self: *Application, comptime name: [:0]const u8, allocator: Allocator, systems: []*System) void {
         self.allocator = allocator;
@@ -45,10 +46,53 @@ pub const Application = struct {
         self.window = undefined;
         self.framebuffer_resized = false;
         self.config = &Global.config;
+
+        self.args = parseArgs(self.allocator);
     }
 
     pub fn deinit(self: *Application) void {
-        _ = self;
+        var args_iter = self.args.iterator();
+        while (args_iter.next()) |arg| {
+            self.allocator.free(arg.key_ptr.*);
+            self.allocator.free(arg.value_ptr.*);
+        }
+        self.args.deinit();
+    }
+
+    fn parseArgs(allocator: Allocator) std.StringHashMap([]const u8) {
+        var map: std.StringHashMap([]const u8) = std.StringHashMap([]const u8).init(allocator);
+
+        const args: []const [:0]u8 = std.process.argsAlloc(allocator) catch unreachable;
+        defer std.process.argsFree(allocator, args);
+
+        var ind: usize = 1;
+        while (ind < args.len) {
+            const arg: [:0]u8 = args[ind];
+            std.debug.print("{s} {d}\n", .{ arg, arg[0] });
+
+            var offset: usize = 0;
+            if (std.mem.startsWith(u8, arg, "--")) {
+                offset = 2;
+            } else if (std.mem.startsWith(u8, arg, "-")) {
+                offset = 1;
+            }
+
+            if (offset == 0) {
+                var arg_dupe: []const u8 = allocator.dupe(u8, arg) catch unreachable;
+                map.put("", arg_dupe) catch unreachable;
+                ind += 1;
+                continue;
+            }
+
+            if (ind + 1 < args.len) {
+                var arg_dupe: []const u8 = allocator.dupe(u8, arg[offset..]) catch unreachable;
+                var val_dupe: []const u8 = allocator.dupe(u8, args[ind + 1]) catch unreachable;
+                map.put(arg_dupe, val_dupe) catch unreachable;
+                ind += 2;
+            }
+        }
+
+        return map;
     }
 
     pub fn start(self: *Application) !void {
