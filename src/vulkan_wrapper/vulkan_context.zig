@@ -1,4 +1,4 @@
-const build_config = @import("../build_config.zig");
+const nyancore_options = @import("nyancore_options");
 const c = @import("../c.zig");
 const std = @import("std");
 const vk = @import("../vk.zig");
@@ -89,7 +89,7 @@ const BaseDispatch = struct {
 };
 pub var vkb: BaseDispatch = undefined;
 
-const InstanceDispatch = if (build_config.use_vulkan_sdk) struct {
+const InstanceDispatch = if (nyancore_options.use_vulkan_sdk) struct {
     vkCreateDebugUtilsMessengerEXT: vk.PfnCreateDebugUtilsMessengerEXT,
     vkDestroyDebugUtilsMessengerEXT: vk.PfnDestroyDebugUtilsMessengerEXT,
 
@@ -320,7 +320,7 @@ pub const VulkanContext = struct {
         };
         errdefer vki.destroySurfaceKHR(self.instance, self.surface, null);
 
-        if (build_config.use_vulkan_sdk) {
+        if (nyancore_options.use_vulkan_sdk) {
             self.setupDebugMessenger() catch |err| {
                 printVulkanError("Error setting up debug messenger", err, self.allocator);
                 return err;
@@ -348,7 +348,7 @@ pub const VulkanContext = struct {
     pub fn deinit(self: *VulkanContext) void {
         vkd.destroyDevice(self.device, null);
 
-        if (build_config.use_vulkan_sdk) {
+        if (nyancore_options.use_vulkan_sdk) {
             vki.destroyDebugUtilsMessengerEXT(self.instance, self.debug_messenger, null);
         }
 
@@ -368,7 +368,7 @@ pub const VulkanContext = struct {
     }
 
     fn createInstance(self: *VulkanContext, app_name: [:0]const u8) !void {
-        if (build_config.use_vulkan_sdk) {
+        if (nyancore_options.use_vulkan_sdk) {
             const validation_layers_supported: bool = self.checkValidationLayerSupport() catch |err| {
                 printVulkanError("Error getting information about layers", err, self.allocator);
                 return err;
@@ -390,7 +390,7 @@ pub const VulkanContext = struct {
         var glfw_extension_count: u32 = undefined;
         const glfw_extensions: [*c][*c]const u8 = c.glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
-        const extensions_count: u32 = glfw_extension_count + 1 * @boolToInt(build_config.use_vulkan_sdk);
+        const extensions_count: u32 = glfw_extension_count + 1 * @boolToInt(nyancore_options.use_vulkan_sdk);
         var extensions: [][*c]const u8 = self.allocator.alloc([*c]const u8, extensions_count) catch {
             printError("Vulkan", "Can't allocate memory for extensions");
             return error.HostAllocationError;
@@ -402,7 +402,7 @@ pub const VulkanContext = struct {
             extensions[i] = glfw_extensions[i];
         }
 
-        if (build_config.use_vulkan_sdk) {
+        if (nyancore_options.use_vulkan_sdk) {
             extensions[i] = "VK_EXT_debug_utils";
         }
 
@@ -410,8 +410,8 @@ pub const VulkanContext = struct {
             .p_application_info = &app_info,
             .enabled_extension_count = extensions_count,
             .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, extensions),
-            .enabled_layer_count = if (build_config.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
-            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
+            .enabled_layer_count = if (nyancore_options.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
+            .pp_enabled_layer_names = if (nyancore_options.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
             .flags = .{},
         };
 
@@ -677,8 +677,8 @@ pub const VulkanContext = struct {
             .p_queue_create_infos = @ptrCast([*]const vk.DeviceQueueCreateInfo, &queue_create_info),
             .queue_create_info_count = @intCast(u32, queue_create_info_count),
             .p_enabled_features = null,
-            .enabled_layer_count = if (build_config.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
-            .pp_enabled_layer_names = if (build_config.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
+            .enabled_layer_count = if (nyancore_options.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
+            .pp_enabled_layer_names = if (nyancore_options.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
             .enabled_extension_count = @intCast(u32, std.mem.len(required_device_extensions)),
             .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, &required_device_extensions),
         };

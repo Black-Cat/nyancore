@@ -15,6 +15,13 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
     nyancore_options.addOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
     nyancoreLib.addOptions("nyancore_options", nyancore_options);
     app.addOptions("nyancore_options", nyancore_options);
+    app.addPackage(.{
+        .name = "nyancore",
+        .path = .{ .path = path ++ "/src/main.zig" },
+        .dependencies = &[_]std.build.Pkg{
+            nyancore_options.getPackage("nyancore_options"),
+        },
+    });
 
     // Vulkan
     const vulkanPackage: std.build.Pkg = .{
