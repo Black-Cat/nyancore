@@ -1,3 +1,6 @@
 [submodule "third_party/glslang"]
 	path = third_party/glslang
 	url = git@github.com:Black-Cat/glslang.git
+[submodule "third_party/enet"]
+	path = third_party/enet
+	url = git@github.com:Black-Cat/enet.git

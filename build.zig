@@ -205,6 +205,48 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
     nyancoreLib.addIncludeDir(path ++ "third_party/fonts/");
     app.addIncludeDir(path ++ "third_party/fonts/");
 
+    // Enet
+    const enet_path: []const u8 = path ++ "third_party/enet/";
+    const enet_flags = switch (os_tag) {
+        .windows => &[_][]const u8{
+            "-DHAS_GETNAMEINFO=1",
+            "-DHAS_INET_PTON=1",
+            "-DHAS_INET_NTOP=1",
+            "-DHAS_MSGHDR_FLAGS=1",
+        },
+        else => &[_][]const u8{
+            "-DHAS_FCNTL=1",
+            "-DHAS_POLL=1",
+            "-DHAS_GETADDRINFO=1",
+            "-DHAS_GETNAMEINFO=1",
+            "-DHAS_GETHOSTBYNAME_R=1",
+            "-DHAS_GETHOSTBYADDR_R=1",
+            "-DHAS_INET_PTON=1",
+            "-DHAS_INET_NTOP=1",
+            "-DHAS_MSGHDR_FLAGS=1",
+            "-DHAS_SOCKLEN_T=1",
+        },
+    };
+    const enet_lib = b.addStaticLibrary("enet", null);
+    enet_lib.setTarget(app.target);
+    enet_lib.setBuildMode(app.build_mode);
+    enet_lib.linkSystemLibrary("c");
+    enet_lib.addIncludeDir(enet_path ++ "include");
+    enet_lib.addCSourceFile(enet_path ++ "callbacks.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "compress.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "host.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "list.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "packet.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "peer.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "protocol.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "unix.c", enet_flags);
+    enet_lib.addCSourceFile(enet_path ++ "win32.c", enet_flags);
+
+    nyancoreLib.step.dependOn(&enet_lib.step);
+    nyancoreLib.linkLibrary(enet_lib);
+    app.addIncludeDir(enet_path ++ "include");
+    app.linkLibrary(enet_lib);
+
     nyancoreLib.install();
 
     return nyancoreLib;
