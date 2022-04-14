@@ -1,6 +1,7 @@
 const std = @import("std");
 const vk = @import("../vk.zig");
 const c = @import("../c.zig");
+const tracy = @import("../tracy.zig");
 
 const vkctxt = @import("../vulkan_wrapper/vulkan_context.zig");
 

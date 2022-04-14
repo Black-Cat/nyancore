@@ -7,6 +7,7 @@ pub usingnamespace @import("renderer/render_graph/passes/passes.zig");
 pub usingnamespace @import("renderer/render_graph/resources/resources.zig");
 
 pub const c = @import("c.zig");
+pub const tracy = @import("tracy.zig");
 pub const vk = @import("vk.zig");
 pub const vkw = @import("vulkan_wrapper/vulkan_context.zig");
 

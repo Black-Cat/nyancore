@@ -1,7 +1,9 @@
 const builtin = @import("builtin");
 const c = @import("../c.zig");
-const std = @import("std");
+const nyancore_options = @import("nyancore_options");
 const rg = @import("../renderer/render_graph/render_graph.zig");
+const std = @import("std");
+const tracy = @import("../tracy.zig");
 
 const Allocator = std.mem.Allocator;
 const Global = @import("../global.zig");
@@ -140,7 +142,12 @@ pub const Application = struct {
         _ = c.glfwSetFramebufferSizeCallback(self.window, framebufferResizeCallback);
         var prev_time: f64 = c.glfwGetTime();
 
+        var tracy_frame: tracy.Frame = undefined;
+
         while (c.glfwWindowShouldClose(self.window) == c.GLFW_FALSE) {
+            if (nyancore_options.enable_tracing)
+                tracy_frame = tracy.Frame.start(null);
+
             c.glfwPollEvents();
 
             self.updateMousePosAndButtons();
@@ -156,6 +163,9 @@ pub const Application = struct {
                 system.update(system, elapsed);
 
             self.framebuffer_resized = false;
+
+            if (nyancore_options.enable_tracing)
+                tracy_frame.end();
         }
 
         rg.global_render_graph.deinitCommandBuffers();

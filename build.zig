@@ -4,7 +4,13 @@ const builtin = @import("builtin");
 const Builder = std.build.Builder;
 const Step = std.build.Step;
 
-pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime path: []const u8, use_vulkan_sdk: bool) *std.build.LibExeObjStep {
+pub fn addStaticLibrary(
+    b: *Builder,
+    app: *std.build.LibExeObjStep,
+    comptime path: []const u8,
+    use_vulkan_sdk: bool,
+    enable_tracing: bool,
+) *std.build.LibExeObjStep {
     const os_tag = if (app.target.os_tag != null) app.target.os_tag.? else builtin.os.tag;
 
     const nyancoreLib = b.addStaticLibrary("nyancore", path ++ "src/main.zig");
@@ -13,6 +19,7 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
 
     const nyancore_options = b.addOptions();
     nyancore_options.addOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
+    nyancore_options.addOption(bool, "enable_tracing", enable_tracing);
     nyancoreLib.addOptions("nyancore_options", nyancore_options);
     app.addOptions("nyancore_options", nyancore_options);
     app.addPackage(.{
@@ -44,6 +51,33 @@ pub fn addStaticLibrary(b: *Builder, app: *std.build.LibExeObjStep, comptime pat
 
         nyancoreLib.addIncludeDir(vulkan_sdk_include_path);
         app.addIncludeDir(vulkan_sdk_include_path);
+    }
+
+    // Tracy
+    if (enable_tracing) {
+        const tracy_path: []const u8 = path ++ "third_party/tracy/";
+        const tracy_lib = b.addStaticLibrary("tracy", null);
+        const tracy_flags = &[_][]const u8{ "-DTRACY_ENABLE", "-DTRACY_NO_CALLSTACK", "-DTRACY_NO_SYSTEM_TRACING" };
+
+        tracy_lib.setTarget(app.target);
+        tracy_lib.setBuildMode(app.build_mode);
+
+        tracy_lib.linkSystemLibrary("c");
+        tracy_lib.linkSystemLibrary("c++");
+        if (os_tag == .windows) {
+            tracy_lib.linkSystemLibrary("advapi32");
+            tracy_lib.linkSystemLibrary("user32");
+            tracy_lib.linkSystemLibrary("ws2_32");
+            tracy_lib.linkSystemLibrary("dbghelp");
+        }
+
+        tracy_lib.addIncludeDir(tracy_path);
+        tracy_lib.addCSourceFile(tracy_path ++ "TracyClient.cpp", tracy_flags);
+
+        nyancoreLib.step.dependOn(&tracy_lib.step);
+        nyancoreLib.linkLibrary(tracy_lib);
+        app.addIncludeDir(tracy_path);
+        app.linkLibrary(tracy_lib);
     }
 
     // GLFW
