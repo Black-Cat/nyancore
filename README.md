@@ -9,8 +9,8 @@ used in [lamia](https://github.com/Black-Cat/lamia) sdf editor
 * enet
 * glfw
 * glslang
-* vulkan-zig
 * tracy
+* vulkan-zig
 
 Math implementation is based on cglm implementation
 

@@ -1,5 +1,6 @@
 const builtin = @import("builtin");
 const c = @import("../c.zig");
+const ico = @import("../image/ico.zig");
 const nyancore_options = @import("nyancore_options");
 const rg = @import("../renderer/render_graph/render_graph.zig");
 const std = @import("std");
@@ -8,6 +9,7 @@ const tracy = @import("../tracy.zig");
 const Allocator = std.mem.Allocator;
 const Global = @import("../global.zig");
 const Config = @import("config.zig").Config;
+const Image = @import("../image/image.zig").Image;
 pub const System = @import("../system/system.zig").System;
 const printError = @import("print_error.zig").printError;
 
@@ -29,6 +31,12 @@ pub fn deinitGlobalData() void {
 pub var app: Application = undefined;
 
 pub const Application = struct {
+    pub const DelayedTask = struct {
+        task: fn (context: *anyopaque) void,
+        context: *anyopaque,
+        delay: f64,
+    };
+
     allocator: Allocator,
     config: *Config,
     config_file: []const u8,
@@ -38,6 +46,7 @@ pub const Application = struct {
     window: *c.GLFWwindow,
     framebuffer_resized: bool,
     args: std.StringHashMap([]const u8),
+    delayed_tasks: std.ArrayList(DelayedTask),
 
     pub fn init(self: *Application, comptime name: [:0]const u8, allocator: Allocator, systems: []*System) void {
         self.allocator = allocator;
@@ -50,6 +59,7 @@ pub const Application = struct {
         self.config = &Global.config;
 
         self.args = parseArgs(self.allocator);
+        self.delayed_tasks = std.ArrayList(DelayedTask).init(allocator);
     }
 
     pub fn deinit(self: *Application) void {
@@ -59,6 +69,7 @@ pub const Application = struct {
             self.allocator.free(arg.value_ptr.*);
         }
         self.args.deinit();
+        self.delayed_tasks.deinit();
     }
 
     fn parseArgs(allocator: Allocator) std.StringHashMap([]const u8) {
@@ -159,6 +170,8 @@ pub const Application = struct {
             const io: *c.ImGuiIO = c.igGetIO();
             io.DeltaTime = @floatCast(f32, elapsed);
 
+            self.updateDelayedTasks(elapsed);
+
             for (self.systems) |system|
                 system.update(system, elapsed);
 
@@ -194,6 +207,20 @@ pub const Application = struct {
         var self: *Application = application_glfw_map.get(window.?).?;
         if (action == c.GLFW_PRESS and button >= 0 and button < imgui_mouse_button_count)
             self.mouse_just_pressed[@intCast(usize, button)] = true;
+    }
+
+    fn updateDelayedTasks(self: *Application, elapsed: f64) void {
+        var i: usize = 0;
+        while (i < self.delayed_tasks.items.len) {
+            const t: *DelayedTask = &self.delayed_tasks.items[i];
+            t.delay -= elapsed;
+            if (t.delay <= 0.0) {
+                t.task(t.context);
+                _ = self.delayed_tasks.swapRemove(i);
+                continue;
+            }
+            i += 1;
+        }
     }
 
     fn updateMousePosAndButtons(self: *Application) void {
@@ -295,5 +322,25 @@ pub const Application = struct {
         var io: *c.ImGuiIO = c.igGetIO();
         io.MouseWheelH += @floatCast(f32, xoffset);
         io.MouseWheel += @floatCast(f32, yoffset);
+    }
+
+    pub fn set_icon(self: *Application, data: []const u8) void {
+        var buffer_stream: std.io.FixedBufferStream([]const u8) = undefined;
+        buffer_stream.buffer = data;
+        buffer_stream.pos = 0;
+
+        const images: []Image = ico.parse(buffer_stream.reader(), self.allocator) catch unreachable;
+        defer self.allocator.free(images);
+
+        const glfw_images: []c.GLFWimage = self.allocator.alloc(c.GLFWimage, images.len) catch unreachable;
+        defer self.allocator.free(glfw_images);
+
+        for (glfw_images) |*img, i|
+            img.* = images[i].asGLFWimage();
+
+        c.glfwSetWindowIcon(self.window, @intCast(c_int, images.len), glfw_images.ptr);
+
+        for (images) |img|
+            self.allocator.free(img.data);
     }
 };

@@ -27,4 +27,8 @@ pub const Widgets = struct {
 };
 
 pub const shader_util = @import("shaders/shader_util.zig");
-pub const file_util = @import("file_util.zig");
+
+pub const Image = @import("image/image.zig").Image;
+pub const bmp = @import("image/bmp.zig");
+pub const ico = @import("image/ico.zig");
+pub const png = @import("image/png.zig");
