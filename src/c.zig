@@ -9,6 +9,9 @@ pub usingnamespace @cImport({
     @cDefine("CIMGUI_DEFINE_ENUMS_AND_STRUCTS", {});
     @cInclude("cimgui.h");
 
+    // enet
+    @cInclude("enet/enet.h");
+
     // tracy
     if (nyancore_options.enable_tracing) {
         @cDefine("TRACY_ENABLE", {});
