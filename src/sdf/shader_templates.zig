@@ -86,9 +86,15 @@ pub const shader_main =
     \\
     \\  vec3 tot = vec3(0.);
     \\
+    \\#if (CAMERA_PROJECTION == 0)
+    \\  float scale = CAMERA_FOV;
+    \\#else
+    \\  float scale = CAMERA_FOV * length(pushConstants.up);
+    \\#endif
+    \\
     \\  vec3 right = cross(pushConstants.up, pushConstants.forward);
-    \\  vec3 offset = right * ip.x * CAMERA_FOV;
-    \\  offset += pushConstants.up * ip.y * CAMERA_FOV;
+    \\  vec3 offset = right * ip.x * scale;
+    \\  offset += pushConstants.up * ip.y * scale;
     \\
     \\#if (CAMERA_PROJECTION == 0)
     \\  vec3 ro = pushConstants.eye;
