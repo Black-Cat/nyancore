@@ -39,6 +39,8 @@ pub const Twist = @import("modifiers/twist.zig");
 // Custom
 pub const CustomNode = @import("special/custom_node.zig");
 
+// Surfaces
+pub const BezierCurve = @import("surfaces/bezier_curve.zig");
 pub const BoundingBox = @import("surfaces/bounding_box.zig");
 pub const Box = @import("surfaces/box.zig");
 pub const CappedCone = @import("surfaces/capped_cone.zig");
@@ -97,6 +99,7 @@ const all_node_types = [_]SdfInfo{
 
     CustomNode.info,
 
+    BezierCurve.info,
     BoundingBox.info,
     Box.info,
     CappedCone.info,
