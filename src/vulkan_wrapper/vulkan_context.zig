@@ -2,6 +2,7 @@ const nyancore_options = @import("nyancore_options");
 const c = @import("../c.zig");
 const std = @import("std");
 const vk = @import("../vk.zig");
+const builtin = @import("builtin");
 
 const Allocator = std.mem.Allocator;
 const Application = @import("../application/application.zig").Application;
@@ -303,6 +304,13 @@ pub const VulkanContext = struct {
     compute_queue: vk.Queue,
 
     pub fn init(self: *VulkanContext, allocator: Allocator, app: *Application) !void {
+        // Workaround bug in amd driver, that reports zero vulkan capable gpu devices
+        //https://github.com/KhronosGroup/Vulkan-Loader/issues/552
+        if (builtin.target.os.tag == .windows) {
+            _ = c._putenv("DISABLE_LAYER_AMD_SWITCHABLE_GRAPHICS_1=1");
+            _ = c._putenv("DISABLE_LAYER_NV_OPTIMUS_1=1");
+        }
+
         self.allocator = allocator;
 
         vkb = try BaseDispatch.load(glfwGetInstanceProcAddress);
