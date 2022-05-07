@@ -90,7 +90,7 @@ pub const shader_main =
     \\#if (CAMERA_PROJECTION == 0)
     \\  float scale = CAMERA_FOV;
     \\#else
-    \\  float scale = CAMERA_FOV * length(pushConstants.up);
+    \\  float scale = 1.0;
     \\#endif
     \\
     \\  vec3 right = cross(pushConstants.up, pushConstants.forward);

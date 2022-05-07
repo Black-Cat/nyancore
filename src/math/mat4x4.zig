@@ -69,7 +69,7 @@ pub fn lookAt(pos: math.vec3, target: math.vec3, up: math.vec3) math.mat4x4 {
 }
 
 pub fn perspective(fov_y: f32, aspect: f32, near: f32, far: f32) math.mat4x4 {
-    var res: math.mat4x4 = .{math.vec4{ 0.0, 0.0, 0.0, 0.0 }} ** 4;
+    var res: math.mat4x4 = .{math.Vec4.zeros()} ** 4;
 
     const f: f32 = 1.0 / std.math.tan(fov_y * 0.5);
     const depth: f32 = 1.0 / (far - near);
@@ -79,6 +79,29 @@ pub fn perspective(fov_y: f32, aspect: f32, near: f32, far: f32) math.mat4x4 {
     res[2][2] = far * depth;
     res[2][3] = 1.0;
     res[3][2] = -(far * near) * depth;
+    return res;
+}
+
+pub fn ortho(size: f32, aspect: f32, near: f32, far: f32) math.mat4x4 {
+    var res: math.mat4x4 = .{math.Vec4.zeros()} ** 4;
+
+    const left: f32 = -size * aspect;
+    const right: f32 = size * aspect;
+    const bottom: f32 = -size;
+    const top: f32 = size;
+
+    const rl: f32 = 1.0 / (right - left);
+    const tb: f32 = 1.0 / (top - bottom);
+    const depth: f32 = 1.0 / (near - far);
+
+    res[0][0] = 2.0 * rl;
+    res[1][1] = 2.0 * tb;
+    res[2][2] = depth;
+    res[3][0] = -(right + left) * rl;
+    res[3][1] = -(top + bottom) * tb;
+    res[3][2] = -near * depth;
+    res[3][3] = 1.0;
+
     return res;
 }
 
