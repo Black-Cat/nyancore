@@ -35,6 +35,7 @@ pub const Scale = @import("modifiers/scale.zig");
 pub const Symmetry = @import("modifiers/symmetry.zig");
 pub const Transform = @import("modifiers/transform.zig");
 pub const Twist = @import("modifiers/twist.zig");
+pub const Wrinkles = @import("modifiers/wrinkles.zig");
 
 // Custom
 pub const CustomNode = @import("special/custom_node.zig");
@@ -96,6 +97,7 @@ const all_node_types = [_]SdfInfo{
     Symmetry.info,
     Transform.info,
     Twist.info,
+    Wrinkles.info,
 
     CustomNode.info,
 
