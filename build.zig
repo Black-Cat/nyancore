@@ -253,12 +253,14 @@ pub fn addStaticLibrary(
     const enet_path: []const u8 = path ++ "third_party/enet/";
     const enet_flags = switch (os_tag) {
         .windows => &[_][]const u8{
+            "-fno-sanitize=undefined",
             "-DHAS_GETNAMEINFO=1",
             "-DHAS_INET_PTON=1",
             "-DHAS_INET_NTOP=1",
             "-DHAS_MSGHDR_FLAGS=1",
         },
         else => &[_][]const u8{
+            "-fno-sanitize=undefined",
             "-DHAS_FCNTL=1",
             "-DHAS_POLL=1",
             "-DHAS_GETADDRINFO=1",
