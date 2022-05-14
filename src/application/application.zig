@@ -12,6 +12,7 @@ const Config = @import("config.zig").Config;
 const Image = @import("../image/image.zig").Image;
 pub const System = @import("../system/system.zig").System;
 const printError = @import("print_error.zig").printError;
+const printErrorNoPanic = @import("print_error.zig").printErrorNoPanic;
 
 const imgui_mouse_button_count: usize = 5;
 
@@ -107,9 +108,9 @@ pub const Application = struct {
         return map;
     }
 
-    pub fn start(self: *Application) !void {
+    pub fn initSystems(self: *Application) !void {
         Global.config.init(self.allocator, self.name, self.config_file);
-        defer Global.config.deinit();
+        errdefer Global.config.deinit();
 
         try Global.config.load();
 
@@ -117,7 +118,7 @@ pub const Application = struct {
             printError("GLFW", "Couldn't initialize GLFW");
             return error.GLFW_FAILED_TO_INIT;
         }
-        defer c.glfwTerminate();
+        errdefer c.glfwTerminate();
 
         _ = c.glfwSetErrorCallback(glfwErrorCallback);
 
@@ -127,7 +128,7 @@ pub const Application = struct {
             printError("GLFW", "Couldn't create window");
             return error.GLFW_FAILED_TO_CREATE_WINDOW;
         };
-        defer c.glfwDestroyWindow(self.window);
+        errdefer c.glfwDestroyWindow(self.window);
 
         try application_glfw_map.putNoClobber(self.window, self);
 
@@ -151,6 +152,32 @@ pub const Application = struct {
         glfwInitKeymap();
 
         _ = c.glfwSetFramebufferSizeCallback(self.window, framebufferResizeCallback);
+    }
+
+    pub fn deinitSystems(self: *Application) void {
+        rg.global_render_graph.deinitCommandBuffers();
+
+        var i: usize = self.systems.len - 1;
+        while (i > 0) : (i -= 1) {
+            self.systems[i].deinit(self.systems[i]);
+        }
+
+        Global.config.flush() catch {
+            printErrorNoPanic("Config", "Error during config flushing");
+        };
+
+        _ = application_glfw_map.remove(self.window);
+
+        c.glfwDestroyWindow(self.window);
+        c.glfwTerminate();
+        Global.config.deinit();
+    }
+
+    pub fn close(self: *Application) void {
+        c.glfwSetWindowShouldClose(self.window, 1);
+    }
+
+    pub fn mainLoop(self: *Application) !void {
         var prev_time: f64 = c.glfwGetTime();
 
         var tracy_frame: tracy.Frame = undefined;
@@ -180,17 +207,6 @@ pub const Application = struct {
             if (nyancore_options.enable_tracing)
                 tracy_frame.end();
         }
-
-        rg.global_render_graph.deinitCommandBuffers();
-
-        var i: usize = self.systems.len - 1;
-        while (i > 0) : (i -= 1) {
-            self.systems[i].deinit(self.systems[i]);
-        }
-
-        try Global.config.flush();
-
-        _ = application_glfw_map.remove(self.window);
     }
 
     fn framebufferResizeCallback(window: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {
