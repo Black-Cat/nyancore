@@ -49,8 +49,12 @@ pub const CappedCylinder = @import("surfaces/capped_cylinder.zig");
 pub const CappedTorus = @import("surfaces/capped_torus.zig");
 pub const Capsule = @import("surfaces/capsule.zig");
 pub const Cone = @import("surfaces/cone.zig");
+pub const Dodecahedron = @import("surfaces/dodecahedron.zig");
+pub const DodecahedronEdges = @import("surfaces/dodecahedron_edges.zig");
 pub const Ellipsoid = @import("surfaces/ellipsoid.zig");
 pub const HexagonalPrism = @import("surfaces/hexagonal_prism.zig");
+pub const Icosahedron = @import("surfaces/icosahedron.zig");
+pub const IcosahedronEdges = @import("surfaces/icosahedron_edges.zig");
 pub const InfiniteCone = @import("surfaces/infinite_cone.zig");
 pub const InfiniteCylinder = @import("surfaces/infinite_cylinder.zig");
 pub const Link = @import("surfaces/link.zig");
@@ -109,8 +113,12 @@ const all_node_types = [_]SdfInfo{
     CappedTorus.info,
     Capsule.info,
     Cone.info,
+    Dodecahedron.info,
+    DodecahedronEdges.info,
     Ellipsoid.info,
     HexagonalPrism.info,
+    Icosahedron.info,
+    IcosahedronEdges.info,
     InfiniteCone.info,
     InfiniteCylinder.info,
     Link.info,
