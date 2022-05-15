@@ -15,8 +15,6 @@ pub const Data = struct {
 
     mats: [2]i32,
     dist_indexes: [2]usize,
-    enter_index: usize,
-    enter_stack: usize,
 };
 
 const function_definition: []const u8 =
@@ -30,8 +28,7 @@ const function_definition: []const u8 =
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
 
-    data.enter_index = iter;
-    data.enter_stack = ctxt.value_indexes.items.len;
+    ctxt.pushEnterInfo(iter);
     ctxt.pushStackInfo(iter, -@intCast(i32, iter));
 
     data.mats[0] = @intCast(i32, mat_offset);
@@ -44,24 +41,25 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
     _ = iter;
 
     const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const ei: util.EnterInfo = ctxt.lastEnterInfo();
 
     const format: []const u8 = "float d{d} = opSmoothUnion(d{d}, d{d}, {d:.5});";
     const broken_stack: []const u8 = "float d{d} = 1e10;";
 
     var res: []const u8 = undefined;
-    if (data.enter_stack + 2 >= ctxt.value_indexes.items.len) {
-        res = util.std.fmt.allocPrint(ctxt.allocator, broken_stack, .{data.enter_index}) catch unreachable;
+    if (ei.enter_stack + 2 >= ctxt.value_indexes.items.len) {
+        res = util.std.fmt.allocPrint(ctxt.allocator, broken_stack, .{ei.enter_index}) catch unreachable;
 
         data.mats[0] = 0;
         data.mats[1] = 0;
-        data.dist_indexes[0] = data.enter_index;
-        data.dist_indexes[1] = data.enter_index;
+        data.dist_indexes[0] = ei.enter_index;
+        data.dist_indexes[1] = ei.enter_index;
     } else {
         const prev_info: util.IterationContext.StackInfo = ctxt.value_indexes.items[ctxt.value_indexes.items.len - 1];
         const prev_prev_info: util.IterationContext.StackInfo = ctxt.value_indexes.items[ctxt.value_indexes.items.len - 2];
 
         res = util.std.fmt.allocPrint(ctxt.allocator, format, .{
-            data.enter_index,
+            ei.enter_index,
             ctxt.last_value_set_index,
             prev_prev_info.index,
             data.smoothing,
@@ -73,15 +71,17 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
         data.dist_indexes[1] = prev_prev_info.index;
     }
 
-    ctxt.dropPreviousValueIndexes(data.enter_stack);
+    ctxt.dropPreviousValueIndexes(ei.enter_stack);
 
     return res;
 }
 
-fn appendMatCheck(exit_command: []const u8, buffer: *[]u8, mat_offset: usize, allocator: util.std.mem.Allocator) []const u8 {
+fn appendMatCheck(ctxt: *util.IterationContext, exit_command: []const u8, buffer: *[]u8, mat_offset: usize, allocator: util.std.mem.Allocator) []const u8 {
     _ = mat_offset;
+    _ = ctxt;
 
     const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const ei: util.EnterInfo = ctxt.popEnterInfo();
 
     const format_mat: []const u8 = "matToColor({d}.,l,n,v)";
     const format_gen_mat: []const u8 = "m{d}";
@@ -99,14 +99,14 @@ fn appendMatCheck(exit_command: []const u8, buffer: *[]u8, mat_offset: usize, al
 
     const res: []const u8 = util.std.fmt.allocPrint(allocator, format, .{
         exit_command,
-        data.enter_index,
+        ei.enter_index,
         mat_str[0],
         mat_str[1],
         data.dist_indexes[0],
         data.dist_indexes[0],
         data.dist_indexes[1],
-        data.enter_index,
-        data.enter_index,
+        ei.enter_index,
+        ei.enter_index,
     }) catch unreachable;
 
     for (mat_str) |s|

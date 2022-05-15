@@ -12,9 +12,6 @@ pub const info: util.SdfInfo = .{
 pub const Data = struct {
     power: f32,
     scale: f32,
-
-    enter_index: usize,
-    enter_stack: usize,
 };
 
 const function_definition: []const u8 =

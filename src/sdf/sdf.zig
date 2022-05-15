@@ -6,7 +6,7 @@ pub const Templates = @import("shader_templates.zig");
 
 pub const EnterCommandFn = fn (ctxt: *IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8;
 pub const ExitCommandFn = fn (ctxt: *IterationContext, iter: usize, buffer: *[]u8) []const u8;
-pub const AppendMatCheckFn = fn (exit_command: []const u8, buffer: *[]u8, mat_offset: usize, alloc: std.mem.Allocator) []const u8;
+pub const AppendMatCheckFn = fn (ctxt: *IterationContext, exit_command: []const u8, buffer: *[]u8, mat_offset: usize, alloc: std.mem.Allocator) []const u8;
 
 // Combinators
 pub const Intersection = @import("combinators/intersection.zig");

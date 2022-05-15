@@ -11,18 +11,13 @@ pub const info: util.SdfInfo = .{
 
 pub const Data = struct {
     radius: f32,
-
-    enter_index: usize,
-    enter_stack: usize,
 };
 
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     _ = mat_offset;
+    _ = buffer;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
-
-    data.enter_index = iter;
-    data.enter_stack = ctxt.value_indexes.items.len;
+    ctxt.pushEnterInfo(iter);
     ctxt.pushStackInfo(iter, 0);
 
     return util.std.fmt.allocPrint(ctxt.allocator, "", .{}) catch unreachable;
@@ -32,22 +27,23 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
     _ = iter;
 
     const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const ei: util.EnterInfo = ctxt.popEnterInfo();
 
     const format: []const u8 = "float d{d} = d{d} - {d:.5};";
     const broken_stack: []const u8 = "float d{d} = 1e10;";
 
     var res: []const u8 = undefined;
-    if (data.enter_index == ctxt.last_value_set_index) {
-        res = util.std.fmt.allocPrint(ctxt.allocator, broken_stack, .{data.enter_index}) catch unreachable;
+    if (ei.enter_index == ctxt.last_value_set_index) {
+        res = util.std.fmt.allocPrint(ctxt.allocator, broken_stack, .{ei.enter_index}) catch unreachable;
     } else {
         res = util.std.fmt.allocPrint(ctxt.allocator, format, .{
-            data.enter_index,
+            ei.enter_index,
             ctxt.last_value_set_index,
             data.radius,
         }) catch unreachable;
     }
 
-    ctxt.dropPreviousValueIndexes(data.enter_stack);
+    ctxt.dropPreviousValueIndexes(ei.enter_stack);
 
     return res;
 }

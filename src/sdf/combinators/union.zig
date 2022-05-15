@@ -9,18 +9,13 @@ pub const info: util.SdfInfo = .{
     .exit_command_fn = exitCommand,
 };
 
-pub const Data = struct {
-    enter_index: usize,
-    enter_stack: usize,
-};
+pub const Data = struct {};
 
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     _ = mat_offset;
+    _ = buffer;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
-
-    data.enter_index = iter;
-    data.enter_stack = ctxt.value_indexes.items.len;
+    ctxt.pushEnterInfo(iter);
     ctxt.pushStackInfo(iter, 0);
 
     return util.std.fmt.allocPrint(ctxt.allocator, "", .{}) catch unreachable;
@@ -28,13 +23,14 @@ fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, bu
 
 fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const u8 {
     _ = iter;
+    _ = buffer;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const ei: util.EnterInfo = ctxt.popEnterInfo();
 
     const command: []const u8 = "d{d} = min(d{d}, d{d});";
-    const res: []const u8 = util.combinatorExitCommand(command, data.enter_stack, data.enter_index, ctxt);
+    const res: []const u8 = util.combinatorExitCommand(command, ei.enter_stack, ei.enter_index, ctxt);
 
-    ctxt.dropPreviousValueIndexes(data.enter_stack);
+    ctxt.dropPreviousValueIndexes(ei.enter_stack);
 
     return res;
 }

@@ -11,7 +11,8 @@ pub const SdfInfo = struct {
     append_mat_check_fn: sdf.AppendMatCheckFn = appendNoMatCheck,
 };
 
-pub fn appendNoMatCheck(exit_command: []const u8, buffer: *[]u8, mat_offset: usize, alloc: std.mem.Allocator) []const u8 {
+pub fn appendNoMatCheck(ctxt: *sdf.IterationContext, exit_command: []const u8, buffer: *[]u8, mat_offset: usize, alloc: std.mem.Allocator) []const u8 {
+    _ = ctxt;
     _ = buffer;
     _ = mat_offset;
 
