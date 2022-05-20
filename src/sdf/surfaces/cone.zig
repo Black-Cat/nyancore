@@ -8,6 +8,7 @@ pub const info: util.SdfInfo = .{
     .enter_command_fn = util.surfaceEnterCommand(Data),
     .exit_command_fn = util.surfaceExitCommand(Data, exitCommand),
     .append_mat_check_fn = util.surfaceMatCheckCommand(Data),
+    .sphere_bound_fn = sphereBound,
 };
 
 pub const Data = struct {
@@ -38,4 +39,18 @@ fn exitCommand(data: *Data, enter_index: usize, cur_point_name: []const u8, allo
         data.height * (@sin(data.angle) / @cos(data.angle)),
         -data.height,
     }) catch unreachable;
+}
+
+fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
+    _ = children;
+
+    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+
+    const radius: f32 = data.height * (@sin(data.angle) / @cos(data.angle));
+
+    bound.* = util.math.SphereBound.from3Points(
+        util.math.Vec3.zeros(),
+        .{ -radius, -data.height, 0.0 },
+        .{ radius, -data.height, 0.0 },
+    );
 }

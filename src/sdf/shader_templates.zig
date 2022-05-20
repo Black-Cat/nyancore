@@ -30,6 +30,17 @@ pub const map_footer: []const u8 =
     \\
 ;
 
+pub const shadow_map_header: []const u8 =
+    \\float shadowMap(in vec3 p) {
+    \\  vec3 cpin, cpout;
+    \\  vec3 cdin, cdout;
+;
+
+pub const shadow_map_footer: []const u8 =
+    \\}
+    \\
+;
+
 pub const mat_to_color_header: []const u8 =
     \\vec3 matToColor(in float m, in vec3 l, in vec3 n, in vec3 v) {
     \\  vec3 res;
@@ -60,23 +71,23 @@ pub const shader_normal_and_shadows =
     \\vec3 calcNormal(in vec3 pos) {
     \\  const float ep = .0001;
     \\  vec2 e = vec2(1.,-1.)*.5773;
-    \\  return normalize(e.xyy * map(pos + e.xyy*ep) +
-    \\      e.yyx * map(pos + e.yyx*ep) +
-    \\      e.yxy * map(pos + e.yxy*ep) +
-    \\      e.xxx * map(pos + e.xxx*ep));
+    \\  return normalize(e.xyy * shadowMap(pos + e.xyy*ep) +
+    \\      e.yyx * shadowMap(pos + e.yyx*ep) +
+    \\      e.yxy * shadowMap(pos + e.yxy*ep) +
+    \\      e.xxx * shadowMap(pos + e.xxx*ep));
     \\}
     // http://iquilezles.org/www/articles/rmshadows/rmshadows.htm
     \\float calcSoftShadows(in vec3 ro, in vec3 rd, in float mint, in float maxt) {
     \\  float res = 1.;
     \\  float t = mint;
     \\  for (int i = 0; i < ENVIRONMENT_SHADOW_STEPS; i++) {
-    \\    float h = map(ro + rd * t);
+    \\    float h = shadowMap(ro + rd * t);
     \\    float s = clamp(8.*h/t,0.,1.);
+    \\    t += h;
     \\    res = min(res, s*s*(3.-2.*s));
-    \\    t += clamp(h, .02, .1);
     \\    if (res < .005 || t > maxt) break;
     \\  }
-    \\  return clamp(res, 0., 1.);
+    \\  return res;
     \\}
     \\
 ;
@@ -115,7 +126,7 @@ pub const shader_main =
     \\  }
     \\
     \\  vec3 col = ENVIRONMENT_BACKGROUND_COLOR;
-    \\  if (t < CAMERA_FAR) {
+    \\  if (t <= CAMERA_FAR) {
     \\      vec3 pos = ro + t * rd;
     \\      vec3 nor = calcNormal(pos);
     \\      vec3 lig = normalize(ENVIRONMENT_LIGHT_DIR);
@@ -124,7 +135,7 @@ pub const shader_main =
     \\      col = matMap(pos, lig, nor, rd);
     \\
     \\      float dif = clamp(dot(nor, lig), 0., 1.);
-    \\      dif *= calcSoftShadows(pos, lig, .02, 2.5);
+    \\      dif *= calcSoftShadows(pos, lig, .02, 5.5);
     \\
     \\      col *= dif;
     \\  }

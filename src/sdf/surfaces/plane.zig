@@ -8,6 +8,7 @@ pub const info: util.SdfInfo = .{
     .enter_command_fn = util.surfaceEnterCommand(Data),
     .exit_command_fn = util.surfaceExitCommand(Data, exitCommand),
     .append_mat_check_fn = util.surfaceMatCheckCommand(Data),
+    .sphere_bound_fn = sphereBound,
 };
 
 pub const Data = struct {
@@ -34,4 +35,14 @@ fn exitCommand(data: *Data, enter_index: usize, cur_point_name: []const u8, allo
         data.normal[2],
         data.offset,
     }) catch unreachable;
+}
+
+fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
+    _ = buffer;
+    _ = children;
+
+    bound.* = .{
+        .pos = util.math.Vec3.zeros(),
+        .r = util.std.math.inf(f32),
+    };
 }

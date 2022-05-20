@@ -7,6 +7,7 @@ pub const info: util.SdfInfo = .{
     .function_definition = "",
     .enter_command_fn = enterCommand,
     .exit_command_fn = exitCommand,
+    .sphere_bound_fn = sphereBound,
 };
 
 pub const Data = struct {};
@@ -33,4 +34,17 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
     ctxt.dropPreviousValueIndexes(ei.enter_stack);
 
     return res;
+}
+
+fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
+    _ = buffer;
+
+    if (children.len == 1) {
+        bound.* = children[0];
+        return;
+    }
+
+    bound.* = util.math.SphereBound.merge(children[0], children[1]);
+    for (children[2..]) |csb|
+        bound.* = util.math.SphereBound.merge(bound.*, csb);
 }

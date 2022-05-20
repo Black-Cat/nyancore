@@ -7,6 +7,7 @@ pub const info: util.SdfInfo = .{
     .function_definition = "",
     .enter_command_fn = enterCommand,
     .exit_command_fn = exitCommand,
+    .sphere_bound_fn = sphereBound,
 };
 
 pub const Data = struct {
@@ -85,4 +86,11 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
 
     ctxt.popPointName();
     return util.std.fmt.allocPrint(ctxt.allocator, "", .{}) catch unreachable;
+}
+
+fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
+    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+
+    bound.* = children[0];
+    bound.*.pos += data.translation;
 }

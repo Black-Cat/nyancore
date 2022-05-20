@@ -1,4 +1,5 @@
 const std = @import("std");
+const m = @import("../math/math.zig");
 pub const SdfInfo = @import("sdf_info.zig").SdfInfo;
 pub const appendNoMatCheck = @import("sdf_info.zig").appendNoMatCheck;
 pub const IterationContext = @import("iteration_context.zig").IterationContext;
@@ -7,6 +8,8 @@ pub const Templates = @import("shader_templates.zig");
 pub const EnterCommandFn = fn (ctxt: *IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8;
 pub const ExitCommandFn = fn (ctxt: *IterationContext, iter: usize, buffer: *[]u8) []const u8;
 pub const AppendMatCheckFn = fn (ctxt: *IterationContext, exit_command: []const u8, buffer: *[]u8, mat_offset: usize, alloc: std.mem.Allocator) []const u8;
+
+pub const SphereBoundFn = fn (buffer: *[]u8, bound: *m.sphereBound, children: []m.sphereBound) void;
 
 // Combinators
 pub const Intersection = @import("combinators/intersection.zig");
@@ -37,8 +40,9 @@ pub const Transform = @import("modifiers/transform.zig");
 pub const Twist = @import("modifiers/twist.zig");
 pub const Wrinkles = @import("modifiers/wrinkles.zig");
 
-// Custom
+// Special
 pub const CustomNode = @import("special/custom_node.zig");
+pub const SphereBoundNode = @import("special/sphere_bound.zig");
 
 // Surfaces
 pub const BezierCurve = @import("surfaces/bezier_curve.zig");
@@ -104,6 +108,7 @@ const all_node_types = [_]SdfInfo{
     Wrinkles.info,
 
     CustomNode.info,
+    SphereBoundNode.info,
 
     BezierCurve.info,
     BoundingBox.info,

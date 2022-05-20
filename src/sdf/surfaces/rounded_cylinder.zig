@@ -8,10 +8,11 @@ pub const info: util.SdfInfo = .{
     .enter_command_fn = util.surfaceEnterCommand(Data),
     .exit_command_fn = util.surfaceExitCommand(Data, exitCommand),
     .append_mat_check_fn = util.surfaceMatCheckCommand(Data),
+    .sphere_bound_fn = sphereBound,
 };
 
 pub const Data = struct {
-    diameter: f32,
+    radius: f32,
     rounding_radius: f32,
     height: f32,
 
@@ -20,7 +21,7 @@ pub const Data = struct {
 
 const function_definition: []const u8 =
     \\float sdRoundedCylinder(vec3 p, float ra, float rb, float h){
-    \\  vec2 d = vec2(length(p.xz)-2.*ra+rb, abs(p.y) - h);
+    \\  vec2 d = vec2(length(p.xz)-ra+rb, abs(p.y) - h);
     \\  return min(max(d.x,d.y),0.) + length(max(d,0.)) - rb;
     \\}
     \\
@@ -31,8 +32,19 @@ fn exitCommand(data: *Data, enter_index: usize, cur_point_name: []const u8, allo
     return util.std.fmt.allocPrint(allocator, format, .{
         enter_index,
         cur_point_name,
-        data.diameter / 2.0,
+        data.radius,
         data.rounding_radius,
         data.height,
     }) catch unreachable;
+}
+
+fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
+    _ = children;
+
+    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+
+    bound.* = .{
+        .pos = util.math.Vec3.zeros(),
+        .r = util.math.Vec3.norm(.{ data.radius + data.rounding_radius, data.height, 0.0 }),
+    };
 }
