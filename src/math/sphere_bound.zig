@@ -36,7 +36,7 @@ pub fn intersect(a: math.sphereBound, b: math.sphereBound) math.sphereBound {
 pub fn subtract(a: math.sphereBound, b: math.sphereBound) math.sphereBound {
     const dist: f32 = math.Vec3.norm(a.pos - b.pos);
     if (dist + a.r <= b.r)
-        return .{ .pos = math.Vec3.zeros(), .r = 0.0 };
+        return b;
     if (dist + b.r <= a.r)
         return a;
 
