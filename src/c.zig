@@ -1,9 +1,11 @@
 const nyancore_options = @import("nyancore_options");
 
 pub usingnamespace @cImport({
-    // glfw
-    @cDefine("GLFW_INCLUDE_NONE", {});
-    @cInclude("GLFW/glfw3.h");
+    if (nyancore_options.compile_glfw) {
+        // glfw
+        @cDefine("GLFW_INCLUDE_NONE", {});
+        @cInclude("GLFW/glfw3.h");
+    }
 
     // cimgui
     @cDefine("CIMGUI_DEFINE_ENUMS_AND_STRUCTS", {});

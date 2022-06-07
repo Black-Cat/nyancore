@@ -10,6 +10,7 @@ pub fn addStaticLibrary(
     comptime path: []const u8,
     use_vulkan_sdk: bool,
     enable_tracing: bool,
+    compile_glfw: bool,
 ) *std.build.LibExeObjStep {
     const os_tag = if (app.target.os_tag != null) app.target.os_tag.? else builtin.os.tag;
 
@@ -20,6 +21,7 @@ pub fn addStaticLibrary(
     const nyancore_options = b.addOptions();
     nyancore_options.addOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
     nyancore_options.addOption(bool, "enable_tracing", enable_tracing);
+    nyancore_options.addOption(bool, "compile_glfw", compile_glfw);
     nyancoreLib.addOptions("nyancore_options", nyancore_options);
     app.addOptions("nyancore_options", nyancore_options);
     app.addPackage(.{
@@ -81,91 +83,93 @@ pub fn addStaticLibrary(
     }
 
     // GLFW
-    const glfw_path: []const u8 = path ++ "third_party/glfw/";
-    const glfw_lib = b.addStaticLibrary("glfw", null);
-    glfw_lib.setTarget(app.target);
-    glfw_lib.setBuildMode(app.build_mode);
+    if (compile_glfw) {
+        const glfw_path: []const u8 = path ++ "third_party/glfw/";
+        const glfw_lib = b.addStaticLibrary("glfw", null);
+        glfw_lib.setTarget(app.target);
+        glfw_lib.setBuildMode(app.build_mode);
 
-    const glfw_flags = &[_][]const u8{
-        switch (os_tag) {
-            .windows => "-D_GLFW_WIN32",
-            .macos => "-D_GLFW_COCA",
-            else => "-D_GLFW_X11", // -D_GLFW_WAYLAND
-        },
-    };
-    glfw_lib.linkSystemLibrary("c");
-    glfw_lib.addIncludeDir(glfw_path ++ "include");
-    glfw_lib.addCSourceFiles(&[_][]const u8{
-        glfw_path ++ "src/context.c",
-        glfw_path ++ "src/egl_context.c",
-        glfw_path ++ "src/init.c",
-        glfw_path ++ "src/input.c",
-        glfw_path ++ "src/monitor.c",
-        glfw_path ++ "src/null_init.c",
-        glfw_path ++ "src/null_joystick.c",
-        glfw_path ++ "src/null_monitor.c",
-        glfw_path ++ "src/null_window.c",
-        glfw_path ++ "src/osmesa_context.c",
-        glfw_path ++ "src/platform.c",
-        glfw_path ++ "src/vulkan.c",
-        glfw_path ++ "src/window.c",
-    }, glfw_flags);
-    glfw_lib.addCSourceFiles(switch (os_tag) {
-        .windows => &[_][]const u8{
-            glfw_path ++ "src/wgl_context.c",
-            glfw_path ++ "src/win32_init.c",
-            glfw_path ++ "src/win32_joystick.c",
-            glfw_path ++ "src/win32_module.c",
-            glfw_path ++ "src/win32_monitor.c",
-            glfw_path ++ "src/win32_thread.c",
-            glfw_path ++ "src/win32_time.c",
-            glfw_path ++ "src/win32_window.c",
-        },
-        .macos => &[_][]const u8{
-            glfw_path ++ "src/cocoa_init.m",
-            glfw_path ++ "src/cocoa_joystick.m",
-            glfw_path ++ "src/cocoa_monitor.m",
-            glfw_path ++ "src/cocoa_time.c",
-            glfw_path ++ "src/cocoa_window.m",
-            glfw_path ++ "src/nsgl_context.m",
-            glfw_path ++ "src/posix_thread.c",
-            glfw_path ++ "src/posix_module.c",
-            glfw_path ++ "src/posix_poll.c",
-        },
-        else => &[_][]const u8{
-            glfw_path ++ "src/posix_poll.c",
-            glfw_path ++ "src/posix_module.c",
-            glfw_path ++ "src/posix_thread.c",
-            glfw_path ++ "src/posix_time.c",
-            glfw_path ++ "src/linux_joystick.c",
+        const glfw_flags = &[_][]const u8{
+            switch (os_tag) {
+                .windows => "-D_GLFW_WIN32",
+                .macos => "-D_GLFW_COCA",
+                else => "-D_GLFW_X11", // -D_GLFW_WAYLAND
+            },
+        };
+        glfw_lib.linkSystemLibrary("c");
+        glfw_lib.addIncludeDir(glfw_path ++ "include");
+        glfw_lib.addCSourceFiles(&[_][]const u8{
+            glfw_path ++ "src/context.c",
+            glfw_path ++ "src/egl_context.c",
+            glfw_path ++ "src/init.c",
+            glfw_path ++ "src/input.c",
+            glfw_path ++ "src/monitor.c",
+            glfw_path ++ "src/null_init.c",
+            glfw_path ++ "src/null_joystick.c",
+            glfw_path ++ "src/null_monitor.c",
+            glfw_path ++ "src/null_window.c",
+            glfw_path ++ "src/osmesa_context.c",
+            glfw_path ++ "src/platform.c",
+            glfw_path ++ "src/vulkan.c",
+            glfw_path ++ "src/window.c",
+        }, glfw_flags);
+        glfw_lib.addCSourceFiles(switch (os_tag) {
+            .windows => &[_][]const u8{
+                glfw_path ++ "src/wgl_context.c",
+                glfw_path ++ "src/win32_init.c",
+                glfw_path ++ "src/win32_joystick.c",
+                glfw_path ++ "src/win32_module.c",
+                glfw_path ++ "src/win32_monitor.c",
+                glfw_path ++ "src/win32_thread.c",
+                glfw_path ++ "src/win32_time.c",
+                glfw_path ++ "src/win32_window.c",
+            },
+            .macos => &[_][]const u8{
+                glfw_path ++ "src/cocoa_init.m",
+                glfw_path ++ "src/cocoa_joystick.m",
+                glfw_path ++ "src/cocoa_monitor.m",
+                glfw_path ++ "src/cocoa_time.c",
+                glfw_path ++ "src/cocoa_window.m",
+                glfw_path ++ "src/nsgl_context.m",
+                glfw_path ++ "src/posix_thread.c",
+                glfw_path ++ "src/posix_module.c",
+                glfw_path ++ "src/posix_poll.c",
+            },
+            else => &[_][]const u8{
+                glfw_path ++ "src/posix_poll.c",
+                glfw_path ++ "src/posix_module.c",
+                glfw_path ++ "src/posix_thread.c",
+                glfw_path ++ "src/posix_time.c",
+                glfw_path ++ "src/linux_joystick.c",
 
-            // X11
-            glfw_path ++ "src/glx_context.c",
-            glfw_path ++ "src/x11_init.c",
-            glfw_path ++ "src/x11_monitor.c",
-            glfw_path ++ "src/x11_window.c",
-            glfw_path ++ "src/xkb_unicode.c",
+                // X11
+                glfw_path ++ "src/glx_context.c",
+                glfw_path ++ "src/x11_init.c",
+                glfw_path ++ "src/x11_monitor.c",
+                glfw_path ++ "src/x11_window.c",
+                glfw_path ++ "src/xkb_unicode.c",
 
-            // Wayland
-            //glfw_path ++ "src/wl_init.c",
-            //glfw_path ++ "src/wl_monitor.c",
-            //glfw_path ++ "src/wl_window.c",
-        },
-    }, glfw_flags);
+                // Wayland
+                //glfw_path ++ "src/wl_init.c",
+                //glfw_path ++ "src/wl_monitor.c",
+                //glfw_path ++ "src/wl_window.c",
+            },
+        }, glfw_flags);
 
-    if (os_tag != .windows) {
-        glfw_lib.linkSystemLibrary("X11");
-        glfw_lib.linkSystemLibrary("xcb");
-        glfw_lib.linkSystemLibrary("Xau");
-        glfw_lib.linkSystemLibrary("Xdmcp");
-    } else {
-        glfw_lib.linkSystemLibrary("gdi32");
+        if (os_tag != .windows) {
+            glfw_lib.linkSystemLibrary("X11");
+            glfw_lib.linkSystemLibrary("xcb");
+            glfw_lib.linkSystemLibrary("Xau");
+            glfw_lib.linkSystemLibrary("Xdmcp");
+        } else {
+            glfw_lib.linkSystemLibrary("gdi32");
+        }
+
+        nyancoreLib.step.dependOn(&glfw_lib.step);
+        nyancoreLib.linkLibrary(glfw_lib);
+        app.addIncludeDir(glfw_path ++ "include");
+        app.linkLibrary(glfw_lib);
     }
-
-    nyancoreLib.step.dependOn(&glfw_lib.step);
-    nyancoreLib.linkLibrary(glfw_lib);
-    app.addIncludeDir(glfw_path ++ "include");
-    app.linkLibrary(glfw_lib);
 
     // Dear ImGui
     const cimgui_path: []const u8 = path ++ "third_party/cimgui/";
