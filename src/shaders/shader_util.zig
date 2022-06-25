@@ -9,6 +9,7 @@ const vkctxt = @import("../vulkan_wrapper/vulkan_context.zig");
 
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
+const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
 pub const ShaderStage = enum {
     vertex,
@@ -208,7 +209,7 @@ pub fn loadShader(shader_code: [*:0]const u8, stage: ShaderStage) vk.ShaderModul
     };
 
     var shader_module: vk.ShaderModule = vkctxt.vkd.createShaderModule(vkctxt.vkc.device, module_create_info, null) catch |err| {
-        vkctxt.printVulkanError("Can't create shader module", err, vkctxt.vkc.allocator);
+        printVulkanError("Can't create shader module", err);
         @panic("Can't create shader module");
     };
 

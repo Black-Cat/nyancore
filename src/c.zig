@@ -7,6 +7,9 @@ pub usingnamespace @cImport({
         @cInclude("GLFW/glfw3.h");
     }
 
+    // vma
+    @cInclude("vk_mem_alloc.h");
+
     // cimgui
     @cDefine("CIMGUI_DEFINE_ENUMS_AND_STRUCTS", {});
     @cInclude("cimgui.h");

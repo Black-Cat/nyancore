@@ -9,6 +9,8 @@ const RGPass = @import("../render_graph_pass.zig").RGPass;
 const Swapchain = @import("../resources/swapchain.zig").Swapchain;
 const ViewportTexture = @import("../resources/viewport_texture.zig").ViewportTexture;
 
+const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
+
 pub const ScreenRenderPass = struct {
     const VertPushConstBlock = struct {
         aspect_ratio: [4]f32,
@@ -152,7 +154,7 @@ pub const ScreenRenderPass = struct {
         };
 
         self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.vkc.device, render_pass_create_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't create render pass for screen render pass", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't create render pass for screen render pass", err);
             return;
         };
 
@@ -268,7 +270,7 @@ pub const ScreenRenderPass = struct {
             };
 
             framebuffer.* = vkctxt.vkd.createFramebuffer(vkctxt.vkc.device, create_info, null) catch |err| {
-                vkctxt.printVulkanError("Can't create framebuffer for screen render pass", err, vkctxt.vkc.allocator);
+                printVulkanError("Can't create framebuffer for screen render pass", err);
                 return;
             };
         }
@@ -294,7 +296,7 @@ pub const ScreenRenderPass = struct {
         };
 
         self.pipeline_cache = vkctxt.vkd.createPipelineCache(vkctxt.vkc.device, pipeline_cache_create_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't create pipeline cache", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't create pipeline cache", err);
             return;
         };
     }
@@ -322,7 +324,7 @@ pub const ScreenRenderPass = struct {
         };
 
         self.pipeline_layout = vkctxt.vkd.createPipelineLayout(vkctxt.vkc.device, pipeline_layout_create_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't create pipeline layout", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't create pipeline layout", err);
             return;
         };
     }
@@ -493,7 +495,7 @@ pub const ScreenRenderPass = struct {
             null,
             @ptrCast([*]vk.Pipeline, &self.pipeline),
         ) catch |err| {
-            vkctxt.printVulkanError("Can't create graphics pipeline for screen render pass", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't create graphics pipeline for screen render pass", err);
             return;
         };
     }

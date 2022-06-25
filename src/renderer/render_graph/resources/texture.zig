@@ -5,6 +5,8 @@ const rg = @import("../render_graph.zig");
 const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
 
 const printError = @import("../../../application/print_error.zig").printError;
+const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
+
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 const RenderGraph = @import("../render_graph.zig").RenderGraph;
 
@@ -62,7 +64,7 @@ pub const Texture = struct {
 
     pub fn alloc(self: *Texture) void {
         self.image = vkctxt.vkd.createImage(vkctxt.vkc.device, self.image_create_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't create texture", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't create texture", err);
             return;
         };
 
@@ -73,12 +75,12 @@ pub const Texture = struct {
             .memory_type_index = vkctxt.vkc.getMemoryType(mem_req.memory_type_bits, .{ .device_local_bit = true }),
         };
         self.memory = vkctxt.vkd.allocateMemory(vkctxt.vkc.device, mem_alloc_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't allocate texture memory", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't allocate texture memory", err);
             return;
         };
 
         vkctxt.vkd.bindImageMemory(vkctxt.vkc.device, self.image, self.memory, 0) catch |err| {
-            vkctxt.printVulkanError("Can't bind texture memory", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't bind texture memory", err);
             return;
         };
 
@@ -97,7 +99,7 @@ pub const Texture = struct {
             .components = .{ .r = .identity, .g = .identity, .b = .identity, .a = .identity },
         };
         self.view = vkctxt.vkd.createImageView(vkctxt.vkc.device, view_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't create image view", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't create image view", err);
             return;
         };
 
@@ -121,7 +123,7 @@ pub const Texture = struct {
         };
 
         self.sampler = vkctxt.vkd.createSampler(vkctxt.vkc.device, sampler_info, null) catch |err| {
-            vkctxt.printVulkanError("Can't create sampler for ui texture", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't create sampler for ui texture", err);
             return;
         };
 

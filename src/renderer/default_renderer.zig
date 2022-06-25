@@ -15,6 +15,7 @@ const RGPass = @import("render_graph/render_graph_pass.zig").RGPass;
 const RGResource = @import("render_graph/render_graph_resource.zig").RGResource;
 
 const printError = @import("../application/print_error.zig").printError;
+const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
 const frames_in_flight: u32 = 2;
 
@@ -93,15 +94,15 @@ pub const DefaultRenderer = struct {
         var i: usize = 0;
         while (i < frames_in_flight) : (i += 1) {
             self.image_available_semaphores[i] = vkctxt.vkd.createSemaphore(vkctxt.vkc.device, semaphore_info, null) catch |err| {
-                vkctxt.printVulkanError("Can't create semaphore", err, self.allocator);
+                printVulkanError("Can't create semaphore", err);
                 return err;
             };
             self.render_finished_semaphores[i] = vkctxt.vkd.createSemaphore(vkctxt.vkc.device, semaphore_info, null) catch |err| {
-                vkctxt.printVulkanError("Can't create semaphore", err, self.allocator);
+                printVulkanError("Can't create semaphore", err);
                 return err;
             };
             self.in_flight_fences[i] = vkctxt.vkd.createFence(vkctxt.vkc.device, fence_info, null) catch |err| {
-                vkctxt.printVulkanError("Can't create fence", err, self.allocator);
+                printVulkanError("Can't create fence", err);
                 return err;
             };
         }
@@ -129,7 +130,7 @@ pub const DefaultRenderer = struct {
 
     fn render(self: *DefaultRenderer) !void {
         _ = vkctxt.vkd.waitForFences(vkctxt.vkc.device, 1, @ptrCast([*]const vk.Fence, &self.in_flight_fences[rg.global_render_graph.frame_index]), vk.TRUE, std.math.maxInt(u64)) catch |err| {
-            vkctxt.printVulkanError("Can't wait for a in flight fence", err, self.allocator);
+            printVulkanError("Can't wait for a in flight fence", err);
             return err;
         };
 
@@ -154,7 +155,7 @@ pub const DefaultRenderer = struct {
 
         var command_buffer: vk.CommandBuffer = rg.global_render_graph.command_buffers[rg.global_render_graph.frame_index];
         vkctxt.vkd.resetCommandBuffer(command_buffer, .{}) catch |err| {
-            vkctxt.printVulkanError("Can't reset command buffer", err, self.allocator);
+            printVulkanError("Can't reset command buffer", err);
         };
 
         RenderGraph.beginSingleTimeCommands(command_buffer);
@@ -175,12 +176,12 @@ pub const DefaultRenderer = struct {
         };
 
         vkctxt.vkd.resetFences(vkctxt.vkc.device, 1, @ptrCast([*]vk.Fence, &self.in_flight_fences[rg.global_render_graph.frame_index])) catch |err| {
-            vkctxt.printVulkanError("Can't reset in flight fence", err, self.allocator);
+            printVulkanError("Can't reset in flight fence", err);
             return err;
         };
 
         vkctxt.vkd.queueSubmit(vkctxt.vkc.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), self.in_flight_fences[rg.global_render_graph.frame_index]) catch |err| {
-            vkctxt.printVulkanError("Can't submit render queue", err, vkctxt.vkc.allocator);
+            printVulkanError("Can't submit render queue", err);
         };
 
         const present_info: vk.PresentInfoKHR = .{

@@ -3,11 +3,15 @@ const c = @import("../c.zig");
 const std = @import("std");
 const vk = @import("../vk.zig");
 const builtin = @import("builtin");
+const vkfn = @import("vulkan_functions.zig");
 
 const Allocator = std.mem.Allocator;
 const Application = @import("../application/application.zig").Application;
+const Instance = @import("instance.zig");
+
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
+const printVulkanError = @import("print_vulkan_error.zig").printVulkanError;
 
 pub extern fn glfwGetInstanceProcAddress(instance: vk.Instance, procname: [*:0]const u8) vk.PfnVoidFunction;
 pub extern fn glfwCreateWindowSurface(instance: vk.Instance, window: *c.GLFWwindow, alocation_callback: ?*const vk.AllocationCallbacks, surface: *vk.SurfaceKHR) vk.Result;
@@ -37,7 +41,7 @@ pub const Buffer = struct {
         };
 
         self.buffer = vkd.createBuffer(vkc.device, buffer_info, null) catch |err| {
-            printVulkanError("Can't create buffer for ui", err, vkc.allocator);
+            printVulkanError("Can't create buffer for ui", err);
             return;
         };
 
@@ -49,17 +53,17 @@ pub const Buffer = struct {
         };
 
         self.memory = vkd.allocateMemory(vkc.device, alloc_info, null) catch |err| {
-            printVulkanError("Can't allocate buffer for ui", err, vkc.allocator);
+            printVulkanError("Can't allocate buffer for ui", err);
             return;
         };
 
         vkd.bindBufferMemory(vkc.device, self.buffer, self.memory, 0) catch |err| {
-            printVulkanError("Can't bind buffer memory for ui", err, vkc.allocator);
+            printVulkanError("Can't bind buffer memory for ui", err);
             return;
         };
 
         self.mapped_memory = vkd.mapMemory(vkc.device, self.memory, 0, size, .{}) catch |err| {
-            printVulkanError("Can't map memory for ui", err, vkc.allocator);
+            printVulkanError("Can't map memory for ui", err);
             return;
         } orelse return;
     }
@@ -72,7 +76,7 @@ pub const Buffer = struct {
         };
 
         vkd.flushMappedMemoryRanges(vkc.device, 1, @ptrCast([*]const vk.MappedMemoryRange, &mapped_range)) catch |err| {
-            printVulkanError("Can't flush buffer for ui", err, vkc.allocator);
+            printVulkanError("Can't flush buffer for ui", err);
         };
     }
 
@@ -82,13 +86,6 @@ pub const Buffer = struct {
         vkd.freeMemory(vkc.device, self.memory, null);
     }
 };
-
-const BaseDispatch = struct {
-    vkCreateInstance: vk.PfnCreateInstance,
-    vkEnumerateInstanceLayerProperties: vk.PfnEnumerateInstanceLayerProperties,
-    usingnamespace vk.BaseWrapper(@This());
-};
-pub var vkb: BaseDispatch = undefined;
 
 const InstanceDispatch = if (nyancore_options.use_vulkan_sdk) struct {
     vkCreateDebugUtilsMessengerEXT: vk.PfnCreateDebugUtilsMessengerEXT,
@@ -229,63 +226,6 @@ const QueueFamilyIndices = struct {
     }
 };
 
-const VulkanError = error{
-    DeviceLost,
-    ExtensionNotPresent,
-    FeatureNotPresent,
-    FragmentationEXT,
-    FragmentedPool,
-    HostAllocationError,
-    IncompatibleDriver,
-    InitializationFailed,
-    InvalidExternalHandle,
-    InvalidOpaqueCaptureAddressKHR,
-    InvalidShaderNV,
-    LayerNotPresent,
-    MemoryMapFailed,
-    NativeWindowInUseKHR,
-    OutOfDeviceMemory,
-    OutOfHostMemory,
-    OutOfPoolMemory,
-    SurfaceLostKHR,
-    TooManyObjects,
-    Unknown,
-    ValidationLayerNotSupported,
-};
-
-pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError, allocator: Allocator) void {
-    @setCold(true);
-
-    const vulkan_error_message: []const u8 = switch (err) {
-        error.DeviceLost => "Device lost",
-        error.ExtensionNotPresent => "Extension not present",
-        error.FeatureNotPresent => "Feature not present",
-        error.FragmentationEXT => "Fragmentation",
-        error.FragmentedPool => "Fragmented pool",
-        error.HostAllocationError => "Error during allocation on host",
-        error.IncompatibleDriver => "Incompatible driver",
-        error.InitializationFailed => "Initialization failed",
-        error.InvalidExternalHandle => "Invalid external handle",
-        error.InvalidOpaqueCaptureAddressKHR => "Invalid opaque capture address KHR",
-        error.InvalidShaderNV => "Invalid Shader",
-        error.MemoryMapFailed => "Memory map failed",
-        error.NativeWindowInUseKHR => "Native window in use",
-        error.LayerNotPresent => "Layer not present",
-        error.OutOfDeviceMemory => "Out of device memory",
-        error.OutOfHostMemory => "Out of host memory",
-        error.OutOfPoolMemory => "Out of pool memory",
-        error.SurfaceLostKHR => "Surface lost",
-        error.TooManyObjects => "Too many objects",
-        error.Unknown => "Unknown error",
-        error.ValidationLayerNotSupported => "Validation layer not supported",
-    };
-
-    const message: []const u8 = std.mem.join(allocator, ": ", &[_][]const u8{ err_context, vulkan_error_message }) catch "=c Error while creating error message: " ++ err_context;
-    defer allocator.free(message);
-
-    printError("Vulkan", message);
-}
-
 pub var vkc: VulkanContext = undefined;
 
 pub const VulkanContext = struct {
@@ -313,17 +253,17 @@ pub const VulkanContext = struct {
 
         self.allocator = allocator;
 
-        vkb = try BaseDispatch.load(glfwGetInstanceProcAddress);
+        vkfn.b = try vkfn.FncBase.load(glfwGetInstanceProcAddress);
 
-        self.createInstance(app.name) catch |err| {
-            printVulkanError("Error during instance creation", err, self.allocator);
+        self.instance = Instance.create(app.name, nyancore_options.use_vulkan_sdk, self.allocator) catch |err| {
+            printVulkanError("Error during instance creation", err);
             return err;
         };
         errdefer vki.destroyInstance(self.instance, null);
         vki = try InstanceDispatch.load(self.instance, glfwGetInstanceProcAddress);
 
         self.createSurface(app.window) catch |err| {
-            printVulkanError("Error during surface creation", err, self.allocator);
+            printVulkanError("Error during surface creation", err);
             return err;
         };
         errdefer vki.destroySurfaceKHR(self.instance, self.surface, null);
@@ -337,11 +277,11 @@ pub const VulkanContext = struct {
         }
 
         self.pickPhysicalDevice() catch |err| {
-            printVulkanError("Error picking physical device", err, self.allocator);
+            printVulkanError("Error picking physical device", err);
             return err;
         };
         self.createLogicalDevice() catch |err| {
-            printVulkanError("Error creating logical device", err, self.allocator);
+            printVulkanError("Error creating logical device", err);
             return err;
         };
 
@@ -373,60 +313,6 @@ pub const VulkanContext = struct {
             temp >>= 1;
         }
         @panic("Can't get memory type");
-    }
-
-    fn createInstance(self: *VulkanContext, app_name: [:0]const u8) !void {
-        if (nyancore_options.use_vulkan_sdk) {
-            const validation_layers_supported: bool = self.checkValidationLayerSupport() catch |err| {
-                printVulkanError("Error getting information about layers", err, self.allocator);
-                return err;
-            };
-            if (!validation_layers_supported) {
-                printError("Vulkan", "Validation layer not supported");
-                return error.ValidationLayerNotSupported;
-            }
-        }
-
-        const app_info: vk.ApplicationInfo = .{
-            .p_application_name = app_name,
-            .application_version = vk.makeApiVersion(0, 1, 0, 0),
-            .p_engine_name = "nyancore engine",
-            .engine_version = vk.makeApiVersion(0, 1, 0, 0),
-            .api_version = vk.API_VERSION_1_2,
-        };
-
-        var glfw_extension_count: u32 = undefined;
-        const glfw_extensions: [*c][*c]const u8 = c.glfwGetRequiredInstanceExtensions(&glfw_extension_count);
-
-        const extensions_count: u32 = glfw_extension_count + 1 * @boolToInt(nyancore_options.use_vulkan_sdk);
-        var extensions: [][*c]const u8 = self.allocator.alloc([*c]const u8, extensions_count) catch {
-            printError("Vulkan", "Can't allocate memory for extensions");
-            return error.HostAllocationError;
-        };
-        defer self.allocator.free(extensions);
-
-        var i: usize = 0;
-        while (i < glfw_extension_count) : (i += 1) {
-            extensions[i] = glfw_extensions[i];
-        }
-
-        if (nyancore_options.use_vulkan_sdk) {
-            extensions[i] = "VK_EXT_debug_utils";
-        }
-
-        const create_info: vk.InstanceCreateInfo = .{
-            .p_application_info = &app_info,
-            .enabled_extension_count = extensions_count,
-            .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, extensions),
-            .enabled_layer_count = if (nyancore_options.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
-            .pp_enabled_layer_names = if (nyancore_options.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
-            .flags = .{},
-        };
-
-        self.instance = vkb.createInstance(create_info, null) catch |err| {
-            printVulkanError("Couldn't create vulkan instance", err, self.allocator);
-            return err;
-        };
     }
 
     fn createSurface(self: *VulkanContext, window: *c.GLFWwindow) !void {
@@ -475,7 +361,7 @@ pub const VulkanContext = struct {
     fn checkDeviceExtensionsSupport(self: *VulkanContext, device: *const vk.PhysicalDevice) !bool {
         var extension_count: u32 = undefined;
         _ = vki.enumerateDeviceExtensionProperties(device.*, null, &extension_count, null) catch |err| {
-            printVulkanError("Can't get count of device extensions", err, self.allocator);
+            printVulkanError("Can't get count of device extensions", err);
             return err;
         };
 
@@ -485,7 +371,7 @@ pub const VulkanContext = struct {
         };
         defer self.allocator.free(available_extensions);
         _ = vki.enumerateDeviceExtensionProperties(device.*, null, &extension_count, @ptrCast([*]vk.ExtensionProperties, available_extensions)) catch |err| {
-            printVulkanError("Can't get information about available extensions", err, self.allocator);
+            printVulkanError("Can't get information about available extensions", err);
             return err;
         };
 
@@ -509,12 +395,12 @@ pub const VulkanContext = struct {
         var details: SwapchainSupportDetails = undefined;
 
         details.capabilities = vki.getPhysicalDeviceSurfaceCapabilitiesKHR(device.*, self.surface) catch |err| {
-            printVulkanError("Can't get physical device surface capabilities", err, self.allocator);
+            printVulkanError("Can't get physical device surface capabilities", err);
             return err;
         };
 
         _ = vki.getPhysicalDeviceSurfaceFormatsKHR(device.*, self.surface, &details.format_count, null) catch |err| {
-            printVulkanError("Can't get physical device's formats count", err, self.allocator);
+            printVulkanError("Can't get physical device's formats count", err);
             return err;
         };
         if (details.format_count > 0) {
@@ -523,13 +409,13 @@ pub const VulkanContext = struct {
                 return error.HostAllocationError;
             };
             _ = vki.getPhysicalDeviceSurfaceFormatsKHR(device.*, self.surface, &details.format_count, @ptrCast([*]vk.SurfaceFormatKHR, details.formats)) catch |err| {
-                printVulkanError("Can't get information about physical device's supported formats", err, self.allocator);
+                printVulkanError("Can't get information about physical device's supported formats", err);
                 return err;
             };
         }
 
         _ = vki.getPhysicalDeviceSurfacePresentModesKHR(device.*, self.surface, &details.present_mode_count, null) catch |err| {
-            printVulkanError("Can't get physical device's present modes count", err, self.allocator);
+            printVulkanError("Can't get physical device's present modes count", err);
             return err;
         };
         if (details.present_mode_count > 0) {
@@ -538,7 +424,7 @@ pub const VulkanContext = struct {
                 return error.HostAllocationError;
             };
             _ = vki.getPhysicalDeviceSurfacePresentModesKHR(device.*, self.surface, &details.present_mode_count, @ptrCast([*]vk.PresentModeKHR, details.present_modes)) catch |err| {
-                printVulkanError("Can't get information about physical device present modes", err, self.allocator);
+                printVulkanError("Can't get information about physical device present modes", err);
                 return err;
             };
         }
@@ -571,7 +457,7 @@ pub const VulkanContext = struct {
             }
 
             var present_support: vk.Bool32 = vki.getPhysicalDeviceSurfaceSupportKHR(device.*, @intCast(u32, i), self.surface) catch |err| {
-                printVulkanError("Can't get physical device surface support information", err, self.allocator);
+                printVulkanError("Can't get physical device surface support information", err);
                 return err;
             };
             if (present_support != 0) {
@@ -589,7 +475,7 @@ pub const VulkanContext = struct {
 
     fn isDeviceSuitable(self: *VulkanContext, device: *const vk.PhysicalDevice) !bool {
         const extensions_supported: bool = self.checkDeviceExtensionsSupport(device) catch |err| {
-            printVulkanError("Error while checking device extensions", err, self.allocator);
+            printVulkanError("Error while checking device extensions", err);
             return err;
         };
 
@@ -598,7 +484,7 @@ pub const VulkanContext = struct {
         }
 
         var swapchain_support: SwapchainSupportDetails = self.getSwapchainSupport(device) catch |err| {
-            printVulkanError("Can't get swapchain support details", err, self.allocator);
+            printVulkanError("Can't get swapchain support details", err);
             return err;
         };
         defer self.allocator.free(swapchain_support.formats);
@@ -609,7 +495,7 @@ pub const VulkanContext = struct {
         }
 
         const indices: QueueFamilyIndices = self.findQueueFamilyIndices(device) catch |err| {
-            printVulkanError("Can't get family indices", err, self.allocator);
+            printVulkanError("Can't get family indices", err);
             return err;
         };
         if (!indices.isComplete()) {
@@ -622,7 +508,7 @@ pub const VulkanContext = struct {
     fn pickPhysicalDevice(self: *VulkanContext) !void {
         var gpu_count: u32 = undefined;
         _ = vki.enumeratePhysicalDevices(self.instance, &gpu_count, null) catch |err| {
-            printVulkanError("Can't get physical device count", err, self.allocator);
+            printVulkanError("Can't get physical device count", err);
             return err;
         };
 
@@ -633,7 +519,7 @@ pub const VulkanContext = struct {
         defer self.allocator.free(physical_devices);
 
         _ = vki.enumeratePhysicalDevices(self.instance, &gpu_count, @ptrCast([*]vk.PhysicalDevice, physical_devices)) catch |err| {
-            printVulkanError("Can't get physical devices information", err, self.allocator);
+            printVulkanError("Can't get physical devices information", err);
             return err;
         };
 
@@ -644,7 +530,7 @@ pub const VulkanContext = struct {
                 self.family_indices = self.findQueueFamilyIndices(&self.physical_device) catch unreachable;
                 return;
             } else |err| {
-                printVulkanError("Error checking physical device suitabilty", err, self.allocator);
+                printVulkanError("Error checking physical device suitabilty", err);
                 return err;
             }
         }
@@ -692,42 +578,8 @@ pub const VulkanContext = struct {
         };
 
         self.device = vki.createDevice(self.physical_device, create_info, null) catch |err| {
-            printVulkanError("Can't create device", err, self.allocator);
+            printVulkanError("Can't create device", err);
             return err;
         };
-    }
-
-    fn checkValidationLayerSupport(self: *VulkanContext) !bool {
-        var layerCount: u32 = undefined;
-
-        _ = vkb.enumerateInstanceLayerProperties(&layerCount, null) catch |err| {
-            printVulkanError("Can't enumerate instance layer properties for layer support", err, self.allocator);
-            return err;
-        };
-
-        var available_layers: []vk.LayerProperties = self.allocator.alloc(vk.LayerProperties, layerCount) catch {
-            printError("Vulkan", "Can't allocate memory for available layers");
-            return error.HostAllocationError;
-        };
-        defer self.allocator.free(available_layers);
-
-        _ = vkb.enumerateInstanceLayerProperties(&layerCount, @ptrCast([*]vk.LayerProperties, available_layers)) catch |err| {
-            printVulkanError("Can't enumerate instance layer properties for layer support", err, self.allocator);
-            return err;
-        };
-
-        for (validation_layers) |validation_layer| {
-            var exist: bool = for (available_layers) |layer| {
-                if (std.mem.startsWith(u8, layer.layer_name[0..], validation_layer[0..])) {
-                    break true;
-                }
-            } else false;
-
-            if (!exist) {
-                return false;
-            }
-        }
-
-        return true;
     }
 };

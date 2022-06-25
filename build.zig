@@ -55,6 +55,36 @@ pub fn addStaticLibrary(
         app.addIncludeDir(vulkan_sdk_include_path);
     }
 
+    // Vulkan Memory Allocator (VMA)
+    const vma_path: []const u8 = path ++ "third_party/vma/";
+    const vma_lib = b.addStaticLibrary("vma", null);
+    const vma_flags = &[_][]const u8{
+        "-std=c++14",
+        "-DVMA_STATIC_VULKAN_FUNCTIONS=0",
+        "-DVMA_DYNAMIC_VULKAN_FUNCTIONS=1",
+        "-DVMA_IMPLEMENTATION",
+        if (os_tag == .windows)
+            "-DVMA_CALL_PRE=__declspec(dllexport)"
+        else
+            "-DVMA_CALL_PRE=__attribute__((visibility(\"default\")))",
+        "-DVMA_CALL_POST=__cdecl",
+    };
+
+    vma_lib.setTarget(app.target);
+    vma_lib.setBuildMode(app.build_mode);
+
+    vma_lib.linkSystemLibrary("c");
+    vma_lib.linkSystemLibrary("c++");
+
+    vma_lib.addIncludeDir(path ++ "third_party/vulkan-headers/include/");
+    // Can't compile vk_mem_alloc.h header directly, zig chooses c instead of c++
+    vma_lib.addCSourceFile(vma_path ++ "src/VmaUsage.cpp", vma_flags);
+
+    nyancoreLib.step.dependOn(&vma_lib.step);
+    nyancoreLib.linkLibrary(vma_lib);
+    app.addIncludeDir(vma_path ++ "include/");
+    app.linkLibrary(vma_lib);
+
     // Tracy
     if (enable_tracing) {
         const tracy_path: []const u8 = path ++ "third_party/tracy/";

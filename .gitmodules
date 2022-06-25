@@ -10,3 +10,9 @@
 [submodule "third_party/glfw"]
 	path = third_party/glfw
 	url = git@github.com:Black-Cat/glfw.git
+[submodule "third_party/vma"]
+	path = third_party/vma
+	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "third_party/vulkan-headers"]
+	path = third_party/vulkan-headers
+	url = git@github.com:KhronosGroup/Vulkan-Headers.git
