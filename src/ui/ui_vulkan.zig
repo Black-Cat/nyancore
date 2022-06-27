@@ -54,30 +54,30 @@ pub const UIVulkanContext = struct {
         self.initResources();
     }
     pub fn deinit(self: *UIVulkanContext) void {
-        vkctxt.vkd.deviceWaitIdle(vkctxt.vkc.device) catch return;
+        vkctxt.vkd.deviceWaitIdle(vkctxt.device) catch return;
         for (self.vertex_buffers) |*buffer|
             if (buffer.buffer != .null_handle)
                 buffer.destroy();
-        vkctxt.vkc.allocator.free(self.vertex_buffers);
+        vkctxt.allocator.free(self.vertex_buffers);
         for (self.index_buffers) |*buffer|
             if (buffer.buffer != .null_handle)
                 buffer.destroy();
-        vkctxt.vkc.allocator.free(self.index_buffers);
+        vkctxt.allocator.free(self.index_buffers);
 
-        vkctxt.vkc.allocator.free(self.vertex_buffer_counts);
-        vkctxt.vkc.allocator.free(self.index_buffer_counts);
+        vkctxt.allocator.free(self.vertex_buffer_counts);
+        vkctxt.allocator.free(self.index_buffer_counts);
 
-        vkctxt.vkd.destroyPipeline(vkctxt.vkc.device, self.pipeline, null);
-        vkctxt.vkd.destroyPipelineLayout(vkctxt.vkc.device, self.pipeline_layout, null);
-        vkctxt.vkd.destroyRenderPass(vkctxt.vkc.device, self.render_pass, null);
+        vkctxt.vkd.destroyPipeline(vkctxt.device, self.pipeline, null);
+        vkctxt.vkd.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
+        vkctxt.vkd.destroyRenderPass(vkctxt.device, self.render_pass, null);
 
-        vkctxt.vkd.destroyShaderModule(vkctxt.vkc.device, self.vert_shader, null);
-        vkctxt.vkd.destroyShaderModule(vkctxt.vkc.device, self.frag_shader, null);
+        vkctxt.vkd.destroyShaderModule(vkctxt.device, self.vert_shader, null);
+        vkctxt.vkd.destroyShaderModule(vkctxt.device, self.frag_shader, null);
 
-        vkctxt.vkd.destroyPipelineCache(vkctxt.vkc.device, self.pipeline_cache, null);
+        vkctxt.vkd.destroyPipelineCache(vkctxt.device, self.pipeline_cache, null);
 
-        vkctxt.vkd.destroyDescriptorSetLayout(vkctxt.vkc.device, self.descriptor_set_layout, null);
-        vkctxt.vkd.destroyDescriptorPool(vkctxt.vkc.device, self.descriptor_pool, null);
+        vkctxt.vkd.destroyDescriptorSetLayout(vkctxt.device, self.descriptor_set_layout, null);
+        vkctxt.vkd.destroyDescriptorPool(vkctxt.device, self.descriptor_pool, null);
 
         self.font_texture.destroy();
     }
@@ -192,7 +192,7 @@ pub const UIVulkanContext = struct {
         // Update only if vertex or index count has changed
         if (self.vertex_buffers[frame_index].buffer == .null_handle or self.vertex_buffer_counts[frame_index] < draw_data.TotalVtxCount) {
             if (self.vertex_buffers[frame_index].buffer != .null_handle) {
-                vkctxt.vkd.queueWaitIdle(vkctxt.vkc.present_queue) catch |err| {
+                vkctxt.vkd.queueWaitIdle(vkctxt.present_queue) catch |err| {
                     printVulkanError("Can't wait present queue", err);
                 };
                 self.vertex_buffers[frame_index].destroy();
@@ -204,7 +204,7 @@ pub const UIVulkanContext = struct {
 
         if (self.index_buffers[frame_index].buffer == .null_handle or self.index_buffer_counts[frame_index] < draw_data.TotalIdxCount) {
             if (self.index_buffers[frame_index].buffer != .null_handle) {
-                vkctxt.vkd.queueWaitIdle(vkctxt.vkc.present_queue) catch |err| {
+                vkctxt.vkd.queueWaitIdle(vkctxt.present_queue) catch |err| {
                     printVulkanError("Can't wait present queue", err);
                 };
                 self.index_buffers[frame_index].destroy();
@@ -290,7 +290,7 @@ pub const UIVulkanContext = struct {
             .flags = .{},
         };
 
-        self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.vkc.device, render_pass_create_info, null) catch |err| {
+        self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
             printVulkanError("Can't create render pass for ui", err);
             return;
         };
@@ -311,7 +311,7 @@ pub const UIVulkanContext = struct {
             .flags = .{},
         };
 
-        self.pipeline_layout = vkctxt.vkd.createPipelineLayout(vkctxt.vkc.device, pipeline_layout_create_info, null) catch |err| {
+        self.pipeline_layout = vkctxt.vkd.createPipelineLayout(vkctxt.device, pipeline_layout_create_info, null) catch |err| {
             printVulkanError("Can't create pipeline layout", err);
             return;
         };
@@ -491,7 +491,7 @@ pub const UIVulkanContext = struct {
         };
 
         _ = vkctxt.vkd.createGraphicsPipelines(
-            vkctxt.vkc.device,
+            vkctxt.device,
             self.pipeline_cache,
             1,
             @ptrCast([*]const vk.GraphicsPipelineCreateInfo, &pipeline_create_info),
@@ -528,37 +528,37 @@ pub const UIVulkanContext = struct {
             .p_queue_family_indices = undefined,
         };
 
-        var staging_buffer: vk.Buffer = vkctxt.vkd.createBuffer(vkctxt.vkc.device, buffer_info, null) catch |err| {
+        var staging_buffer: vk.Buffer = vkctxt.vkd.createBuffer(vkctxt.device, buffer_info, null) catch |err| {
             printVulkanError("Can't crete buffer for font texture", err);
             return;
         };
-        defer vkctxt.vkd.destroyBuffer(vkctxt.vkc.device, staging_buffer, null);
+        defer vkctxt.vkd.destroyBuffer(vkctxt.device, staging_buffer, null);
 
-        var mem_req: vk.MemoryRequirements = vkctxt.vkd.getBufferMemoryRequirements(vkctxt.vkc.device, staging_buffer);
+        var mem_req: vk.MemoryRequirements = vkctxt.vkd.getBufferMemoryRequirements(vkctxt.device, staging_buffer);
 
         const alloc_info: vk.MemoryAllocateInfo = .{
             .allocation_size = mem_req.size,
-            .memory_type_index = vkctxt.vkc.getMemoryType(mem_req.memory_type_bits, .{ .host_visible_bit = true, .host_coherent_bit = true }),
+            .memory_type_index = vkctxt.getMemoryType(mem_req.memory_type_bits, .{ .host_visible_bit = true, .host_coherent_bit = true }),
         };
 
-        var staging_buffer_memory: vk.DeviceMemory = vkctxt.vkd.allocateMemory(vkctxt.vkc.device, alloc_info, null) catch |err| {
+        var staging_buffer_memory: vk.DeviceMemory = vkctxt.vkd.allocateMemory(vkctxt.device, alloc_info, null) catch |err| {
             printVulkanError("Can't allocate buffer for font texture", err);
             return;
         };
-        defer vkctxt.vkd.freeMemory(vkctxt.vkc.device, staging_buffer_memory, null);
+        defer vkctxt.vkd.freeMemory(vkctxt.device, staging_buffer_memory, null);
 
-        vkctxt.vkd.bindBufferMemory(vkctxt.vkc.device, staging_buffer, staging_buffer_memory, 0) catch |err| {
+        vkctxt.vkd.bindBufferMemory(vkctxt.device, staging_buffer, staging_buffer_memory, 0) catch |err| {
             printVulkanError("Can't bind buffer memory for font texture", err);
             return;
         };
-        var mapped_memory: *anyopaque = vkctxt.vkd.mapMemory(vkctxt.vkc.device, staging_buffer_memory, 0, tex_size, .{}) catch |err| {
+        var mapped_memory: *anyopaque = vkctxt.vkd.mapMemory(vkctxt.device, staging_buffer_memory, 0, tex_size, .{}) catch |err| {
             printVulkanError("Can't map memory for font texture", err);
             return;
         } orelse return;
         @memcpy(@ptrCast([*]u8, mapped_memory), font_data, tex_size);
-        vkctxt.vkd.unmapMemory(vkctxt.vkc.device, staging_buffer_memory);
+        vkctxt.vkd.unmapMemory(vkctxt.device, staging_buffer_memory);
 
-        self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .r8g8b8a8_unorm, vkctxt.vkc.allocator);
+        self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .r8g8b8a8_unorm, vkctxt.allocator);
         self.font_texture.alloc();
 
         const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
@@ -603,7 +603,7 @@ pub const UIVulkanContext = struct {
             .flags = .{},
         };
 
-        self.descriptor_pool = vkctxt.vkd.createDescriptorPool(vkctxt.vkc.device, descriptor_pool_info, null) catch |err| {
+        self.descriptor_pool = vkctxt.vkd.createDescriptorPool(vkctxt.device, descriptor_pool_info, null) catch |err| {
             printVulkanError("Can't create descriptor pool for ui", err);
             return;
         };
@@ -622,7 +622,7 @@ pub const UIVulkanContext = struct {
             .flags = .{},
         };
 
-        self.descriptor_set_layout = vkctxt.vkd.createDescriptorSetLayout(vkctxt.vkc.device, set_layout_create_info, null) catch |err| {
+        self.descriptor_set_layout = vkctxt.vkd.createDescriptorSetLayout(vkctxt.device, set_layout_create_info, null) catch |err| {
             printVulkanError("Can't create descriptor set layout for ui", err);
             return;
         };
@@ -633,7 +633,7 @@ pub const UIVulkanContext = struct {
             .descriptor_set_count = 1,
         };
 
-        vkctxt.vkd.allocateDescriptorSets(vkctxt.vkc.device, descriptor_set_allocate_info, @ptrCast([*]vk.DescriptorSet, &self.descriptor_set)) catch |err| {
+        vkctxt.vkd.allocateDescriptorSets(vkctxt.device, descriptor_set_allocate_info, @ptrCast([*]vk.DescriptorSet, &self.descriptor_set)) catch |err| {
             printVulkanError("Can't allocate descriptor set for ui", err);
             return;
         };
@@ -655,7 +655,7 @@ pub const UIVulkanContext = struct {
             .p_texel_buffer_view = undefined,
         };
 
-        vkctxt.vkd.updateDescriptorSets(vkctxt.vkc.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
+        vkctxt.vkd.updateDescriptorSets(vkctxt.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
     }
 
     fn initResources(self: *UIVulkanContext) void {
@@ -667,7 +667,7 @@ pub const UIVulkanContext = struct {
             .p_initial_data = undefined,
         };
 
-        self.pipeline_cache = vkctxt.vkd.createPipelineCache(vkctxt.vkc.device, pipeline_cache_create_info, null) catch |err| {
+        self.pipeline_cache = vkctxt.vkd.createPipelineCache(vkctxt.device, pipeline_cache_create_info, null) catch |err| {
             printVulkanError("Can't create pipeline cache", err);
             return;
         };
@@ -682,11 +682,11 @@ pub const UIVulkanContext = struct {
 
         const buffer_count: u32 = rg.global_render_graph.final_swapchain.image_count;
 
-        self.vertex_buffers = vkctxt.vkc.allocator.alloc(Buffer, buffer_count) catch unreachable;
-        self.index_buffers = vkctxt.vkc.allocator.alloc(Buffer, buffer_count) catch unreachable;
+        self.vertex_buffers = vkctxt.allocator.alloc(Buffer, buffer_count) catch unreachable;
+        self.index_buffers = vkctxt.allocator.alloc(Buffer, buffer_count) catch unreachable;
 
-        self.vertex_buffer_counts = vkctxt.vkc.allocator.alloc(usize, buffer_count) catch unreachable;
-        self.index_buffer_counts = vkctxt.vkc.allocator.alloc(usize, buffer_count) catch unreachable;
+        self.vertex_buffer_counts = vkctxt.allocator.alloc(usize, buffer_count) catch unreachable;
+        self.index_buffer_counts = vkctxt.allocator.alloc(usize, buffer_count) catch unreachable;
 
         for (self.vertex_buffers) |*buffer| {
             buffer.* = undefined;

@@ -153,7 +153,7 @@ pub const ScreenRenderPass = struct {
             .flags = .{},
         };
 
-        self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.vkc.device, render_pass_create_info, null) catch |err| {
+        self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
             printVulkanError("Can't create render pass for screen render pass", err);
             return;
         };
@@ -167,16 +167,16 @@ pub const ScreenRenderPass = struct {
 
     fn passDeinit(render_pass: *RGPass) void {
         const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
-        vkctxt.vkd.destroyRenderPass(vkctxt.vkc.device, self.render_pass, null);
+        vkctxt.vkd.destroyRenderPass(vkctxt.device, self.render_pass, null);
 
-        vkctxt.vkd.destroyPipeline(vkctxt.vkc.device, self.pipeline, null);
-        vkctxt.vkd.destroyPipelineLayout(vkctxt.vkc.device, self.pipeline_layout, null);
-        vkctxt.vkd.destroyPipelineCache(vkctxt.vkc.device, self.pipeline_cache, null);
+        vkctxt.vkd.destroyPipeline(vkctxt.device, self.pipeline, null);
+        vkctxt.vkd.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
+        vkctxt.vkd.destroyPipelineCache(vkctxt.device, self.pipeline_cache, null);
 
         if (self.alloc_framebuffers)
             self.destroyFramebuffers();
 
-        vkctxt.vkd.destroyShaderModule(vkctxt.vkc.device, self.vert_shader, null);
+        vkctxt.vkd.destroyShaderModule(vkctxt.device, self.vert_shader, null);
     }
 
     fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void {
@@ -269,7 +269,7 @@ pub const ScreenRenderPass = struct {
                 .layers = 1,
             };
 
-            framebuffer.* = vkctxt.vkd.createFramebuffer(vkctxt.vkc.device, create_info, null) catch |err| {
+            framebuffer.* = vkctxt.vkd.createFramebuffer(vkctxt.device, create_info, null) catch |err| {
                 printVulkanError("Can't create framebuffer for screen render pass", err);
                 return;
             };
@@ -278,7 +278,7 @@ pub const ScreenRenderPass = struct {
 
     fn destroyFramebuffers(self: *ScreenRenderPass) void {
         for (self.framebuffers) |f|
-            vkctxt.vkd.destroyFramebuffer(vkctxt.vkc.device, f, null);
+            vkctxt.vkd.destroyFramebuffer(vkctxt.device, f, null);
     }
 
     fn reinitFramebuffer(render_pass: *RGPass) void {
@@ -295,7 +295,7 @@ pub const ScreenRenderPass = struct {
             .p_initial_data = undefined,
         };
 
-        self.pipeline_cache = vkctxt.vkd.createPipelineCache(vkctxt.vkc.device, pipeline_cache_create_info, null) catch |err| {
+        self.pipeline_cache = vkctxt.vkd.createPipelineCache(vkctxt.device, pipeline_cache_create_info, null) catch |err| {
             printVulkanError("Can't create pipeline cache", err);
             return;
         };
@@ -323,14 +323,14 @@ pub const ScreenRenderPass = struct {
             .flags = .{},
         };
 
-        self.pipeline_layout = vkctxt.vkd.createPipelineLayout(vkctxt.vkc.device, pipeline_layout_create_info, null) catch |err| {
+        self.pipeline_layout = vkctxt.vkd.createPipelineLayout(vkctxt.device, pipeline_layout_create_info, null) catch |err| {
             printVulkanError("Can't create pipeline layout", err);
             return;
         };
     }
 
     fn recreatePipeline(self: *ScreenRenderPass) void {
-        vkctxt.vkd.destroyPipeline(vkctxt.vkc.device, self.pipeline, null);
+        vkctxt.vkd.destroyPipeline(vkctxt.device, self.pipeline, null);
         self.createPipeline();
     }
 
@@ -488,7 +488,7 @@ pub const ScreenRenderPass = struct {
         };
 
         _ = vkctxt.vkd.createGraphicsPipelines(
-            vkctxt.vkc.device,
+            vkctxt.device,
             self.pipeline_cache,
             1,
             @ptrCast([*]const vk.GraphicsPipelineCreateInfo, &pipeline_create_info),

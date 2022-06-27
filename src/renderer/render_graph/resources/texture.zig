@@ -63,23 +63,23 @@ pub const Texture = struct {
     }
 
     pub fn alloc(self: *Texture) void {
-        self.image = vkctxt.vkd.createImage(vkctxt.vkc.device, self.image_create_info, null) catch |err| {
+        self.image = vkctxt.vkd.createImage(vkctxt.device, self.image_create_info, null) catch |err| {
             printVulkanError("Can't create texture", err);
             return;
         };
 
-        var mem_req: vk.MemoryRequirements = vkctxt.vkd.getImageMemoryRequirements(vkctxt.vkc.device, self.image);
+        var mem_req: vk.MemoryRequirements = vkctxt.vkd.getImageMemoryRequirements(vkctxt.device, self.image);
 
         const mem_alloc_info: vk.MemoryAllocateInfo = .{
             .allocation_size = mem_req.size,
-            .memory_type_index = vkctxt.vkc.getMemoryType(mem_req.memory_type_bits, .{ .device_local_bit = true }),
+            .memory_type_index = vkctxt.getMemoryType(mem_req.memory_type_bits, .{ .device_local_bit = true }),
         };
-        self.memory = vkctxt.vkd.allocateMemory(vkctxt.vkc.device, mem_alloc_info, null) catch |err| {
+        self.memory = vkctxt.vkd.allocateMemory(vkctxt.device, mem_alloc_info, null) catch |err| {
             printVulkanError("Can't allocate texture memory", err);
             return;
         };
 
-        vkctxt.vkd.bindImageMemory(vkctxt.vkc.device, self.image, self.memory, 0) catch |err| {
+        vkctxt.vkd.bindImageMemory(vkctxt.device, self.image, self.memory, 0) catch |err| {
             printVulkanError("Can't bind texture memory", err);
             return;
         };
@@ -98,7 +98,7 @@ pub const Texture = struct {
             .flags = .{},
             .components = .{ .r = .identity, .g = .identity, .b = .identity, .a = .identity },
         };
-        self.view = vkctxt.vkd.createImageView(vkctxt.vkc.device, view_info, null) catch |err| {
+        self.view = vkctxt.vkd.createImageView(vkctxt.device, view_info, null) catch |err| {
             printVulkanError("Can't create image view", err);
             return;
         };
@@ -122,7 +122,7 @@ pub const Texture = struct {
             .unnormalized_coordinates = 0,
         };
 
-        self.sampler = vkctxt.vkd.createSampler(vkctxt.vkc.device, sampler_info, null) catch |err| {
+        self.sampler = vkctxt.vkd.createSampler(vkctxt.device, sampler_info, null) catch |err| {
             printVulkanError("Can't create sampler for ui texture", err);
             return;
         };
@@ -137,10 +137,10 @@ pub const Texture = struct {
     }
 
     pub fn destroy(self: *Texture) void {
-        vkctxt.vkd.destroySampler(vkctxt.vkc.device, self.sampler, null);
-        vkctxt.vkd.destroyImage(vkctxt.vkc.device, self.image, null);
-        vkctxt.vkd.destroyImageView(vkctxt.vkc.device, self.view, null);
-        vkctxt.vkd.freeMemory(vkctxt.vkc.device, self.memory, null);
+        vkctxt.vkd.destroySampler(vkctxt.device, self.sampler, null);
+        vkctxt.vkd.destroyImage(vkctxt.device, self.image, null);
+        vkctxt.vkd.destroyImageView(vkctxt.device, self.view, null);
+        vkctxt.vkd.freeMemory(vkctxt.device, self.memory, null);
     }
 
     pub fn transitionImageLayout(self: *Texture, command_buffer: vk.CommandBuffer, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) void {

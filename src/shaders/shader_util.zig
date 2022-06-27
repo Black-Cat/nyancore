@@ -208,7 +208,7 @@ pub fn loadShader(shader_code: [*:0]const u8, stage: ShaderStage) vk.ShaderModul
         .flags = .{},
     };
 
-    var shader_module: vk.ShaderModule = vkctxt.vkd.createShaderModule(vkctxt.vkc.device, module_create_info, null) catch |err| {
+    var shader_module: vk.ShaderModule = vkctxt.vkd.createShaderModule(vkctxt.device, module_create_info, null) catch |err| {
         printVulkanError("Can't create shader module", err);
         @panic("Can't create shader module");
     };
