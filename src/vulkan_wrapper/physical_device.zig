@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const c = @import("../c.zig");
 const vk = @import("../vk.zig");
 
 const vkctxt = @import("vulkan_context.zig");

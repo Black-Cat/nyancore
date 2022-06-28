@@ -11,6 +11,7 @@ pub const c = @import("c.zig");
 pub const tracy = @import("tracy.zig");
 pub const vk = @import("vk.zig");
 pub const vkctxt = @import("vulkan_wrapper/vulkan_context.zig");
+pub const vkfn = @import("vulkan_wrapper/vulkan_functions.zig");
 
 pub const DefaultRenderer = @import("renderer/default_renderer.zig").DefaultRenderer;
 pub const UI = @import("ui/ui.zig").UI;

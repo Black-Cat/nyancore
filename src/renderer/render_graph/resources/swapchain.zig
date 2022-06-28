@@ -2,6 +2,7 @@ const vk = @import("../../../vk.zig");
 const std = @import("std");
 
 const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
+const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
 
 const printError = @import("../../../application/print_error.zig").printError;
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
@@ -47,18 +48,18 @@ pub const Swapchain = struct {
 
     fn cleanup(self: *Swapchain) void {
         for (self.image_views) |image_view| {
-            vkctxt.vkd.destroyImageView(vkctxt.device, image_view, null);
+            vkfn.d.destroyImageView(vkctxt.device, image_view, null);
         }
 
         for (self.framebuffers) |framebuffer| {
-            vkctxt.vkd.destroyFramebuffer(vkctxt.device, framebuffer, null);
+            vkfn.d.destroyFramebuffer(vkctxt.device, framebuffer, null);
         }
 
         vkctxt.allocator.free(self.image_views);
         vkctxt.allocator.free(self.framebuffers);
 
-        vkctxt.vkd.destroyRenderPass(vkctxt.device, self.render_pass, null);
-        vkctxt.vkd.destroySwapchainKHR(vkctxt.device, self.swapchain, null);
+        vkfn.d.destroyRenderPass(vkctxt.device, self.render_pass, null);
+        vkfn.d.destroySwapchainKHR(vkctxt.device, self.swapchain, null);
     }
 
     fn createSwapchain(self: *Swapchain, width: u32, height: u32) !void {
@@ -109,7 +110,7 @@ pub const Swapchain = struct {
             .p_queue_family_indices = @ptrCast([*]const u32, &queue_family_indices),
         };
 
-        self.swapchain = vkctxt.vkd.createSwapchainKHR(vkctxt.device, create_info, null) catch |err| {
+        self.swapchain = vkfn.d.createSwapchainKHR(vkctxt.device, create_info, null) catch |err| {
             printVulkanError("Can't create swapchain", err);
             return err;
         };
@@ -117,7 +118,7 @@ pub const Swapchain = struct {
         self.image_format = surface_format.format;
         self.image_extent = extent;
 
-        _ = vkctxt.vkd.getSwapchainImagesKHR(vkctxt.device, self.swapchain, &self.image_count, null) catch |err| {
+        _ = vkfn.d.getSwapchainImagesKHR(vkctxt.device, self.swapchain, &self.image_count, null) catch |err| {
             printVulkanError("Can't get image count for swapchain", err);
             return err;
         };
@@ -125,7 +126,7 @@ pub const Swapchain = struct {
             printError("Vulkan Wrapper", "Can't allocate images for swapchain on host");
             return error.HostAllocationError;
         };
-        _ = vkctxt.vkd.getSwapchainImagesKHR(vkctxt.device, self.swapchain, &self.image_count, self.images.ptr) catch |err| {
+        _ = vkfn.d.getSwapchainImagesKHR(vkctxt.device, self.swapchain, &self.image_count, self.images.ptr) catch |err| {
             printVulkanError("Can't get images for swapchain", err);
             return err;
         };
@@ -162,7 +163,7 @@ pub const Swapchain = struct {
                 },
             };
 
-            image_view.* = vkctxt.vkd.createImageView(vkctxt.device, create_info, null) catch |err| {
+            image_view.* = vkfn.d.createImageView(vkctxt.device, create_info, null) catch |err| {
                 printVulkanError("Can't create image view", err);
                 return err;
             };
@@ -213,7 +214,7 @@ pub const Swapchain = struct {
             .p_dependencies = undefined,
         };
 
-        self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
+        self.render_pass = vkfn.d.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
             printVulkanError("Can't create render pass for swapchain", err);
             return err;
         };
@@ -236,7 +237,7 @@ pub const Swapchain = struct {
                 .layers = 1,
             };
 
-            framebuffer.* = vkctxt.vkd.createFramebuffer(vkctxt.device, create_info, null) catch |err| {
+            framebuffer.* = vkfn.d.createFramebuffer(vkctxt.device, create_info, null) catch |err| {
                 printVulkanError("Can't create framebuffer for swapchain", err);
                 return err;
             };

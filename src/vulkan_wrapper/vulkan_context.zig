@@ -10,6 +10,7 @@ const Application = @import("../application/application.zig").Application;
 
 const Instance = @import("instance.zig");
 const PhysicalDevice = @import("physical_device.zig").PhysicalDevice;
+const Device = @import("device.zig");
 
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
@@ -42,29 +43,29 @@ pub const Buffer = struct {
             .p_queue_family_indices = undefined,
         };
 
-        self.buffer = vkd.createBuffer(device, buffer_info, null) catch |err| {
+        self.buffer = vkfn.d.createBuffer(device, buffer_info, null) catch |err| {
             printVulkanError("Can't create buffer for ui", err);
             return;
         };
 
-        var mem_req: vk.MemoryRequirements = vkd.getBufferMemoryRequirements(device, self.buffer);
+        var mem_req: vk.MemoryRequirements = vkfn.d.getBufferMemoryRequirements(device, self.buffer);
 
         const alloc_info: vk.MemoryAllocateInfo = .{
             .allocation_size = mem_req.size,
             .memory_type_index = getMemoryType(mem_req.memory_type_bits, properties),
         };
 
-        self.memory = vkd.allocateMemory(device, alloc_info, null) catch |err| {
+        self.memory = vkfn.d.allocateMemory(device, alloc_info, null) catch |err| {
             printVulkanError("Can't allocate buffer for ui", err);
             return;
         };
 
-        vkd.bindBufferMemory(device, self.buffer, self.memory, 0) catch |err| {
+        vkfn.d.bindBufferMemory(device, self.buffer, self.memory, 0) catch |err| {
             printVulkanError("Can't bind buffer memory for ui", err);
             return;
         };
 
-        self.mapped_memory = vkd.mapMemory(device, self.memory, 0, size, .{}) catch |err| {
+        self.mapped_memory = vkfn.d.mapMemory(device, self.memory, 0, size, .{}) catch |err| {
             printVulkanError("Can't map memory for ui", err);
             return;
         } orelse return;
@@ -77,99 +78,17 @@ pub const Buffer = struct {
             .size = vk.WHOLE_SIZE,
         };
 
-        vkd.flushMappedMemoryRanges(device, 1, @ptrCast([*]const vk.MappedMemoryRange, &mapped_range)) catch |err| {
+        vkfn.d.flushMappedMemoryRanges(device, 1, @ptrCast([*]const vk.MappedMemoryRange, &mapped_range)) catch |err| {
             printVulkanError("Can't flush buffer for ui", err);
         };
     }
 
     pub fn destroy(self: *Buffer) void {
-        vkd.unmapMemory(device, self.memory);
-        vkd.destroyBuffer(device, self.buffer, null);
-        vkd.freeMemory(device, self.memory, null);
+        vkfn.d.unmapMemory(device, self.memory);
+        vkfn.d.destroyBuffer(device, self.buffer, null);
+        vkfn.d.freeMemory(device, self.memory, null);
     }
 };
-
-const DeviceDispatch = struct {
-    vkAcquireNextImageKHR: vk.PfnAcquireNextImageKHR,
-    vkAllocateCommandBuffers: vk.PfnAllocateCommandBuffers,
-    vkAllocateDescriptorSets: vk.PfnAllocateDescriptorSets,
-    vkAllocateMemory: vk.PfnAllocateMemory,
-    vkBeginCommandBuffer: vk.PfnBeginCommandBuffer,
-    vkBindBufferMemory: vk.PfnBindBufferMemory,
-    vkBindImageMemory: vk.PfnBindImageMemory,
-    vkCmdBeginRenderPass: vk.PfnCmdBeginRenderPass,
-    vkCmdBindDescriptorSets: vk.PfnCmdBindDescriptorSets,
-    vkCmdBindIndexBuffer: vk.PfnCmdBindIndexBuffer,
-    vkCmdBindPipeline: vk.PfnCmdBindPipeline,
-    vkCmdBindVertexBuffers: vk.PfnCmdBindVertexBuffers,
-    vkCmdClearAttachments: vk.PfnCmdClearAttachments,
-    vkCmdCopyBufferToImage: vk.PfnCmdCopyBufferToImage,
-    vkCmdCopyImageToBuffer: vk.PfnCmdCopyImageToBuffer,
-    vkCmdDispatch: vk.PfnCmdDispatch,
-    vkCmdDraw: vk.PfnCmdDraw,
-    vkCmdDrawIndexed: vk.PfnCmdDrawIndexed,
-    vkCmdEndRenderPass: vk.PfnCmdEndRenderPass,
-    vkCmdPipelineBarrier: vk.PfnCmdPipelineBarrier,
-    vkCmdPushConstants: vk.PfnCmdPushConstants,
-    vkCmdSetScissor: vk.PfnCmdSetScissor,
-    vkCmdSetViewport: vk.PfnCmdSetViewport,
-    vkCreateBuffer: vk.PfnCreateBuffer,
-    vkCreateCommandPool: vk.PfnCreateCommandPool,
-    vkCreateComputePipelines: vk.PfnCreateComputePipelines,
-    vkCreateDescriptorPool: vk.PfnCreateDescriptorPool,
-    vkCreateDescriptorSetLayout: vk.PfnCreateDescriptorSetLayout,
-    vkCreateFence: vk.PfnCreateFence,
-    vkCreateFramebuffer: vk.PfnCreateFramebuffer,
-    vkCreateGraphicsPipelines: vk.PfnCreateGraphicsPipelines,
-    vkCreateImage: vk.PfnCreateImage,
-    vkCreateImageView: vk.PfnCreateImageView,
-    vkCreatePipelineCache: vk.PfnCreatePipelineCache,
-    vkCreatePipelineLayout: vk.PfnCreatePipelineLayout,
-    vkCreateRenderPass: vk.PfnCreateRenderPass,
-    vkCreateSampler: vk.PfnCreateSampler,
-    vkCreateSemaphore: vk.PfnCreateSemaphore,
-    vkCreateShaderModule: vk.PfnCreateShaderModule,
-    vkCreateSwapchainKHR: vk.PfnCreateSwapchainKHR,
-    vkDestroyBuffer: vk.PfnDestroyBuffer,
-    vkDestroyCommandPool: vk.PfnDestroyCommandPool,
-    vkDestroyDescriptorPool: vk.PfnDestroyDescriptorPool,
-    vkDestroyDescriptorSetLayout: vk.PfnDestroyDescriptorSetLayout,
-    vkDestroyDevice: vk.PfnDestroyDevice,
-    vkDestroyFence: vk.PfnDestroyFence,
-    vkDestroyFramebuffer: vk.PfnDestroyFramebuffer,
-    vkDestroyImage: vk.PfnDestroyImage,
-    vkDestroyImageView: vk.PfnDestroyImageView,
-    vkDestroyPipeline: vk.PfnDestroyPipeline,
-    vkDestroyPipelineCache: vk.PfnDestroyPipelineCache,
-    vkDestroyPipelineLayout: vk.PfnDestroyPipelineLayout,
-    vkDestroyRenderPass: vk.PfnDestroyRenderPass,
-    vkDestroySampler: vk.PfnDestroySampler,
-    vkDestroySemaphore: vk.PfnDestroySemaphore,
-    vkDestroyShaderModule: vk.PfnDestroyShaderModule,
-    vkDestroySwapchainKHR: vk.PfnDestroySwapchainKHR,
-    vkDeviceWaitIdle: vk.PfnDeviceWaitIdle,
-    vkEndCommandBuffer: vk.PfnEndCommandBuffer,
-    vkFlushMappedMemoryRanges: vk.PfnFlushMappedMemoryRanges,
-    vkFreeCommandBuffers: vk.PfnFreeCommandBuffers,
-    vkFreeMemory: vk.PfnFreeMemory,
-    vkGetBufferMemoryRequirements: vk.PfnGetBufferMemoryRequirements,
-    vkGetDeviceQueue: vk.PfnGetDeviceQueue,
-    vkGetFenceStatus: vk.PfnGetFenceStatus,
-    vkGetImageMemoryRequirements: vk.PfnGetImageMemoryRequirements,
-    vkGetSwapchainImagesKHR: vk.PfnGetSwapchainImagesKHR,
-    vkMapMemory: vk.PfnMapMemory,
-    vkQueuePresentKHR: vk.PfnQueuePresentKHR,
-    vkQueueSubmit: vk.PfnQueueSubmit,
-    vkQueueWaitIdle: vk.PfnQueueWaitIdle,
-    vkResetCommandBuffer: vk.PfnResetCommandBuffer,
-    vkResetFences: vk.PfnResetFences,
-    vkUnmapMemory: vk.PfnUnmapMemory,
-    vkUpdateDescriptorSets: vk.PfnUpdateDescriptorSets,
-    vkWaitForFences: vk.PfnWaitForFences,
-
-    usingnamespace vk.DeviceWrapper(@This());
-};
-pub var vkd: DeviceDispatch = undefined;
 
 pub var allocator: Allocator = undefined;
 pub var instance: vk.Instance = undefined;
@@ -221,21 +140,21 @@ pub fn init(a: Allocator, app: *Application) !void {
         return err;
     };
 
-    createLogicalDevice() catch |err| {
+    device = Device.create(&physical_device) catch |err| {
         printVulkanError("Error creating logical device", err);
         return err;
     };
 
-    vkd = try DeviceDispatch.load(device, vkfn.i.vkGetDeviceProcAddr);
-    errdefer vkd.destroyDevice(device, null);
+    vkfn.d = try vkfn.DeviceDispatch.load(device, vkfn.i.vkGetDeviceProcAddr);
+    errdefer vkfn.d.destroyDevice(device, null);
 
-    graphics_queue = vkd.getDeviceQueue(device, physical_device.family_indices.graphics_family, 0);
-    present_queue = vkd.getDeviceQueue(device, physical_device.family_indices.present_family, 0);
-    compute_queue = vkd.getDeviceQueue(device, physical_device.family_indices.compute_family, 0);
+    graphics_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.graphics_family, 0);
+    present_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.present_family, 0);
+    compute_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.compute_family, 0);
 }
 
 pub fn deinit() void {
-    vkd.destroyDevice(device, null);
+    Device.destroy(device);
 
     if (nyancore_options.use_vulkan_sdk) {
         vkfn.i.destroyDebugUtilsMessengerEXT(instance, debug_messenger, null);
@@ -295,50 +214,6 @@ fn setupDebugMessenger() !void {
 
     debug_messenger = vkfn.i.createDebugUtilsMessengerEXT(instance, create_info, null) catch |err| {
         printVulkanError("Can't create debug messenger", err);
-        return err;
-    };
-}
-
-fn createLogicalDevice() !void {
-    var queue_indices: [3]u32 = [_]u32{
-        physical_device.family_indices.present_family,
-        physical_device.family_indices.graphics_family,
-        physical_device.family_indices.compute_family,
-    };
-
-    std.sort.sort(u32, queue_indices[0..], {}, comptime std.sort.asc(u32));
-
-    var queue_create_info: [3]vk.DeviceQueueCreateInfo = [_]vk.DeviceQueueCreateInfo{ undefined, undefined, undefined };
-    var queue_create_info_count: usize = 0;
-    var i: usize = 0;
-    var last_family: u32 = undefined;
-    const queue_priority: f32 = 1.0;
-    while (i < std.mem.len(queue_indices)) : (i += 1) {
-        if (queue_indices[i] != last_family) {
-            queue_create_info[queue_create_info_count] = .{
-                .flags = .{},
-                .queue_family_index = queue_indices[i],
-                .queue_count = 1,
-                .p_queue_priorities = @ptrCast([*]const f32, &queue_priority),
-            };
-            last_family = queue_indices[i];
-            queue_create_info_count += 1;
-        }
-    }
-
-    const create_info: vk.DeviceCreateInfo = .{
-        .flags = .{},
-        .p_queue_create_infos = @ptrCast([*]const vk.DeviceQueueCreateInfo, &queue_create_info),
-        .queue_create_info_count = @intCast(u32, queue_create_info_count),
-        .p_enabled_features = null,
-        .enabled_layer_count = if (nyancore_options.use_vulkan_sdk) @intCast(u32, std.mem.len(validation_layers)) else 0,
-        .pp_enabled_layer_names = if (nyancore_options.use_vulkan_sdk) @ptrCast([*]const [*:0]const u8, &validation_layers) else undefined,
-        .enabled_extension_count = @intCast(u32, std.mem.len(required_device_extensions)),
-        .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, &required_device_extensions),
-    };
-
-    device = vkfn.i.createDevice(physical_device.vk_reference, create_info, null) catch |err| {
-        printVulkanError("Can't create device", err);
         return err;
     };
 }

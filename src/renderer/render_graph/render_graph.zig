@@ -2,6 +2,7 @@ const std = @import("std");
 const vk = @import("../../vk.zig");
 
 const vkctxt = @import("../../vulkan_wrapper/vulkan_context.zig");
+const vkfn = @import("../../vulkan_wrapper/vulkan_functions.zig");
 
 const printError = @import("../../application/print_error.zig").printError;
 const printVulkanError = @import("../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
@@ -83,14 +84,14 @@ pub const RenderGraph = struct {
             },
         };
 
-        self.command_pool = vkctxt.vkd.createCommandPool(vkctxt.device, pool_info, null) catch |err| {
+        self.command_pool = vkfn.d.createCommandPool(vkctxt.device, pool_info, null) catch |err| {
             printVulkanError("Can't create command pool for render graph", err);
             return;
         };
 
         pool_info.queue_family_index = vkctxt.physical_device.family_indices.compute_family;
 
-        self.compute_command_pool = vkctxt.vkd.createCommandPool(vkctxt.device, pool_info, null) catch |err| {
+        self.compute_command_pool = vkfn.d.createCommandPool(vkctxt.device, pool_info, null) catch |err| {
             printVulkanError("Can't create compute command pool for render graph", err);
             return;
         };
@@ -103,17 +104,17 @@ pub const RenderGraph = struct {
 
         self.command_buffers = self.allocator.alloc(vk.CommandBuffer, self.in_flight) catch unreachable;
 
-        vkctxt.vkd.allocateCommandBuffers(vkctxt.device, command_buffer_info, self.command_buffers.ptr) catch |err| {
+        vkfn.d.allocateCommandBuffers(vkctxt.device, command_buffer_info, self.command_buffers.ptr) catch |err| {
             printVulkanError("Can't allocate primary command buffers", err);
         };
     }
 
     pub fn deinitCommandBuffers(self: *RenderGraph) void {
-        vkctxt.vkd.deviceWaitIdle(vkctxt.device) catch |err| {
+        vkfn.d.deviceWaitIdle(vkctxt.device) catch |err| {
             printVulkanError("Can't wait for device idle while destruction of command buffers", err);
         };
-        vkctxt.vkd.freeCommandBuffers(vkctxt.device, self.command_pool, self.in_flight, self.command_buffers.ptr);
-        vkctxt.vkd.destroyCommandPool(vkctxt.device, self.command_pool, null);
+        vkfn.d.freeCommandBuffers(vkctxt.device, self.command_pool, self.in_flight, self.command_buffers.ptr);
+        vkfn.d.destroyCommandPool(vkctxt.device, self.command_pool, null);
     }
 
     pub fn deinit(self: *RenderGraph) void {
@@ -156,7 +157,7 @@ pub const RenderGraph = struct {
         if (self.resource_changes.items.len == 0)
             return;
 
-        vkctxt.vkd.deviceWaitIdle(vkctxt.device) catch |err| {
+        vkfn.d.deviceWaitIdle(vkctxt.device) catch |err| {
             printVulkanError("Can't wait for device idle in order to change resources", err);
             return;
         };
@@ -299,13 +300,13 @@ pub const RenderGraph = struct {
             .p_inheritance_info = undefined,
         };
 
-        vkctxt.vkd.beginCommandBuffer(command_buffer, begin_info) catch |err| {
+        vkfn.d.beginCommandBuffer(command_buffer, begin_info) catch |err| {
             printVulkanError("Can't begin command buffer", err);
         };
     }
 
     pub fn endSingleTimeCommands(command_buffer: vk.CommandBuffer) void {
-        vkctxt.vkd.endCommandBuffer(command_buffer) catch |err| {
+        vkfn.d.endCommandBuffer(command_buffer) catch |err| {
             printVulkanError("Can't end command buffer", err);
             return;
         };
@@ -320,7 +321,7 @@ pub const RenderGraph = struct {
         };
 
         var command_buffer: vk.CommandBuffer = undefined;
-        vkctxt.vkd.allocateCommandBuffers(vkctxt.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &command_buffer)) catch |err| {
+        vkfn.d.allocateCommandBuffers(vkctxt.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &command_buffer)) catch |err| {
             printVulkanError("Can't allocate command buffer", err);
         };
         return command_buffer;
@@ -335,7 +336,7 @@ pub const RenderGraph = struct {
         };
 
         var command_buffer: vk.CommandBuffer = undefined;
-        vkctxt.vkd.allocateCommandBuffers(vkctxt.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &command_buffer)) catch |err| {
+        vkfn.d.allocateCommandBuffers(vkctxt.device, alloc_info, @ptrCast([*]vk.CommandBuffer, &command_buffer)) catch |err| {
             printVulkanError("Can't allocate command buffer", err);
         };
         return command_buffer;
@@ -353,14 +354,14 @@ pub const RenderGraph = struct {
             .p_signal_semaphores = undefined,
         };
 
-        vkctxt.vkd.queueSubmit(vkctxt.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), .null_handle) catch |err| {
+        vkfn.d.queueSubmit(vkctxt.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), .null_handle) catch |err| {
             printVulkanError("Can't submit queue", err);
         };
-        vkctxt.vkd.queueWaitIdle(vkctxt.graphics_queue) catch |err| {
+        vkfn.d.queueWaitIdle(vkctxt.graphics_queue) catch |err| {
             printVulkanError("Can't wait for queue", err);
         };
 
-        vkctxt.vkd.freeCommandBuffers(vkctxt.device, self.command_pool, 1, @ptrCast([*]const vk.CommandBuffer, &command_buffer));
+        vkfn.d.freeCommandBuffers(vkctxt.device, self.command_pool, 1, @ptrCast([*]const vk.CommandBuffer, &command_buffer));
     }
 
     pub fn initPasses(self: *RenderGraph) void {

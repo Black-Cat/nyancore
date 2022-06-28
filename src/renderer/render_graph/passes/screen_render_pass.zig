@@ -3,7 +3,9 @@ const std = @import("std");
 const rg = @import("../render_graph.zig");
 const shader_util = @import("../../../shaders/shader_util.zig");
 const vk = @import("../../../vk.zig");
+
 const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
+const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
 
 const RGPass = @import("../render_graph_pass.zig").RGPass;
 const Swapchain = @import("../resources/swapchain.zig").Swapchain;
@@ -153,7 +155,7 @@ pub const ScreenRenderPass = struct {
             .flags = .{},
         };
 
-        self.render_pass = vkctxt.vkd.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
+        self.render_pass = vkfn.d.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
             printVulkanError("Can't create render pass for screen render pass", err);
             return;
         };
@@ -167,16 +169,16 @@ pub const ScreenRenderPass = struct {
 
     fn passDeinit(render_pass: *RGPass) void {
         const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
-        vkctxt.vkd.destroyRenderPass(vkctxt.device, self.render_pass, null);
+        vkfn.d.destroyRenderPass(vkctxt.device, self.render_pass, null);
 
-        vkctxt.vkd.destroyPipeline(vkctxt.device, self.pipeline, null);
-        vkctxt.vkd.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
-        vkctxt.vkd.destroyPipelineCache(vkctxt.device, self.pipeline_cache, null);
+        vkfn.d.destroyPipeline(vkctxt.device, self.pipeline, null);
+        vkfn.d.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
+        vkfn.d.destroyPipelineCache(vkctxt.device, self.pipeline_cache, null);
 
         if (self.alloc_framebuffers)
             self.destroyFramebuffers();
 
-        vkctxt.vkd.destroyShaderModule(vkctxt.device, self.vert_shader, null);
+        vkfn.d.destroyShaderModule(vkctxt.device, self.vert_shader, null);
     }
 
     fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void {
@@ -199,10 +201,10 @@ pub const ScreenRenderPass = struct {
             .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
         };
 
-        vkctxt.vkd.cmdBeginRenderPass(command_buffer, render_pass_info, .@"inline");
-        defer vkctxt.vkd.cmdEndRenderPass(command_buffer);
+        vkfn.d.cmdBeginRenderPass(command_buffer, render_pass_info, .@"inline");
+        defer vkfn.d.cmdEndRenderPass(command_buffer);
 
-        vkctxt.vkd.cmdBindPipeline(command_buffer, .graphics, self.pipeline);
+        vkfn.d.cmdBindPipeline(command_buffer, .graphics, self.pipeline);
 
         const viewport_info: vk.Viewport = .{
             .width = @intToFloat(f32, self.target_width.*),
@@ -213,7 +215,7 @@ pub const ScreenRenderPass = struct {
             .y = 0,
         };
 
-        vkctxt.vkd.cmdSetViewport(command_buffer, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
+        vkfn.d.cmdSetViewport(command_buffer, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
 
         var scissor_rect: vk.Rect2D = .{
             .offset = .{ .x = 0, .y = 0 },
@@ -224,7 +226,7 @@ pub const ScreenRenderPass = struct {
         };
 
         const scissor_rect_ptr: *vk.Rect2D = if (self.custom_scissors) |custom_scissors| custom_scissors else &scissor_rect;
-        vkctxt.vkd.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
+        vkfn.d.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
 
         var push_const_block: VertPushConstBlock = .{
             .aspect_ratio = [4]f32{ 1.0, 1.0, 0.0, 0.0 },
@@ -236,7 +238,7 @@ pub const ScreenRenderPass = struct {
             push_const_block.aspect_ratio[1] = viewport_info.height / viewport_info.width;
         }
 
-        vkctxt.vkd.cmdPushConstants(
+        vkfn.d.cmdPushConstants(
             command_buffer,
             self.pipeline_layout,
             .{ .vertex_bit = true },
@@ -245,7 +247,7 @@ pub const ScreenRenderPass = struct {
             @ptrCast([*]const VertPushConstBlock, &push_const_block),
         );
 
-        vkctxt.vkd.cmdPushConstants(
+        vkfn.d.cmdPushConstants(
             command_buffer,
             self.pipeline_layout,
             .{ .fragment_bit = true },
@@ -254,7 +256,7 @@ pub const ScreenRenderPass = struct {
             self.frag_push_const_block,
         );
 
-        vkctxt.vkd.cmdDraw(command_buffer, 3, 1, 0, 0);
+        vkfn.d.cmdDraw(command_buffer, 3, 1, 0, 0);
     }
 
     fn createFramebuffers(self: *ScreenRenderPass) void {
@@ -269,7 +271,7 @@ pub const ScreenRenderPass = struct {
                 .layers = 1,
             };
 
-            framebuffer.* = vkctxt.vkd.createFramebuffer(vkctxt.device, create_info, null) catch |err| {
+            framebuffer.* = vkfn.d.createFramebuffer(vkctxt.device, create_info, null) catch |err| {
                 printVulkanError("Can't create framebuffer for screen render pass", err);
                 return;
             };
@@ -278,7 +280,7 @@ pub const ScreenRenderPass = struct {
 
     fn destroyFramebuffers(self: *ScreenRenderPass) void {
         for (self.framebuffers) |f|
-            vkctxt.vkd.destroyFramebuffer(vkctxt.device, f, null);
+            vkfn.d.destroyFramebuffer(vkctxt.device, f, null);
     }
 
     fn reinitFramebuffer(render_pass: *RGPass) void {
@@ -295,7 +297,7 @@ pub const ScreenRenderPass = struct {
             .p_initial_data = undefined,
         };
 
-        self.pipeline_cache = vkctxt.vkd.createPipelineCache(vkctxt.device, pipeline_cache_create_info, null) catch |err| {
+        self.pipeline_cache = vkfn.d.createPipelineCache(vkctxt.device, pipeline_cache_create_info, null) catch |err| {
             printVulkanError("Can't create pipeline cache", err);
             return;
         };
@@ -323,14 +325,14 @@ pub const ScreenRenderPass = struct {
             .flags = .{},
         };
 
-        self.pipeline_layout = vkctxt.vkd.createPipelineLayout(vkctxt.device, pipeline_layout_create_info, null) catch |err| {
+        self.pipeline_layout = vkfn.d.createPipelineLayout(vkctxt.device, pipeline_layout_create_info, null) catch |err| {
             printVulkanError("Can't create pipeline layout", err);
             return;
         };
     }
 
     fn recreatePipeline(self: *ScreenRenderPass) void {
-        vkctxt.vkd.destroyPipeline(vkctxt.device, self.pipeline, null);
+        vkfn.d.destroyPipeline(vkctxt.device, self.pipeline, null);
         self.createPipeline();
     }
 
@@ -487,7 +489,7 @@ pub const ScreenRenderPass = struct {
             .subpass = 0,
         };
 
-        _ = vkctxt.vkd.createGraphicsPipelines(
+        _ = vkfn.d.createGraphicsPipelines(
             vkctxt.device,
             self.pipeline_cache,
             1,

@@ -5,7 +5,9 @@ const c = struct {
         @cInclude("glslang_c_interface.h");
     });
 };
+
 const vkctxt = @import("../vulkan_wrapper/vulkan_context.zig");
+const vkfn = @import("../vulkan_wrapper/vulkan_functions.zig");
 
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
@@ -208,7 +210,7 @@ pub fn loadShader(shader_code: [*:0]const u8, stage: ShaderStage) vk.ShaderModul
         .flags = .{},
     };
 
-    var shader_module: vk.ShaderModule = vkctxt.vkd.createShaderModule(vkctxt.device, module_create_info, null) catch |err| {
+    var shader_module: vk.ShaderModule = vkfn.d.createShaderModule(vkctxt.device, module_create_info, null) catch |err| {
         printVulkanError("Can't create shader module", err);
         @panic("Can't create shader module");
     };

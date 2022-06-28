@@ -3,6 +3,7 @@ const std = @import("std");
 const rg = @import("../render_graph.zig");
 
 const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
+const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
 
 const printError = @import("../../../application/print_error.zig").printError;
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
@@ -63,23 +64,23 @@ pub const Texture = struct {
     }
 
     pub fn alloc(self: *Texture) void {
-        self.image = vkctxt.vkd.createImage(vkctxt.device, self.image_create_info, null) catch |err| {
+        self.image = vkfn.d.createImage(vkctxt.device, self.image_create_info, null) catch |err| {
             printVulkanError("Can't create texture", err);
             return;
         };
 
-        var mem_req: vk.MemoryRequirements = vkctxt.vkd.getImageMemoryRequirements(vkctxt.device, self.image);
+        var mem_req: vk.MemoryRequirements = vkfn.d.getImageMemoryRequirements(vkctxt.device, self.image);
 
         const mem_alloc_info: vk.MemoryAllocateInfo = .{
             .allocation_size = mem_req.size,
             .memory_type_index = vkctxt.getMemoryType(mem_req.memory_type_bits, .{ .device_local_bit = true }),
         };
-        self.memory = vkctxt.vkd.allocateMemory(vkctxt.device, mem_alloc_info, null) catch |err| {
+        self.memory = vkfn.d.allocateMemory(vkctxt.device, mem_alloc_info, null) catch |err| {
             printVulkanError("Can't allocate texture memory", err);
             return;
         };
 
-        vkctxt.vkd.bindImageMemory(vkctxt.device, self.image, self.memory, 0) catch |err| {
+        vkfn.d.bindImageMemory(vkctxt.device, self.image, self.memory, 0) catch |err| {
             printVulkanError("Can't bind texture memory", err);
             return;
         };
@@ -98,7 +99,7 @@ pub const Texture = struct {
             .flags = .{},
             .components = .{ .r = .identity, .g = .identity, .b = .identity, .a = .identity },
         };
-        self.view = vkctxt.vkd.createImageView(vkctxt.device, view_info, null) catch |err| {
+        self.view = vkfn.d.createImageView(vkctxt.device, view_info, null) catch |err| {
             printVulkanError("Can't create image view", err);
             return;
         };
@@ -122,7 +123,7 @@ pub const Texture = struct {
             .unnormalized_coordinates = 0,
         };
 
-        self.sampler = vkctxt.vkd.createSampler(vkctxt.device, sampler_info, null) catch |err| {
+        self.sampler = vkfn.d.createSampler(vkctxt.device, sampler_info, null) catch |err| {
             printVulkanError("Can't create sampler for ui texture", err);
             return;
         };
@@ -137,10 +138,10 @@ pub const Texture = struct {
     }
 
     pub fn destroy(self: *Texture) void {
-        vkctxt.vkd.destroySampler(vkctxt.device, self.sampler, null);
-        vkctxt.vkd.destroyImage(vkctxt.device, self.image, null);
-        vkctxt.vkd.destroyImageView(vkctxt.device, self.view, null);
-        vkctxt.vkd.freeMemory(vkctxt.device, self.memory, null);
+        vkfn.d.destroySampler(vkctxt.device, self.sampler, null);
+        vkfn.d.destroyImage(vkctxt.device, self.image, null);
+        vkfn.d.destroyImageView(vkctxt.device, self.view, null);
+        vkfn.d.freeMemory(vkctxt.device, self.memory, null);
     }
 
     pub fn transitionImageLayout(self: *Texture, command_buffer: vk.CommandBuffer, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) void {
@@ -191,6 +192,6 @@ pub const Texture = struct {
             @panic("Not supported image layouts for transfer");
         }
 
-        vkctxt.vkd.cmdPipelineBarrier(command_buffer, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast([*]const vk.ImageMemoryBarrier, &barrier));
+        vkfn.d.cmdPipelineBarrier(command_buffer, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast([*]const vk.ImageMemoryBarrier, &barrier));
     }
 };
