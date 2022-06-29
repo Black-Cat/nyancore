@@ -13,6 +13,8 @@ pub const vk = @import("vk.zig");
 pub const vkctxt = @import("vulkan_wrapper/vulkan_context.zig");
 pub const vkfn = @import("vulkan_wrapper/vulkan_functions.zig");
 
+pub const Config = @import("application/config.zig").Config;
+
 pub const DefaultRenderer = @import("renderer/default_renderer.zig").DefaultRenderer;
 pub const UI = @import("ui/ui.zig").UI;
 pub const Math = @import("math/math.zig");

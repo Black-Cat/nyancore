@@ -119,13 +119,14 @@ pub const Config = struct {
         }
     }
 
-    pub fn getBool(self: *Config, key: []const u8, default: bool) bool {
+    pub fn getBool(self: *Config, key: []const u8) bool {
         const val: ?[]const u8 = self.map.get(key);
         if (val) |v| {
             return v.len > 0 and v[0] == '1';
         } else {
-            return default;
+            printError("Config", "Entry doesn't exist in config");
         }
+        unreachable;
     }
 
     pub fn putBool(self: *Config, key: []const u8, val: bool) void {

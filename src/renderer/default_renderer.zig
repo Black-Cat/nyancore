@@ -55,7 +55,13 @@ pub const DefaultRenderer = struct {
         var height: i32 = undefined;
         c.glfwGetFramebufferSize(app.window, &width, &height);
 
-        rg.global_render_graph.final_swapchain.init(@intCast(u32, width), @intCast(u32, height), frames_in_flight) catch @panic("Error during swapchain creation");
+        const vsync: bool = app.config.getBool("swapchain_vsync");
+        rg.global_render_graph.final_swapchain.init(
+            @intCast(u32, width),
+            @intCast(u32, height),
+            frames_in_flight,
+            vsync,
+        ) catch @panic("Error during swapchain creation");
 
         rg.global_render_graph.initVulkan(frames_in_flight);
 

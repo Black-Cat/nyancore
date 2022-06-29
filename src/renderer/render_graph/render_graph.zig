@@ -13,7 +13,7 @@ const RGResource = @import("render_graph_resource.zig").RGResource;
 const ResourceList = std.ArrayList(*RGResource);
 
 const SyncPass = @import("passes/sync_pass.zig").SyncPass;
-const Swapchain = @import("resources/swapchain.zig").Swapchain;
+const Swapchain = @import("../../vulkan_wrapper/swapchain.zig").Swapchain;
 const Texture = @import("resources/texture.zig").Texture;
 const ViewportTexture = @import("resources/viewport_texture.zig").ViewportTexture;
 

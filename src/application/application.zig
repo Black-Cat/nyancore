@@ -51,13 +51,15 @@ pub const Application = struct {
 
     pub fn init(self: *Application, comptime name: [:0]const u8, allocator: Allocator, systems: []*System) void {
         self.allocator = allocator;
-        self.config_file = name ++ ".conf";
         self.mouse_just_pressed = [_]bool{false} ** imgui_mouse_button_count;
         self.name = name;
         self.systems = systems;
         self.window = undefined;
         self.framebuffer_resized = false;
+
+        self.config_file = name ++ ".conf";
         self.config = &Global.config;
+        self.config.init(self.allocator, self.name, self.config_file);
 
         self.args = parseArgs(self.allocator);
         self.delayed_tasks = std.ArrayList(DelayedTask).init(allocator);
@@ -109,9 +111,6 @@ pub const Application = struct {
     }
 
     pub fn initSystems(self: *Application) !void {
-        Global.config.init(self.allocator, self.name, self.config_file);
-        errdefer Global.config.deinit();
-
         try Global.config.load();
 
         if (c.glfwInit() == c.GLFW_FALSE) {

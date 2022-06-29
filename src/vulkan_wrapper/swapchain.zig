@@ -1,20 +1,22 @@
-const vk = @import("../../../vk.zig");
+const vk = @import("../vk.zig");
 const std = @import("std");
 
-const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
-const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
+const vkctxt = @import("vulkan_context.zig");
+const vkfn = @import("vulkan_functions.zig");
 
-const printError = @import("../../../application/print_error.zig").printError;
-const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
-const RGResource = @import("../render_graph_resource.zig").RGResource;
-const Application = @import("../../../application/application.zig");
-const PhysicalDevice = @import("../../../vulkan_wrapper/physical_device.zig").PhysicalDevice;
+const printError = @import("../application/print_error.zig").printError;
+const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
+
+const RGResource = @import("../renderer/render_graph/render_graph_resource.zig").RGResource;
+const PhysicalDevice = @import("physical_device.zig").PhysicalDevice;
 const SwapchainSupportDetails = PhysicalDevice.SwapchainSupportDetails;
 
 pub const Swapchain = struct {
     rg_resource: RGResource,
 
     swapchain: vk.SwapchainKHR,
+
+    vsync: bool,
 
     image_format: vk.Format,
     image_extent: vk.Extent2D,
@@ -25,8 +27,10 @@ pub const Swapchain = struct {
     render_pass: vk.RenderPass,
     framebuffers: []vk.Framebuffer,
 
-    pub fn init(self: *Swapchain, width: u32, height: u32, images_count: u32) !void {
+    pub fn init(self: *Swapchain, width: u32, height: u32, images_count: u32, vsync: bool) !void {
         self.image_count = images_count;
+        self.vsync = vsync;
+
         try self.createSwapchain(width, height);
         try self.createImageViews();
         try self.createRenderPass();
@@ -39,7 +43,7 @@ pub const Swapchain = struct {
 
     pub fn recreate(self: *Swapchain, width: u32, height: u32) !void {
         self.cleanup();
-        try self.init(width, height, self.image_count);
+        try self.init(width, height, self.image_count, self.vsync);
     }
 
     pub fn recreateWithSameSize(self: *Swapchain) !void {
@@ -68,7 +72,7 @@ pub const Swapchain = struct {
         defer vkctxt.allocator.free(swapchain_support.present_modes);
 
         const surface_format: vk.SurfaceFormatKHR = chooseSwapSurfaceFormat(swapchain_support.formats);
-        const present_mode: vk.PresentModeKHR = chooseSwapPresentMode(swapchain_support.present_modes);
+        const present_mode: vk.PresentModeKHR = chooseSwapPresentMode(swapchain_support.present_modes, self.vsync);
         const extent: vk.Extent2D = chooseSwapExtent(&swapchain_support.capabilities, width, height);
 
         var image_count: u32 = self.image_count;
@@ -254,15 +258,16 @@ pub const Swapchain = struct {
         return available_formats[0];
     }
 
-    fn chooseSwapPresentMode(available_present_modes: []vk.PresentModeKHR) vk.PresentModeKHR {
-        const vsync: bool = Application.app.config.getBool("swapchain_vsync", false);
-        const prefered_modes: [1]vk.PresentModeKHR = [_]vk.PresentModeKHR{if (vsync) .mailbox_khr else .immediate_khr};
+    fn chooseSwapPresentMode(available_present_modes: []vk.PresentModeKHR, vsync: bool) vk.PresentModeKHR {
+        const prefered_modes: []const vk.PresentModeKHR = if (vsync)
+            &.{.mailbox_khr}
+        else
+            &.{.immediate_khr};
 
         for (prefered_modes) |prefered_mode| {
             for (available_present_modes) |present_mode| {
-                if (present_mode == prefered_mode) {
+                if (present_mode == prefered_mode)
                     return present_mode;
-                }
             }
         }
 

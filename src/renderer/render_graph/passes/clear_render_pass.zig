@@ -6,7 +6,7 @@ const vk = @import("../../../vk.zig");
 const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
 
 const RGPass = @import("../render_graph_pass.zig").RGPass;
-const Swapchain = @import("../resources/swapchain.zig").Swapchain;
+const Swapchain = @import("../../../vulkan_wrapper/swapchain.zig").Swapchain;
 
 pub const ClearRenderPass = struct {
     rg_pass: RGPass,

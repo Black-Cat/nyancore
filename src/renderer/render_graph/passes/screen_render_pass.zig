@@ -8,7 +8,7 @@ const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
 const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
 
 const RGPass = @import("../render_graph_pass.zig").RGPass;
-const Swapchain = @import("../resources/swapchain.zig").Swapchain;
+const Swapchain = @import("../../../vulkan_wrapper/swapchain.zig").Swapchain;
 const ViewportTexture = @import("../resources/viewport_texture.zig").ViewportTexture;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
