@@ -9,6 +9,7 @@ const System = @import("../system/system.zig").System;
 const UIVulkanContext = @import("ui_vulkan.zig").UIVulkanContext;
 const vk = @import("../vk.zig");
 const DockSpace = @import("dockspace.zig").DockSpace;
+const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 const RGPass = @import("../renderer/render_graph/render_graph_pass.zig").RGPass;
 const rg = @import("../renderer/render_graph/render_graph.zig");
@@ -131,7 +132,7 @@ pub const UI = struct {
         self.render_pass.removeWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
     }
 
-    fn renderPassRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, image_index: u32) void {
+    fn renderPassRender(render_pass: *RGPass, command_buffer: *CommandBuffer, image_index: u32) void {
         const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
         self.vulkan_context.render(command_buffer, image_index);
     }

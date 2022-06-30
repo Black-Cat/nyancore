@@ -4,13 +4,14 @@ const vk = @import("../../vk.zig");
 const RGResource = @import("render_graph_resource.zig").RGResource;
 const RenderGraph = @import("render_graph.zig").RenderGraph;
 const SyncPoint = @import("resources/sync_point.zig").SyncPoint;
+const CommandBuffer = @import("../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 const ResourceList = std.ArrayList(*RGResource);
 const PassList = std.ArrayList(*RGPass);
 
 pub const RGPass = struct {
     const PassFunction = fn (render_pass: *RGPass) void;
-    const RenderFunction = fn (render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void;
+    const RenderFunction = fn (render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void;
 
     name: []const u8,
 

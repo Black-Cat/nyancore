@@ -5,6 +5,7 @@ const Allocator = @import("std").mem.Allocator;
 const RGPass = @import("../render_graph_pass.zig").RGPass;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 const SyncPoint = @import("../resources/sync_point.zig").SyncPoint;
+const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig");
 
 pub const SyncPass = struct {
     rg_pass: RGPass,
@@ -34,11 +35,11 @@ pub const SyncPass = struct {
         _ = render_pass;
     }
 
-    fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void {
+    fn passRender(render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void {
         _ = frame_index;
 
         vkctxt.vkd.cmdPipelineBarrier(
-            command_buffer,
+            command_buffer.vk_ref,
             render_pass.pipeline_start,
             render_pass.pipeline_end,
             .{},

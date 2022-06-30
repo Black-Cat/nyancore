@@ -10,8 +10,10 @@ pub usingnamespace @import("renderer/render_graph/resources/resources.zig");
 pub const c = @import("c.zig");
 pub const tracy = @import("tracy.zig");
 pub const vk = @import("vk.zig");
+
 pub const vkctxt = @import("vulkan_wrapper/vulkan_context.zig");
 pub const vkfn = @import("vulkan_wrapper/vulkan_functions.zig");
+pub const SingleCommandBuffer = @import("vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
 
 pub const Config = @import("application/config.zig").Config;
 

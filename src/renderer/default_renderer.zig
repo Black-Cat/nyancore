@@ -14,6 +14,7 @@ const rg = @import("render_graph/render_graph.zig");
 const RenderGraph = rg.RenderGraph;
 const RGPass = @import("render_graph/render_graph_pass.zig").RGPass;
 const RGResource = @import("render_graph/render_graph_resource.zig").RGResource;
+const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 const printError = @import("../application/print_error.zig").printError;
 const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
@@ -160,14 +161,12 @@ pub const DefaultRenderer = struct {
             return error.Unknown;
         }
 
-        var command_buffer: vk.CommandBuffer = rg.global_render_graph.command_buffers[rg.global_render_graph.frame_index];
-        vkfn.d.resetCommandBuffer(command_buffer, .{}) catch |err| {
-            printVulkanError("Can't reset command buffer", err);
-        };
+        var command_buffer: CommandBuffer = rg.global_render_graph.command_buffers.getBuffer(rg.global_render_graph.frame_index);
+        command_buffer.reset();
 
-        RenderGraph.beginSingleTimeCommands(command_buffer);
-        rg.global_render_graph.render(command_buffer);
-        RenderGraph.endSingleTimeCommands(command_buffer);
+        command_buffer.beginSingleTimeCommands();
+        rg.global_render_graph.render(&command_buffer);
+        command_buffer.endSingleTimeCommands();
 
         const wait_stage: vk.PipelineStageFlags = .{ .color_attachment_output_bit = true };
         const submit_info: vk.SubmitInfo = .{
@@ -176,7 +175,7 @@ pub const DefaultRenderer = struct {
             .p_wait_dst_stage_mask = @ptrCast([*]const vk.PipelineStageFlags, &wait_stage),
 
             .command_buffer_count = 1,
-            .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &command_buffer),
+            .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &command_buffer.vk_ref),
 
             .signal_semaphore_count = 1,
             .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[rg.global_render_graph.frame_index]),

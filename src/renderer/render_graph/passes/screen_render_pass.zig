@@ -10,6 +10,7 @@ const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
 const RGPass = @import("../render_graph_pass.zig").RGPass;
 const Swapchain = @import("../../../vulkan_wrapper/swapchain.zig").Swapchain;
 const ViewportTexture = @import("../resources/viewport_texture.zig").ViewportTexture;
+const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
@@ -181,7 +182,7 @@ pub const ScreenRenderPass = struct {
         vkfn.d.destroyShaderModule(vkctxt.device, self.vert_shader, null);
     }
 
-    fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void {
+    fn passRender(render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void {
         _ = frame_index;
 
         const self: *ScreenRenderPass = @fieldParentPtr(ScreenRenderPass, "rg_pass", render_pass);
@@ -201,10 +202,10 @@ pub const ScreenRenderPass = struct {
             .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
         };
 
-        vkfn.d.cmdBeginRenderPass(command_buffer, render_pass_info, .@"inline");
-        defer vkfn.d.cmdEndRenderPass(command_buffer);
+        vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
+        defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
-        vkfn.d.cmdBindPipeline(command_buffer, .graphics, self.pipeline);
+        vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline);
 
         const viewport_info: vk.Viewport = .{
             .width = @intToFloat(f32, self.target_width.*),
@@ -215,7 +216,7 @@ pub const ScreenRenderPass = struct {
             .y = 0,
         };
 
-        vkfn.d.cmdSetViewport(command_buffer, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
+        vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
 
         var scissor_rect: vk.Rect2D = .{
             .offset = .{ .x = 0, .y = 0 },
@@ -226,7 +227,7 @@ pub const ScreenRenderPass = struct {
         };
 
         const scissor_rect_ptr: *vk.Rect2D = if (self.custom_scissors) |custom_scissors| custom_scissors else &scissor_rect;
-        vkfn.d.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
+        vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
 
         var push_const_block: VertPushConstBlock = .{
             .aspect_ratio = [4]f32{ 1.0, 1.0, 0.0, 0.0 },
@@ -239,7 +240,7 @@ pub const ScreenRenderPass = struct {
         }
 
         vkfn.d.cmdPushConstants(
-            command_buffer,
+            command_buffer.vk_ref,
             self.pipeline_layout,
             .{ .vertex_bit = true },
             0,
@@ -248,7 +249,7 @@ pub const ScreenRenderPass = struct {
         );
 
         vkfn.d.cmdPushConstants(
-            command_buffer,
+            command_buffer.vk_ref,
             self.pipeline_layout,
             .{ .fragment_bit = true },
             @sizeOf(VertPushConstBlock),
@@ -256,7 +257,7 @@ pub const ScreenRenderPass = struct {
             self.frag_push_const_block,
         );
 
-        vkfn.d.cmdDraw(command_buffer, 3, 1, 0, 0);
+        vkfn.d.cmdDraw(command_buffer.vk_ref, 3, 1, 0, 0);
     }
 
     fn createFramebuffers(self: *ScreenRenderPass) void {

@@ -19,6 +19,8 @@ const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").pri
 const rg = @import("../renderer/render_graph/render_graph.zig");
 const RenderGraph = rg.RenderGraph;
 const Texture = @import("../renderer/render_graph/resources/texture.zig").Texture;
+const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
+const SingleCommandBuffer = @import("../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -82,7 +84,7 @@ pub const UIVulkanContext = struct {
 
         self.font_texture.destroy();
     }
-    pub fn render(self: *UIVulkanContext, command_buffer: vk.CommandBuffer, frame_index: u32) void {
+    pub fn render(self: *UIVulkanContext, command_buffer: *CommandBuffer, frame_index: u32) void {
         self.updateBuffers(frame_index);
 
         const io: *c.ImGuiIO = c.igGetIO();
@@ -99,11 +101,11 @@ pub const UIVulkanContext = struct {
             .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
         };
 
-        vkfn.d.cmdBeginRenderPass(command_buffer, render_pass_info, .@"inline");
-        defer vkfn.d.cmdEndRenderPass(command_buffer);
+        vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
+        defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
-        vkfn.d.cmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
-        vkfn.d.cmdBindPipeline(command_buffer, .graphics, self.pipeline);
+        vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
+        vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline);
 
         const viewport: vk.Viewport = .{
             .width = io.DisplaySize.x,
@@ -114,12 +116,12 @@ pub const UIVulkanContext = struct {
             .x = 0,
             .y = 0,
         };
-        vkfn.d.cmdSetViewport(command_buffer, 0, 1, @ptrCast([*]const vk.Viewport, &viewport));
+        vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport));
 
         const push_const_block: PushConstBlock = .{
             .scale_translate = [4]f32{ 2.0 / viewport.width, 2.0 / viewport.height, -1.0, -1.0 },
         };
-        vkfn.d.cmdPushConstants(command_buffer, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(PushConstBlock), @ptrCast([*]const PushConstBlock, &push_const_block));
+        vkfn.d.cmdPushConstants(command_buffer.vk_ref, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(PushConstBlock), @ptrCast([*]const PushConstBlock, &push_const_block));
 
         // Render commands
         const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return;
@@ -131,8 +133,8 @@ pub const UIVulkanContext = struct {
             return;
 
         const offset: u64 = 0;
-        vkfn.d.cmdBindVertexBuffers(command_buffer, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffers[frame_index].buffer), @ptrCast([*]const u64, &offset));
-        vkfn.d.cmdBindIndexBuffer(command_buffer, self.index_buffers[frame_index].buffer, 0, .uint16);
+        vkfn.d.cmdBindVertexBuffers(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffers[frame_index].buffer), @ptrCast([*]const u64, &offset));
+        vkfn.d.cmdBindIndexBuffer(command_buffer.vk_ref, self.index_buffers[frame_index].buffer, 0, .uint16);
 
         const clip_off: c.ImVec2 = draw_data.DisplayPos;
         const clip_scale: c.ImVec2 = draw_data.FramebufferScale;
@@ -161,21 +163,21 @@ pub const UIVulkanContext = struct {
                         .height = @floatToInt(u32, pcmd.ClipRect.w - pcmd.ClipRect.y),
                     },
                 };
-                vkfn.d.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
+                vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
 
                 // Bind descriptor that user specified with igImage
                 if (pcmd.TextureId != null) {
                     const alignment: u26 = @alignOf([*]const vk.DescriptorSet);
                     const descriptor_set: [*]const vk.DescriptorSet = @ptrCast([*]const vk.DescriptorSet, @alignCast(alignment, pcmd.TextureId.?));
-                    vkfn.d.cmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, descriptor_set, 0, undefined);
+                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout, 0, 1, descriptor_set, 0, undefined);
                 }
 
-                vkfn.d.cmdDrawIndexed(command_buffer, pcmd.ElemCount, 1, index_offset, vertex_offset, 0);
+                vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, pcmd.ElemCount, 1, index_offset, vertex_offset, 0);
                 index_offset += pcmd.ElemCount;
 
                 // Return font descriptor
                 if (pcmd.TextureId != null)
-                    vkfn.d.cmdBindDescriptorSets(command_buffer, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
+                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
             }
             vertex_offset += cmd_list.VtxBuffer.Size;
         }
@@ -562,10 +564,10 @@ pub const UIVulkanContext = struct {
         self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .r8g8b8a8_unorm, vkctxt.allocator);
         self.font_texture.alloc();
 
-        const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
-        RenderGraph.beginSingleTimeCommands(command_buffer);
+        var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(&rg.global_render_graph.command_pool) catch unreachable;
+        scb.command_buffer.beginSingleTimeCommands();
 
-        self.font_texture.transitionImageLayout(command_buffer, .@"undefined", .transfer_dst_optimal);
+        self.font_texture.transitionImageLayout(scb.command_buffer.vk_ref, .@"undefined", .transfer_dst_optimal);
 
         const region: vk.BufferImageCopy = .{
             .buffer_offset = 0,
@@ -585,12 +587,12 @@ pub const UIVulkanContext = struct {
             },
         };
 
-        vkfn.d.cmdCopyBufferToImage(command_buffer, staging_buffer, self.font_texture.image, .transfer_dst_optimal, 1, @ptrCast([*]const vk.BufferImageCopy, &region));
+        vkfn.d.cmdCopyBufferToImage(scb.command_buffer.vk_ref, staging_buffer, self.font_texture.image, .transfer_dst_optimal, 1, @ptrCast([*]const vk.BufferImageCopy, &region));
 
-        self.font_texture.transitionImageLayout(command_buffer, .transfer_dst_optimal, .shader_read_only_optimal);
+        self.font_texture.transitionImageLayout(scb.command_buffer.vk_ref, .transfer_dst_optimal, .shader_read_only_optimal);
 
-        RenderGraph.endSingleTimeCommands(command_buffer);
-        rg.global_render_graph.submitCommandBuffer(command_buffer);
+        scb.command_buffer.endSingleTimeCommands();
+        scb.submit(vkctxt.graphics_queue);
 
         const pool_size: vk.DescriptorPoolSize = .{
             .type = .combined_image_sampler,

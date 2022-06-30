@@ -7,6 +7,7 @@ const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
 
 const RGPass = @import("../render_graph_pass.zig").RGPass;
 const Swapchain = @import("../../../vulkan_wrapper/swapchain.zig").Swapchain;
+const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 pub const ClearRenderPass = struct {
     rg_pass: RGPass,
@@ -125,7 +126,7 @@ pub const ClearRenderPass = struct {
         vkctxt.vkd.destroyPipelineCache(vkctxt.vkc.device, self.pipeline_cache, null);
     }
 
-    fn passRender(render_pass: *RGPass, command_buffer: vk.CommandBuffer, frame_index: u32) void {
+    fn passRender(render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void {
         _ = frame_index;
 
         const self: *ClearRenderPass = @fieldParentPtr(ClearRenderPass, "rg_pass", render_pass);
@@ -144,8 +145,8 @@ pub const ClearRenderPass = struct {
             .p_clear_values = @ptrCast([*]const vk.ClearValue, &self.clear_color),
         };
 
-        vkctxt.vkd.cmdBeginRenderPass(command_buffer, render_pass_info, .@"inline");
-        defer vkctxt.vkd.cmdEndRenderPass(command_buffer);
+        vkctxt.vkd.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
+        defer vkctxt.vkd.cmdEndRenderPass(command_buffer.vk_ref);
 
         const viewport_info: vk.Viewport = .{
             .width = @intToFloat(f32, self.target_width),
@@ -155,7 +156,7 @@ pub const ClearRenderPass = struct {
             .x = 0,
             .y = 0,
         };
-        vkctxt.vkd.cmdSetViewport(command_buffer, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
+        vkctxt.vkd.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
 
         var scissor_rect: vk.Rect2D = .{
             .offset = .{ .x = 0, .y = 0 },
@@ -164,7 +165,7 @@ pub const ClearRenderPass = struct {
                 .height = self.target_height,
             },
         };
-        vkctxt.vkd.cmdSetScissor(command_buffer, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
+        vkctxt.vkd.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
     }
 
     fn createPipelineCache(self: *ClearRenderPass) void {

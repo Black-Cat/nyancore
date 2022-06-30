@@ -10,6 +10,7 @@ const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig
 
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 const RenderGraph = @import("../render_graph.zig").RenderGraph;
+const SingleCommandBuffer = @import("../../../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
 
 pub const Texture = struct {
     rg_resource: RGResource,
@@ -129,11 +130,11 @@ pub const Texture = struct {
         };
 
         if (self.image_layout != .@"undefined") {
-            const command_buffer: vk.CommandBuffer = rg.global_render_graph.allocateCommandBuffer();
-            RenderGraph.beginSingleTimeCommands(command_buffer);
-            self.transitionImageLayout(command_buffer, .@"undefined", self.image_layout);
-            RenderGraph.endSingleTimeCommands(command_buffer);
-            rg.global_render_graph.submitCommandBuffer(command_buffer);
+            var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(&rg.global_render_graph.command_pool) catch unreachable;
+            scb.command_buffer.beginSingleTimeCommands();
+            self.transitionImageLayout(scb.command_buffer.vk_ref, .@"undefined", self.image_layout);
+            scb.command_buffer.endSingleTimeCommands();
+            scb.submit(vkctxt.graphics_queue);
         }
     }
 
