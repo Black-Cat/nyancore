@@ -16,6 +16,7 @@ const RGPass = @import("render_graph/render_graph_pass.zig").RGPass;
 const RGResource = @import("render_graph/render_graph_resource.zig").RGResource;
 const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 const Fence = @import("../vulkan_wrapper/fence.zig").Fence;
+const Semaphore = @import("../vulkan_wrapper/semaphore.zig").Semaphore;
 
 const printError = @import("../application/print_error.zig").printError;
 const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
@@ -28,8 +29,8 @@ pub const DefaultRenderer = struct {
     system: System,
     app: *Application,
 
-    image_available_semaphores: [frames_in_flight]vk.Semaphore,
-    render_finished_semaphores: [frames_in_flight]vk.Semaphore,
+    image_available_semaphores: [frames_in_flight]Semaphore,
+    render_finished_semaphores: [frames_in_flight]Semaphore,
     in_flight_fences: [frames_in_flight]Fence,
 
     framebuffer_resized: bool,
@@ -91,20 +92,10 @@ pub const DefaultRenderer = struct {
     }
 
     fn createSyncObjects(self: *DefaultRenderer) !void {
-        const semaphore_info: vk.SemaphoreCreateInfo = .{
-            .flags = .{},
-        };
-
         var i: usize = 0;
         while (i < frames_in_flight) : (i += 1) {
-            self.image_available_semaphores[i] = vkfn.d.createSemaphore(vkctxt.device, semaphore_info, null) catch |err| {
-                printVulkanError("Can't create semaphore", err);
-                return err;
-            };
-            self.render_finished_semaphores[i] = vkfn.d.createSemaphore(vkctxt.device, semaphore_info, null) catch |err| {
-                printVulkanError("Can't create semaphore", err);
-                return err;
-            };
+            self.image_available_semaphores[i] = Semaphore.create();
+            self.render_finished_semaphores[i] = Semaphore.create();
             self.in_flight_fences[i] = Fence.create();
         }
     }
@@ -112,8 +103,8 @@ pub const DefaultRenderer = struct {
     fn destroySyncObjects(self: *DefaultRenderer) void {
         var i: usize = 0;
         while (i < frames_in_flight) : (i += 1) {
-            vkfn.d.destroySemaphore(vkctxt.device, self.image_available_semaphores[i], null);
-            vkfn.d.destroySemaphore(vkctxt.device, self.render_finished_semaphores[i], null);
+            self.image_available_semaphores[i].destroy();
+            self.render_finished_semaphores[i].destroy();
             self.in_flight_fences[i].destroy();
         }
     }
@@ -130,15 +121,17 @@ pub const DefaultRenderer = struct {
     }
 
     fn render(self: *DefaultRenderer) !void {
-        var current_fence: *Fence = &self.in_flight_fences[rg.global_render_graph.frame_index];
+        const current_fence: *Fence = &self.in_flight_fences[rg.global_render_graph.frame_index];
         current_fence.waitFor();
+
+        const current_image_available_semaphore: *Semaphore = &self.image_available_semaphores[rg.global_render_graph.frame_index];
 
         var image_index: u32 = undefined;
         const vkres_acquire: vk.Result = vkfn.d.vkAcquireNextImageKHR(
             vkctxt.device,
             rg.global_render_graph.final_swapchain.swapchain,
             std.math.maxInt(u64),
-            self.image_available_semaphores[rg.global_render_graph.frame_index],
+            current_image_available_semaphore.vk_ref,
             .null_handle,
             &image_index,
         );
@@ -159,17 +152,19 @@ pub const DefaultRenderer = struct {
         rg.global_render_graph.render(&command_buffer);
         command_buffer.endSingleTimeCommands();
 
+        const current_render_finished_semaphore: *Semaphore = &self.render_finished_semaphores[rg.global_render_graph.frame_index];
+
         const wait_stage: vk.PipelineStageFlags = .{ .color_attachment_output_bit = true };
         const submit_info: vk.SubmitInfo = .{
             .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.image_available_semaphores[rg.global_render_graph.frame_index]),
+            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &current_image_available_semaphore.vk_ref),
             .p_wait_dst_stage_mask = @ptrCast([*]const vk.PipelineStageFlags, &wait_stage),
 
             .command_buffer_count = 1,
             .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &command_buffer.vk_ref),
 
             .signal_semaphore_count = 1,
-            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[rg.global_render_graph.frame_index]),
+            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &current_render_finished_semaphore.vk_ref),
         };
 
         current_fence.reset();
@@ -180,7 +175,7 @@ pub const DefaultRenderer = struct {
 
         const present_info: vk.PresentInfoKHR = .{
             .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &self.render_finished_semaphores[rg.global_render_graph.frame_index]),
+            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &current_render_finished_semaphore.vk_ref),
 
             .swapchain_count = 1,
             .p_swapchains = @ptrCast([*]vk.SwapchainKHR, &rg.global_render_graph.final_swapchain.swapchain),
