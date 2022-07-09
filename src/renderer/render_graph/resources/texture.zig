@@ -13,9 +13,7 @@ const RenderGraph = @import("../render_graph.zig").RenderGraph;
 const SingleCommandBuffer = @import("../../../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
 
 pub const Texture = struct {
-    rg_resource: RGResource,
-
-    size: [2]u32,
+    extent: vk.Extent3D,
     image: vk.Image,
     memory: vk.DeviceMemory,
     view: vk.ImageView,
@@ -23,22 +21,22 @@ pub const Texture = struct {
     image_format: vk.Format = .r8g8b8a8_unorm,
     image_create_info: vk.ImageCreateInfo,
     image_layout: vk.ImageLayout,
+    rg_resource: RGResource,
 
     pub fn init(self: *Texture, name: []const u8, width: u32, height: u32, image_format: vk.Format, allocator: std.mem.Allocator) void {
         self.rg_resource.init(name, allocator);
 
-        self.size[0] = width;
-        self.size[1] = height;
+        self.extent = .{
+            .width = width,
+            .height = height,
+            .depth = 1,
+        };
         self.image_format = image_format;
 
         self.image_create_info = .{
             .image_type = .@"2d",
             .format = self.image_format,
-            .extent = .{
-                .width = self.size[0],
-                .height = self.size[1],
-                .depth = 1,
-            },
+            .extent = self.extent,
             .mip_levels = 1,
             .array_layers = 1,
             .samples = .{

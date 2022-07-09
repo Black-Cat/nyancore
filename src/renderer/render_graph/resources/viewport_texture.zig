@@ -13,8 +13,7 @@ pub const ViewportTexture = struct {
     allocator: std.mem.Allocator,
     textures: []Texture,
 
-    width: u32,
-    height: u32,
+    extent: vk.Extent2D,
 
     // Used for resizing
     new_width: u32,
@@ -25,8 +24,10 @@ pub const ViewportTexture = struct {
     image_layout: vk.ImageLayout,
 
     pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, image_format: vk.Format, allocator: std.mem.Allocator) void {
-        self.width = width;
-        self.height = height;
+        self.extent = .{
+            .width = width,
+            .height = height,
+        };
         self.image_format = image_format;
 
         self.rg_resource.init(name, allocator);
@@ -47,7 +48,7 @@ pub const ViewportTexture = struct {
 
     pub fn alloc(self: *ViewportTexture) void {
         for (self.textures) |*tex| {
-            tex.init(self.rg_resource.name, self.width, self.height, self.image_format, self.allocator);
+            tex.init(self.rg_resource.name, self.extent.width, self.extent.height, self.image_format, self.allocator);
             tex.image_create_info.usage = self.usage;
             tex.image_layout = self.image_layout;
             tex.alloc();
@@ -68,8 +69,10 @@ pub const ViewportTexture = struct {
     fn resizeBetweenFrames(res: *RGResource) void {
         const self: *ViewportTexture = @fieldParentPtr(ViewportTexture, "rg_resource", res);
 
-        self.width = self.new_width;
-        self.height = self.new_height;
+        self.extent = .{
+            .width = self.new_width,
+            .height = self.new_height,
+        };
 
         self.destroy();
         self.alloc();

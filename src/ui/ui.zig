@@ -78,7 +78,7 @@ pub const UI = struct {
     system: System,
     vulkan_context: UIVulkanContext,
     dockspace: ?*DockSpace,
-    render_pass: RGPass,
+    rg_pass: RGPass,
 
     paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
     drawFn: fn (ui: *UI) void,
@@ -92,10 +92,10 @@ pub const UI = struct {
 
         self.system = System.create(name ++ " System", systemInit, systemDeinit, systemUpdate);
 
-        self.render_pass.init("UI Render Pass", allocator, renderPassInit, renderPassDeinit, renderPassRender);
+        self.rg_pass.init("UI Render Pass", allocator, renderPassInit, renderPassDeinit, renderPassRender);
 
-        self.render_pass.pipeline_start = .{ .fragment_shader_bit = true };
-        self.render_pass.pipeline_end = .{ .transfer_bit = true };
+        self.rg_pass.pipeline_start = .{ .fragment_shader_bit = true };
+        self.rg_pass.pipeline_end = .{ .transfer_bit = true };
     }
 
     fn initPalette(self: *UI) void {
@@ -122,18 +122,18 @@ pub const UI = struct {
         c.ImGuiStyle_ScaleAllSizes(style, scale[1]);
     }
 
-    fn renderPassInit(render_pass: *RGPass) void {
-        const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
-        self.render_pass.appendWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
+    fn renderPassInit(rg_pass: *RGPass) void {
+        const self: *UI = @fieldParentPtr(UI, "rg_pass", rg_pass);
+        self.rg_pass.appendWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
     }
 
-    fn renderPassDeinit(render_pass: *RGPass) void {
-        const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
-        self.render_pass.removeWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
+    fn renderPassDeinit(rg_pass: *RGPass) void {
+        const self: *UI = @fieldParentPtr(UI, "rg_pass", rg_pass);
+        self.rg_pass.removeWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
     }
 
-    fn renderPassRender(render_pass: *RGPass, command_buffer: *CommandBuffer, image_index: u32) void {
-        const self: *UI = @fieldParentPtr(UI, "render_pass", render_pass);
+    fn renderPassRender(rg_pass: *RGPass, command_buffer: *CommandBuffer, image_index: u32) void {
+        const self: *UI = @fieldParentPtr(UI, "rg_pass", rg_pass);
         self.vulkan_context.render(command_buffer, image_index);
     }
 

@@ -24,8 +24,6 @@ pub const Swapchain = struct {
 
     images: []vk.Image,
     image_views: []vk.ImageView,
-    render_pass: vk.RenderPass,
-    framebuffers: []vk.Framebuffer,
 
     pub fn init(self: *Swapchain, width: u32, height: u32, images_count: u32, vsync: bool) !void {
         self.image_count = images_count;
@@ -33,8 +31,6 @@ pub const Swapchain = struct {
 
         try self.createSwapchain(width, height);
         try self.createImageViews();
-        try self.createRenderPass();
-        try self.createSwapBuffers();
     }
 
     pub fn deinit(self: *Swapchain) void {
@@ -55,14 +51,8 @@ pub const Swapchain = struct {
             vkfn.d.destroyImageView(vkctxt.device, image_view, null);
         }
 
-        for (self.framebuffers) |framebuffer| {
-            vkfn.d.destroyFramebuffer(vkctxt.device, framebuffer, null);
-        }
-
         vkctxt.allocator.free(self.image_views);
-        vkctxt.allocator.free(self.framebuffers);
 
-        vkfn.d.destroyRenderPass(vkctxt.device, self.render_pass, null);
         vkfn.d.destroySwapchainKHR(vkctxt.device, self.swapchain, null);
     }
 
@@ -169,80 +159,6 @@ pub const Swapchain = struct {
 
             image_view.* = vkfn.d.createImageView(vkctxt.device, create_info, null) catch |err| {
                 printVulkanError("Can't create image view", err);
-                return err;
-            };
-        }
-    }
-
-    fn createRenderPass(self: *Swapchain) !void {
-        const color_attachment: vk.AttachmentDescription = .{
-            .flags = .{},
-            .format = self.image_format,
-            .samples = .{
-                .@"1_bit" = true,
-            },
-            .load_op = .clear,
-            .store_op = .store,
-            .stencil_load_op = .dont_care,
-            .stencil_store_op = .dont_care,
-            .initial_layout = .@"undefined",
-            .final_layout = .present_src_khr,
-        };
-
-        const color_attachment_ref: vk.AttachmentReference = .{
-            .attachment = 0,
-            .layout = .color_attachment_optimal,
-        };
-
-        const subpass: vk.SubpassDescription = .{
-            .flags = .{},
-            .pipeline_bind_point = .graphics,
-            .color_attachment_count = 1,
-            .p_color_attachments = @ptrCast([*]const vk.AttachmentReference, &color_attachment_ref),
-
-            .input_attachment_count = 0,
-            .p_input_attachments = undefined,
-            .p_resolve_attachments = undefined,
-            .p_depth_stencil_attachment = undefined,
-            .preserve_attachment_count = 0,
-            .p_preserve_attachments = undefined,
-        };
-
-        const render_pass_create_info: vk.RenderPassCreateInfo = .{
-            .flags = .{},
-            .attachment_count = 1,
-            .p_attachments = @ptrCast([*]const vk.AttachmentDescription, &color_attachment),
-            .subpass_count = 1,
-            .p_subpasses = @ptrCast([*]const vk.SubpassDescription, &subpass),
-            .dependency_count = 0,
-            .p_dependencies = undefined,
-        };
-
-        self.render_pass = vkfn.d.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
-            printVulkanError("Can't create render pass for swapchain", err);
-            return err;
-        };
-    }
-
-    fn createSwapBuffers(self: *Swapchain) !void {
-        self.framebuffers = vkctxt.allocator.alloc(vk.Framebuffer, self.image_count) catch {
-            printError("Vulkan Wrapper", "Can't allocate framebuffers for swapchain in host");
-            return error.HostAllocationError;
-        };
-
-        for (self.framebuffers) |*framebuffer, i| {
-            const create_info: vk.FramebufferCreateInfo = .{
-                .flags = .{},
-                .render_pass = self.render_pass,
-                .attachment_count = 1,
-                .p_attachments = @ptrCast([*]const vk.ImageView, &self.image_views[i]),
-                .width = self.image_extent.width,
-                .height = self.image_extent.height,
-                .layers = 1,
-            };
-
-            framebuffer.* = vkfn.d.createFramebuffer(vkctxt.device, create_info, null) catch |err| {
-                printVulkanError("Can't create framebuffer for swapchain", err);
                 return err;
             };
         }

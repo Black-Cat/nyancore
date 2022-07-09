@@ -1,5 +1,6 @@
 const std = @import("std");
 const vk = @import("../../vk.zig");
+const vkctxt = @import("../../vulkan_wrapper/vulkan_context.zig");
 
 const RGResource = @import("render_graph_resource.zig").RGResource;
 const RenderGraph = @import("render_graph.zig").RenderGraph;
@@ -31,7 +32,14 @@ pub const RGPass = struct {
     pipeline_start: vk.PipelineStageFlags = .{ .top_of_pipe_bit = true },
     pipeline_end: vk.PipelineStageFlags = .{ .bottom_of_pipe_bit = true },
 
-    pub fn init(self: *RGPass, comptime name: []const u8, allocator: std.mem.Allocator, initFn: PassFunction, deinitFn: PassFunction, renderFn: RenderFunction) void {
+    pub fn init(
+        self: *RGPass,
+        comptime name: []const u8,
+        allocator: std.mem.Allocator,
+        initFn: PassFunction,
+        deinitFn: PassFunction,
+        renderFn: RenderFunction,
+    ) void {
         self.name = name;
         self.initFn = initFn;
         self.deinitFn = deinitFn;

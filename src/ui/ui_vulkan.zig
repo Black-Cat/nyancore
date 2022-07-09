@@ -21,6 +21,7 @@ const RenderGraph = rg.RenderGraph;
 const Texture = @import("../renderer/render_graph/resources/texture.zig").Texture;
 const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 const SingleCommandBuffer = @import("../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
+const RenderPass = @import("../vulkan_wrapper/render_pass.zig").RenderPass;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -45,7 +46,7 @@ pub const UIVulkanContext = struct {
     vertex_buffer_counts: []usize,
     index_buffer_counts: []usize,
 
-    render_pass: vk.RenderPass,
+    render_pass: RenderPass,
     pipeline_layout: vk.PipelineLayout,
     pipeline: vk.Pipeline,
 
@@ -72,7 +73,7 @@ pub const UIVulkanContext = struct {
 
         vkfn.d.destroyPipeline(vkctxt.device, self.pipeline, null);
         vkfn.d.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
-        vkfn.d.destroyRenderPass(vkctxt.device, self.render_pass, null);
+        self.render_pass.destroy();
 
         vkfn.d.destroyShaderModule(vkctxt.device, self.vert_shader, null);
         vkfn.d.destroyShaderModule(vkctxt.device, self.frag_shader, null);
@@ -91,8 +92,8 @@ pub const UIVulkanContext = struct {
 
         const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } };
         const render_pass_info: vk.RenderPassBeginInfo = .{
-            .render_pass = self.render_pass,
-            .framebuffer = rg.global_render_graph.final_swapchain.framebuffers[rg.global_render_graph.image_index],
+            .render_pass = self.render_pass.vk_ref,
+            .framebuffer = self.render_pass.getCurrentFramebuffer().vk_ref,
             .render_area = .{
                 .offset = .{ .x = 0, .y = 0 },
                 .extent = rg.global_render_graph.final_swapchain.image_extent,
@@ -242,61 +243,19 @@ pub const UIVulkanContext = struct {
     }
 
     fn createRenderPass(self: *UIVulkanContext) void {
-        const color_attachment: vk.AttachmentDescription = .{
+        var color_attachment: [1]vk.AttachmentDescription = .{.{
             .format = rg.global_render_graph.final_swapchain.image_format,
             .samples = .{ .@"1_bit" = true },
-            .load_op = self.parent.render_pass.load_op,
+            .load_op = self.parent.rg_pass.load_op,
             .store_op = .store,
             .stencil_load_op = .dont_care,
             .stencil_store_op = .dont_care,
-            .initial_layout = self.parent.render_pass.initial_layout,
-            .final_layout = self.parent.render_pass.final_layout,
+            .initial_layout = self.parent.rg_pass.initial_layout,
+            .final_layout = self.parent.rg_pass.final_layout,
             .flags = .{},
-        };
+        }};
 
-        const color_attachment_ref: vk.AttachmentReference = .{
-            .attachment = 0,
-            .layout = .color_attachment_optimal,
-        };
-
-        const subpass: vk.SubpassDescription = .{
-            .pipeline_bind_point = .graphics,
-            .color_attachment_count = 1,
-            .p_color_attachments = @ptrCast([*]const vk.AttachmentReference, &color_attachment_ref),
-
-            .flags = .{},
-            .input_attachment_count = 0,
-            .p_input_attachments = undefined,
-            .p_resolve_attachments = undefined,
-            .p_depth_stencil_attachment = undefined,
-            .preserve_attachment_count = 0,
-            .p_preserve_attachments = undefined,
-        };
-
-        const dependency: vk.SubpassDependency = .{
-            .src_subpass = vk.SUBPASS_EXTERNAL,
-            .dst_subpass = 0,
-            .src_stage_mask = .{ .color_attachment_output_bit = true },
-            .src_access_mask = .{},
-            .dst_stage_mask = .{ .color_attachment_output_bit = true },
-            .dst_access_mask = .{ .color_attachment_read_bit = true, .color_attachment_write_bit = true },
-            .dependency_flags = .{},
-        };
-
-        const render_pass_create_info: vk.RenderPassCreateInfo = .{
-            .attachment_count = 1,
-            .p_attachments = @ptrCast([*]const vk.AttachmentDescription, &color_attachment),
-            .subpass_count = 1,
-            .p_subpasses = @ptrCast([*]const vk.SubpassDescription, &subpass),
-            .dependency_count = 1,
-            .p_dependencies = @ptrCast([*]const vk.SubpassDependency, &dependency),
-            .flags = .{},
-        };
-
-        self.render_pass = vkfn.d.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
-            printVulkanError("Can't create render pass for ui", err);
-            return;
-        };
+        self.render_pass = RenderPass.create(&rg.global_render_graph.final_swapchain, color_attachment[0..]);
     }
 
     fn createGraphicsPipeline(self: *UIVulkanContext) void {
@@ -472,7 +431,7 @@ pub const UIVulkanContext = struct {
 
         const pipeline_create_info: vk.GraphicsPipelineCreateInfo = .{
             .layout = self.pipeline_layout,
-            .render_pass = self.render_pass,
+            .render_pass = self.render_pass.vk_ref,
             .flags = .{},
             .base_pipeline_index = -1,
             .base_pipeline_handle = .null_handle,

@@ -11,6 +11,7 @@ const RGPass = @import("render_graph_pass.zig").RGPass;
 const PassList = std.ArrayList(*RGPass);
 const RGResource = @import("render_graph_resource.zig").RGResource;
 const ResourceList = std.ArrayList(*RGResource);
+const ResourceMap = std.AutoArrayHashMap(*anyopaque, *RGResource);
 
 const SyncPass = @import("passes/sync_pass.zig").SyncPass;
 const Swapchain = @import("../../vulkan_wrapper/swapchain.zig").Swapchain;
@@ -42,7 +43,7 @@ pub const RenderGraph = struct {
     in_flight: u32,
 
     passes: PassList,
-    resources: ResourceList,
+    resources: ResourceMap,
 
     culled_passes: PassList,
     culled_resources: ResourceList,
@@ -59,7 +60,7 @@ pub const RenderGraph = struct {
         self.allocator = allocator;
 
         self.passes = PassList.init(allocator);
-        self.resources = ResourceList.init(allocator);
+        self.resources = ResourceMap.init(allocator);
 
         self.culled_passes = PassList.init(allocator);
         self.culled_resources = ResourceList.init(allocator);
@@ -106,6 +107,11 @@ pub const RenderGraph = struct {
 
     pub fn deinit(self: *RenderGraph) void {
         self.passes.deinit();
+
+        for (self.resources.values()) |res| {
+            res.deinit();
+            self.allocator.destroy(res);
+        }
         self.resources.deinit();
 
         self.culled_passes.deinit();
@@ -119,12 +125,22 @@ pub const RenderGraph = struct {
 
     pub fn addTexture(self: *RenderGraph, tex: *Texture) void {
         self.textures.append(tex) catch unreachable;
-        self.resources.append(&tex.rg_resource) catch unreachable;
+        self.resources.put(tex, &tex.rg_resource) catch unreachable;
     }
 
     pub fn addViewportTexture(self: *RenderGraph, tex: *ViewportTexture) void {
         self.viewport_textures.append(tex) catch unreachable;
-        self.resources.append(&tex.rg_resource) catch unreachable;
+        self.resources.put(tex, &tex.rg_resource) catch unreachable;
+    }
+
+    pub fn addResource(self: *RenderGraph, res: *anyopaque, name: []const u8) void {
+        var rg_res: *RGResource = self.allocator.create(RGResource) catch unreachable;
+        rg_res.init(name, self.allocator);
+        self.resources.put(res, rg_res);
+    }
+
+    pub fn getResource(self: *RenderGraph, res: *anyopaque) *RGResource {
+        return self.resources.get(res).?;
     }
 
     pub fn removeTexture(self: *RenderGraph, tex: *Texture) void {
