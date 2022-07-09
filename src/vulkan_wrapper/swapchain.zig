@@ -10,6 +10,7 @@ const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").pri
 const RGResource = @import("../renderer/render_graph/render_graph_resource.zig").RGResource;
 const PhysicalDevice = @import("physical_device.zig").PhysicalDevice;
 const SwapchainSupportDetails = PhysicalDevice.SwapchainSupportDetails;
+const Framebuffer = @import("framebuffer.zig").Framebuffer;
 
 pub const Swapchain = struct {
     rg_resource: RGResource,
@@ -25,21 +26,29 @@ pub const Swapchain = struct {
     images: []vk.Image,
     image_views: []vk.ImageView,
 
+    framebuffers: std.ArrayList(*[]Framebuffer),
+
     pub fn init(self: *Swapchain, width: u32, height: u32, images_count: u32, vsync: bool) !void {
         self.image_count = images_count;
         self.vsync = vsync;
+        self.framebuffers = std.ArrayList(*[]Framebuffer).init(vkctxt.allocator);
 
         try self.createSwapchain(width, height);
         try self.createImageViews();
     }
 
     pub fn deinit(self: *Swapchain) void {
+        self.framebuffers.deinit();
         self.cleanup();
     }
 
     pub fn recreate(self: *Swapchain, width: u32, height: u32) !void {
         self.cleanup();
-        try self.init(width, height, self.image_count, self.vsync);
+        try self.createSwapchain(width, height);
+        try self.createImageViews();
+
+        for (self.framebuffers.items) |fbs|
+            Framebuffer.recreateFramebuffers(fbs, self);
     }
 
     pub fn recreateWithSameSize(self: *Swapchain) !void {

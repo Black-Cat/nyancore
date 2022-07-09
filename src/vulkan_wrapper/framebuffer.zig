@@ -12,6 +12,7 @@ const ViewportTexture = @import("../renderer/render_graph/resources/viewport_tex
 
 pub const Framebuffer = struct {
     vk_ref: vk.Framebuffer,
+    render_pass: *RenderPass,
 
     pub fn create(render_pass: *RenderPass, target: anytype) []Framebuffer {
         switch (@TypeOf(target)) {
@@ -40,6 +41,7 @@ pub const Framebuffer = struct {
                 printVulkanError("Can't create framebuffer from swapchain", err);
                 return undefined;
             };
+            framebuffer.render_pass = render_pass;
         }
 
         return framebuffers;
@@ -61,5 +63,17 @@ pub const Framebuffer = struct {
 
     pub fn destroy(self: *Framebuffer) void {
         vkfn.d.destroyFramebuffer(vkctxt.device, self.vk_ref, null);
+    }
+
+    pub fn destroyFramebuffers(framebuffers: []Framebuffer) void {
+        for (framebuffers) |*fb|
+            fb.destroy();
+        vkctxt.allocator.free(framebuffers);
+    }
+
+    pub fn recreateFramebuffers(framebuffers: *[]Framebuffer, target: anytype) void {
+        const rp: *RenderPass = framebuffers.*[0].render_pass;
+        destroyFramebuffers(framebuffers.*);
+        framebuffers.* = create(rp, target);
     }
 };

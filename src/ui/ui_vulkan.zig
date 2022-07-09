@@ -255,7 +255,7 @@ pub const UIVulkanContext = struct {
             .flags = .{},
         }};
 
-        self.render_pass = RenderPass.create(&rg.global_render_graph.final_swapchain, color_attachment[0..]);
+        self.render_pass.init(&rg.global_render_graph.final_swapchain, color_attachment[0..]);
     }
 
     fn createGraphicsPipeline(self: *UIVulkanContext) void {

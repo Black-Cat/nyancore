@@ -59,8 +59,6 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             self.rg_pass.init(name, rg.global_render_graph.allocator, passInit, passDeinit, passRender);
             self.rg_pass.appendWriteResource(res);
 
-            res.registerOnChangeCallback(&self.rg_pass, reinitFramebuffer);
-
             self.target = target;
 
             self.custom_scissors = null;
@@ -91,7 +89,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 .flags = .{},
             }};
 
-            self.render_pass = RenderPass.create(self.target, color_attachment[0..]);
+            self.render_pass.init(self.target, color_attachment[0..]);
 
             self.createPipelineCache();
             self.createPipelineLayout();
@@ -182,12 +180,6 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             );
 
             vkfn.d.cmdDraw(command_buffer.vk_ref, 3, 1, 0, 0);
-        }
-
-        fn reinitFramebuffer(render_pass: *RGPass) void {
-            const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", render_pass);
-
-            self.render_pass.recreateFramebuffers(self.target);
         }
 
         fn createPipelineCache(self: *SelfType) void {

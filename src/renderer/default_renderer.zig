@@ -109,15 +109,59 @@ pub const DefaultRenderer = struct {
         }
     }
 
-    fn recreateSwapchain(self: *DefaultRenderer) !void {
+    fn recreateSwapchain(window: *c.GLFWwindow) !void {
         var width: c_int = undefined;
         var height: c_int = undefined;
         while (width <= 0 or height <= 0) {
-            c.glfwGetFramebufferSize(self.app.window, &width, &height);
+            c.glfwGetFramebufferSize(window, &width, &height);
             c.glfwWaitEvents();
         }
 
         try rg.global_render_graph.final_swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
+    }
+
+    fn acquireImage(window: *c.GLFWwindow, acquire_semaphore: *Semaphore) !u32 {
+        var image_index: u32 = undefined;
+
+        const vkres_acquire: vk.Result = vkfn.d.vkAcquireNextImageKHR(
+            vkctxt.device,
+            rg.global_render_graph.final_swapchain.swapchain,
+            std.math.maxInt(u64),
+            acquire_semaphore.vk_ref,
+            .null_handle,
+            &image_index,
+        );
+
+        if (vkres_acquire == .error_out_of_date_khr) {
+            try recreateSwapchain(window);
+        } else if (vkres_acquire != .success and vkres_acquire != .suboptimal_khr) {
+            printError("Renderer", "Error while getting swapchain image");
+            return error.Unknown;
+        }
+
+        return image_index;
+    }
+
+    fn presentSwapchain(window: *c.GLFWwindow, wait_semaphore: *Semaphore) !void {
+        const present_info: vk.PresentInfoKHR = .{
+            .wait_semaphore_count = 1,
+            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &wait_semaphore.vk_ref),
+
+            .swapchain_count = 1,
+            .p_swapchains = @ptrCast([*]vk.SwapchainKHR, &rg.global_render_graph.final_swapchain.swapchain),
+            .p_image_indices = @ptrCast([*]const u32, &rg.global_render_graph.image_index),
+
+            .p_results = null,
+        };
+
+        const vkres_present = vkfn.d.vkQueuePresentKHR(vkctxt.present_queue, &present_info);
+
+        if (vkres_present == .error_out_of_date_khr or vkres_present == .suboptimal_khr) {
+            try recreateSwapchain(window);
+        } else if (vkres_present != .success) {
+            printError("Vulkan Wrapper", "Can't queue present");
+            return error.Unknown;
+        }
     }
 
     fn render(self: *DefaultRenderer) !void {
@@ -126,24 +170,7 @@ pub const DefaultRenderer = struct {
 
         const current_image_available_semaphore: *Semaphore = &self.image_available_semaphores[rg.global_render_graph.frame_index];
 
-        var image_index: u32 = undefined;
-        const vkres_acquire: vk.Result = vkfn.d.vkAcquireNextImageKHR(
-            vkctxt.device,
-            rg.global_render_graph.final_swapchain.swapchain,
-            std.math.maxInt(u64),
-            current_image_available_semaphore.vk_ref,
-            .null_handle,
-            &image_index,
-        );
-        rg.global_render_graph.image_index = image_index;
-
-        if (vkres_acquire == .error_out_of_date_khr) {
-            try self.recreateSwapchain();
-            return;
-        } else if (vkres_acquire != .success and vkres_acquire != .suboptimal_khr) {
-            printError("Renderer", "Error while getting swapchain image");
-            return error.Unknown;
-        }
+        rg.global_render_graph.image_index = try acquireImage(self.app.window, current_image_available_semaphore);
 
         var command_buffer: CommandBuffer = rg.global_render_graph.command_buffers.getBuffer(rg.global_render_graph.frame_index);
         command_buffer.reset();
@@ -173,24 +200,7 @@ pub const DefaultRenderer = struct {
             printVulkanError("Can't submit render queue", err);
         };
 
-        const present_info: vk.PresentInfoKHR = .{
-            .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &current_render_finished_semaphore.vk_ref),
-
-            .swapchain_count = 1,
-            .p_swapchains = @ptrCast([*]vk.SwapchainKHR, &rg.global_render_graph.final_swapchain.swapchain),
-            .p_image_indices = @ptrCast([*]const u32, &image_index),
-
-            .p_results = null,
-        };
-
-        const vkres_present = vkfn.d.vkQueuePresentKHR(vkctxt.present_queue, &present_info);
-        if (vkres_present == .error_out_of_date_khr or vkres_present == .suboptimal_khr) {
-            try self.recreateSwapchain();
-        } else if (vkres_present != .success) {
-            printError("Vulkan Wrapper", "Can't queue present");
-            return error.Unknown;
-        }
+        try presentSwapchain(self.app.window, current_render_finished_semaphore);
 
         rg.global_render_graph.frame_index = (rg.global_render_graph.frame_index + 1) % frames_in_flight;
 

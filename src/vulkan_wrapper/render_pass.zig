@@ -16,35 +16,32 @@ pub const RenderPass = struct {
     framebuffers: []Framebuffer,
     framebuffer_index: *u32,
 
-    pub fn create(target: anytype, attachments: []vk.AttachmentDescription) RenderPass {
-        var res: RenderPass = undefined;
+    target_framebuffers: *std.ArrayList(*[]Framebuffer),
 
-        res.vk_ref = createVulkanRenderPass(attachments);
-        res.framebuffers = Framebuffer.create(&res, target);
-        res.framebuffer_index = if (@TypeOf(target) == *Swapchain) &rg.global_render_graph.image_index else &rg.global_render_graph.frame_index;
+    pub fn init(self: *RenderPass, target: anytype, attachments: []vk.AttachmentDescription) void {
+        self.vk_ref = createVulkanRenderPass(attachments);
+        self.framebuffers = Framebuffer.create(self, target);
+        self.framebuffer_index = if (@TypeOf(target) == *Swapchain) &rg.global_render_graph.image_index else &rg.global_render_graph.frame_index;
 
-        return res;
+        self.target_framebuffers = &target.framebuffers;
+        target.framebuffers.append(&self.framebuffers) catch unreachable;
     }
 
     pub fn destroy(self: *RenderPass) void {
-        destroyFramebuffers(self.framebuffers);
+        for (self.target_framebuffers.items) |fbs, ind| {
+            if (fbs == &self.framebuffers) {
+                _ = self.target_framebuffers.swapRemove(ind);
+                break;
+            }
+        }
+
+        Framebuffer.destroyFramebuffers(self.framebuffers);
 
         vkfn.d.destroyRenderPass(vkctxt.device, self.vk_ref, null);
     }
 
     pub fn getCurrentFramebuffer(self: *RenderPass) *Framebuffer {
         return &self.framebuffers[@intCast(usize, self.framebuffer_index.*)];
-    }
-
-    pub fn recreateFramebuffers(self: *RenderPass, target: anytype) void {
-        destroyFramebuffers(self.framebuffers);
-        self.framebuffers = Framebuffer.create(self, target);
-    }
-
-    fn destroyFramebuffers(framebuffers: []Framebuffer) void {
-        for (framebuffers) |*fb|
-            fb.destroy();
-        vkctxt.allocator.free(framebuffers);
     }
 
     fn createVulkanRenderPass(attachments: []vk.AttachmentDescription) vk.RenderPass {
