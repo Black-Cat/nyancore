@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const rg = @import("../render_graph.zig");
-const shader_util = @import("../../../shaders/shader_util.zig");
 const vk = @import("../../../vk.zig");
 
 const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
@@ -13,6 +12,7 @@ const Swapchain = @import("../../../vulkan_wrapper/swapchain.zig").Swapchain;
 const ViewportTexture = @import("../resources/viewport_texture.zig").ViewportTexture;
 const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
+const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").ShaderModule;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
@@ -33,7 +33,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
         pipeline_layout: vk.PipelineLayout,
         pipeline: vk.Pipeline,
 
-        vert_shader: vk.ShaderModule,
+        vert_shader: ShaderModule,
 
         frag_shader: *vk.ShaderModule,
         frag_push_const_size: usize,
@@ -75,7 +75,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", rg_pass);
 
             const vert_code = @embedFile("screen_render_pass.vert");
-            self.vert_shader = shader_util.loadShader(vert_code, .vertex);
+            self.vert_shader = ShaderModule.load(vert_code, .vertex);
 
             var color_attachment: [1]vk.AttachmentDescription = .{.{
                 .format = self.target.image_format,
@@ -104,7 +104,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             vkfn.d.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
             vkfn.d.destroyPipelineCache(vkctxt.device, self.pipeline_cache, null);
 
-            vkfn.d.destroyShaderModule(vkctxt.device, self.vert_shader, null);
+            self.vert_shader.destroy();
         }
 
         fn passRender(render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void {
@@ -342,7 +342,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
 
             const ui_vert_shader_stage: vk.PipelineShaderStageCreateInfo = .{
                 .stage = .{ .vertex_bit = true },
-                .module = self.vert_shader,
+                .module = self.vert_shader.vk_ref,
                 .p_name = "main",
                 .flags = .{},
                 .p_specialization_info = null,

@@ -13,12 +13,6 @@ const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
 const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
-pub const ShaderStage = enum {
-    vertex,
-    fragment,
-    compute,
-};
-
 const default_resources: c.glslang_resource_s = .{
     .max_lights = 32,
     .max_clip_planes = 6,
@@ -127,23 +121,6 @@ const default_resources: c.glslang_resource_s = .{
     },
 };
 
-var input: c.glslang_input_t = .{
-    .language = c.GLSLANG_SOURCE_GLSL,
-    .client = c.GLSLANG_CLIENT_VULKAN,
-    .client_version = c.GLSLANG_TARGET_VULKAN_1_2,
-    .target_language = c.GLSLANG_TARGET_SPV,
-    .target_language_version = c.GLSLANG_TARGET_SPV_1_0,
-    .default_version = 100,
-    .default_profile = c.GLSLANG_NO_PROFILE,
-    .force_default_version_and_profile = 0,
-    .forward_compatible = 0,
-    .messages = c.GLSLANG_MSG_DEFAULT_BIT,
-    .resource = &default_resources,
-
-    .stage = undefined,
-    .code = undefined,
-};
-
 fn printGlslangError(err_message: [*c]const u8) void {
     const stdout = std.io.getStdOut().writer();
     stdout.print("\x1b[1;31mGLSLANG ERROR:\x1b[0m {s}\n", .{err_message}) catch unreachable;
@@ -155,65 +132,92 @@ fn reportGlslangError(shader: *c.glslang_shader_t, message: []const u8) void {
     printError("glslang", message);
 }
 
-pub const CompiledShader = struct {
-    size: usize,
-    pcode: [*]c_uint,
-};
-
 pub fn initShaderCompilation() void {
     _ = c.glslang_initialize_process();
 }
 
-pub fn compileShader(code: [*:0]const u8, stage: ShaderStage) CompiledShader {
-    input.code = code;
-    input.stage = switch (stage) {
-        .vertex => c.GLSLANG_STAGE_VERTEX,
-        .fragment => c.GLSLANG_STAGE_FRAGMENT,
-        .compute => c.GLSLANG_STAGE_COMPUTE,
+pub const ShaderModule = struct {
+    pub const ShaderStage = enum {
+        vertex,
+        fragment,
+        compute,
+    };
+    pub const CompiledShader = struct {
+        size: usize,
+        pcode: [*]c_uint,
     };
 
-    var shader: *c.glslang_shader_t = c.glslang_shader_create(&input) orelse unreachable;
+    vk_ref: vk.ShaderModule,
 
-    if (c.glslang_shader_preprocess(shader, &input) != 1)
-        reportGlslangError(shader, "Can't preprocess shader");
+    pub fn compileShader(code: [*:0]const u8, stage: ShaderStage) CompiledShader {
+        var input: c.glslang_input_t = .{
+            .language = c.GLSLANG_SOURCE_GLSL,
+            .client = c.GLSLANG_CLIENT_VULKAN,
+            .client_version = c.GLSLANG_TARGET_VULKAN_1_2,
+            .target_language = c.GLSLANG_TARGET_SPV,
+            .target_language_version = c.GLSLANG_TARGET_SPV_1_0,
+            .default_version = 100,
+            .default_profile = c.GLSLANG_NO_PROFILE,
+            .force_default_version_and_profile = 0,
+            .forward_compatible = 0,
+            .messages = c.GLSLANG_MSG_DEFAULT_BIT,
+            .resource = &default_resources,
 
-    if (c.glslang_shader_parse(shader, &input) != 1)
-        reportGlslangError(shader, "Can't parse shader");
+            .code = code,
+            .stage = switch (stage) {
+                .vertex => c.GLSLANG_STAGE_VERTEX,
+                .fragment => c.GLSLANG_STAGE_FRAGMENT,
+                .compute => c.GLSLANG_STAGE_COMPUTE,
+            },
+        };
 
-    var program: *c.glslang_program_t = c.glslang_program_create() orelse unreachable;
-    c.glslang_program_add_shader(program, shader);
+        var shader: *c.glslang_shader_t = c.glslang_shader_create(&input) orelse unreachable;
 
-    if (c.glslang_program_link(program, c.GLSLANG_MSG_SPV_RULES_BIT | c.GLSLANG_MSG_VULKAN_RULES_BIT) != 1)
-        reportGlslangError(shader, "Can't link program");
+        if (c.glslang_shader_preprocess(shader, &input) != 1)
+            reportGlslangError(shader, "Can't preprocess shader");
 
-    c.glslang_program_SPIRV_generate(program, input.stage);
+        if (c.glslang_shader_parse(shader, &input) != 1)
+            reportGlslangError(shader, "Can't parse shader");
 
-    var messages = c.glslang_program_SPIRV_get_messages(program);
-    if (messages != null)
-        printGlslangError(messages);
+        var program: *c.glslang_program_t = c.glslang_program_create() orelse unreachable;
+        c.glslang_program_add_shader(program, shader);
 
-    c.glslang_shader_delete(shader);
+        if (c.glslang_program_link(program, c.GLSLANG_MSG_SPV_RULES_BIT | c.GLSLANG_MSG_VULKAN_RULES_BIT) != 1)
+            reportGlslangError(shader, "Can't link program");
 
-    var compiledShader: CompiledShader = undefined;
-    compiledShader.size = c.glslang_program_SPIRV_get_size(program) * @sizeOf(c_uint);
-    compiledShader.pcode = c.glslang_program_SPIRV_get_ptr(program);
+        c.glslang_program_SPIRV_generate(program, input.stage);
 
-    return compiledShader;
-}
+        var messages = c.glslang_program_SPIRV_get_messages(program);
+        if (messages != null)
+            printGlslangError(messages);
 
-pub fn loadShader(shader_code: [*:0]const u8, stage: ShaderStage) vk.ShaderModule {
-    const shader: CompiledShader = compileShader(shader_code, stage);
+        c.glslang_shader_delete(shader);
 
-    const module_create_info: vk.ShaderModuleCreateInfo = .{
-        .code_size = shader.size,
-        .p_code = shader.pcode,
-        .flags = .{},
-    };
+        var compiledShader: CompiledShader = undefined;
+        compiledShader.size = c.glslang_program_SPIRV_get_size(program) * @sizeOf(c_uint);
+        compiledShader.pcode = c.glslang_program_SPIRV_get_ptr(program);
 
-    var shader_module: vk.ShaderModule = vkfn.d.createShaderModule(vkctxt.device, module_create_info, null) catch |err| {
-        printVulkanError("Can't create shader module", err);
-        @panic("Can't create shader module");
-    };
+        return compiledShader;
+    }
 
-    return shader_module;
-}
+    pub fn load(shader_code: [*:0]const u8, stage: ShaderStage) ShaderModule {
+        const shader: CompiledShader = compileShader(shader_code, stage);
+
+        const module_create_info: vk.ShaderModuleCreateInfo = .{
+            .code_size = shader.size,
+            .p_code = shader.pcode,
+            .flags = .{},
+        };
+
+        var shader_module: vk.ShaderModule = vkfn.d.createShaderModule(vkctxt.device, module_create_info, null) catch |err| {
+            printVulkanError("Can't create shader module", err);
+            @panic("Can't create shader module");
+        };
+
+        return .{ .vk_ref = shader_module };
+    }
+
+    pub fn destroy(self: *const ShaderModule) void {
+        vkfn.d.destroyShaderModule(vkctxt.device, self.vk_ref, null);
+    }
+};

@@ -1,7 +1,6 @@
 const c = @import("../c.zig");
 const vk = @import("../vk.zig");
 const std = @import("std");
-const shader_util = @import("../shaders/shader_util.zig");
 
 usingnamespace @cImport({
     @cInclude("fira_sans_regular.h");
@@ -22,6 +21,7 @@ const Texture = @import("../renderer/render_graph/resources/texture.zig").Textur
 const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 const SingleCommandBuffer = @import("../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
 const RenderPass = @import("../vulkan_wrapper/render_pass.zig").RenderPass;
+const ShaderModule = @import("../vulkan_wrapper/shader_module.zig").ShaderModule;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -37,8 +37,8 @@ pub const UIVulkanContext = struct {
 
     pipeline_cache: vk.PipelineCache,
 
-    frag_shader: vk.ShaderModule,
-    vert_shader: vk.ShaderModule,
+    frag_shader: ShaderModule,
+    vert_shader: ShaderModule,
 
     vertex_buffers: []Buffer,
     index_buffers: []Buffer,
@@ -52,8 +52,6 @@ pub const UIVulkanContext = struct {
 
     pub fn init(self: *UIVulkanContext, parent: *UI) void {
         self.parent = parent;
-
-        shader_util.initShaderCompilation();
 
         self.initResources();
     }
@@ -75,8 +73,8 @@ pub const UIVulkanContext = struct {
         vkfn.d.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
         self.render_pass.destroy();
 
-        vkfn.d.destroyShaderModule(vkctxt.device, self.vert_shader, null);
-        vkfn.d.destroyShaderModule(vkctxt.device, self.frag_shader, null);
+        self.vert_shader.destroy();
+        self.frag_shader.destroy();
 
         vkfn.d.destroyPipelineCache(vkctxt.device, self.pipeline_cache, null);
 
@@ -413,7 +411,7 @@ pub const UIVulkanContext = struct {
 
         const ui_vert_shader_stage: vk.PipelineShaderStageCreateInfo = .{
             .stage = .{ .vertex_bit = true },
-            .module = self.vert_shader,
+            .module = self.vert_shader.vk_ref,
             .p_name = "main",
             .flags = .{},
             .p_specialization_info = null,
@@ -421,7 +419,7 @@ pub const UIVulkanContext = struct {
 
         const ui_frag_shader_stage: vk.PipelineShaderStageCreateInfo = .{
             .stage = .{ .fragment_bit = true },
-            .module = self.frag_shader,
+            .module = self.frag_shader.vk_ref,
             .p_name = "main",
             .flags = .{},
             .p_specialization_info = null,
@@ -636,8 +634,8 @@ pub const UIVulkanContext = struct {
 
         const ui_vert = @embedFile("ui.vert");
         const ui_frag = @embedFile("ui.frag");
-        self.vert_shader = shader_util.loadShader(ui_vert, .vertex);
-        self.frag_shader = shader_util.loadShader(ui_frag, .fragment);
+        self.vert_shader = ShaderModule.load(ui_vert, .vertex);
+        self.frag_shader = ShaderModule.load(ui_frag, .fragment);
 
         self.createRenderPass();
         self.createGraphicsPipeline();

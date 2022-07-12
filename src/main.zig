@@ -14,6 +14,7 @@ pub const vk = @import("vk.zig");
 pub const vkctxt = @import("vulkan_wrapper/vulkan_context.zig");
 pub const vkfn = @import("vulkan_wrapper/vulkan_functions.zig");
 pub const SingleCommandBuffer = @import("vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
+pub const ShaderModule = @import("vulkan_wrapper/shader_module.zig").ShaderModule;
 
 pub const Config = @import("application/config.zig").Config;
 
@@ -31,8 +32,6 @@ pub const Widgets = struct {
     pub const Widget = @import("ui/widget.zig").Widget;
     pub const Window = @import("ui/window.zig").Window;
 };
-
-pub const shader_util = @import("shaders/shader_util.zig");
 
 pub const Image = @import("image/image.zig").Image;
 pub const bmp = @import("image/bmp.zig");

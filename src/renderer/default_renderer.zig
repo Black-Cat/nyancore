@@ -48,6 +48,8 @@ pub const DefaultRenderer = struct {
     }
 
     fn systemInit(system: *System, app: *Application) void {
+        @import("../vulkan_wrapper/shader_module.zig").initShaderCompilation();
+
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
 
         self.app = app;
