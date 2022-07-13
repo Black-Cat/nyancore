@@ -13,8 +13,12 @@ pub const vk = @import("vk.zig");
 
 pub const vkctxt = @import("vulkan_wrapper/vulkan_context.zig");
 pub const vkfn = @import("vulkan_wrapper/vulkan_functions.zig");
+
 pub const SingleCommandBuffer = @import("vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
 pub const ShaderModule = @import("vulkan_wrapper/shader_module.zig").ShaderModule;
+pub const Pipeline = @import("vulkan_wrapper/pipeline.zig").Pipeline;
+pub const PipelineBuilder = @import("vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
+pub const PipelineCache = @import("vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 
 pub const Config = @import("application/config.zig").Config;
 

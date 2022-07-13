@@ -13,6 +13,9 @@ const ViewportTexture = @import("../resources/viewport_texture.zig").ViewportTex
 const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").ShaderModule;
+const Pipeline = @import("../../../vulkan_wrapper/pipeline.zig").Pipeline;
+const PipelineBuilder = @import("../../../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
+const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
@@ -29,13 +32,13 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
         render_pass: RenderPass,
         target: *TargetType,
 
-        pipeline_cache: vk.PipelineCache,
+        pipeline_cache: PipelineCache,
         pipeline_layout: vk.PipelineLayout,
-        pipeline: vk.Pipeline,
+        pipeline: Pipeline,
 
         vert_shader: ShaderModule,
 
-        frag_shader: *vk.ShaderModule,
+        frag_shader: *ShaderModule,
         frag_push_const_size: usize,
         frag_push_const_block: *const anyopaque,
 
@@ -46,7 +49,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             self: *SelfType,
             comptime name: []const u8,
             target: *TargetType,
-            frag_shader: *vk.ShaderModule,
+            frag_shader: *ShaderModule,
             frag_push_const_size: usize,
             frag_push_const_block: *const anyopaque,
         ) void {
@@ -91,7 +94,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
 
             self.render_pass.init(self.target, color_attachment[0..]);
 
-            self.createPipelineCache();
+            self.pipeline_cache = PipelineCache.createEmpty();
             self.createPipelineLayout();
             self.createPipeline();
         }
@@ -100,9 +103,9 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", render_pass);
             self.render_pass.destroy();
 
-            vkfn.d.destroyPipeline(vkctxt.device, self.pipeline, null);
+            self.pipeline.destroy();
             vkfn.d.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
-            vkfn.d.destroyPipelineCache(vkctxt.device, self.pipeline_cache, null);
+            self.pipeline_cache.destroy();
 
             self.vert_shader.destroy();
         }
@@ -127,7 +130,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
             defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
-            vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline);
+            vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline.vk_ref);
 
             const viewport_info: vk.Viewport = .{
                 .width = @intToFloat(f32, self.target.extent.width),
@@ -182,19 +185,6 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             vkfn.d.cmdDraw(command_buffer.vk_ref, 3, 1, 0, 0);
         }
 
-        fn createPipelineCache(self: *SelfType) void {
-            const pipeline_cache_create_info: vk.PipelineCacheCreateInfo = .{
-                .flags = .{},
-                .initial_data_size = 0,
-                .p_initial_data = undefined,
-            };
-
-            self.pipeline_cache = vkfn.d.createPipelineCache(vkctxt.device, pipeline_cache_create_info, null) catch |err| {
-                printVulkanError("Can't create pipeline cache", err);
-                return;
-            };
-        }
-
         fn createPipelineLayout(self: *SelfType) void {
             const push_constant_range: [2]vk.PushConstantRange = [_]vk.PushConstantRange{
                 .{
@@ -224,7 +214,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
         }
 
         fn recreatePipeline(self: *SelfType) void {
-            vkfn.d.destroyPipeline(vkctxt.device, self.pipeline, null);
+            self.pipeline.destroy();
             self.createPipeline();
         }
 
@@ -234,164 +224,30 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
         }
 
         fn createPipeline(self: *SelfType) void {
-            const input_assembly_state: vk.PipelineInputAssemblyStateCreateInfo = .{
-                .topology = .triangle_list,
-                .flags = .{},
-                .primitive_restart_enable = vk.FALSE,
+            const shader_stages = [_]vk.PipelineShaderStageCreateInfo{
+                PipelineBuilder.buildShaderStageCreateInfo(.{ .vertex_bit = true }, &self.vert_shader),
+                PipelineBuilder.buildShaderStageCreateInfo(.{ .fragment_bit = true }, self.frag_shader),
             };
 
-            const rasterization_state: vk.PipelineRasterizationStateCreateInfo = .{
-                .polygon_mode = .fill,
-                .cull_mode = .{},
-                .front_face = .counter_clockwise,
-                .flags = .{},
-                .depth_clamp_enable = vk.FALSE,
-                .line_width = 1.0,
-
-                .rasterizer_discard_enable = vk.FALSE,
-                .depth_bias_enable = vk.FALSE,
-                .depth_bias_constant_factor = 0,
-                .depth_bias_clamp = 0,
-                .depth_bias_slope_factor = 0,
+            const color_blend_attachments = [_]vk.PipelineColorBlendAttachmentState{
+                PipelineBuilder.buildBlendAttachmentState(false),
             };
 
-            const blend_attachment_state: vk.PipelineColorBlendAttachmentState = .{
-                .blend_enable = vk.FALSE,
-                .color_write_mask = .{ .r_bit = true, .g_bit = true, .b_bit = true, .a_bit = true },
-                .src_color_blend_factor = .src_alpha,
-                .dst_color_blend_factor = .one_minus_src_alpha,
-                .color_blend_op = .add,
-                .src_alpha_blend_factor = .one,
-                .dst_alpha_blend_factor = .zero,
-                .alpha_blend_op = .add,
+            var pipeline_builder: PipelineBuilder = .{
+                .shader_stages = shader_stages[0..],
+                .vertex_input_state = PipelineBuilder.buildVertexInputStateCreateInfo(&.{}, &.{}),
+                .input_assembly_state = PipelineBuilder.buildInputAssemblyStateCreateInfo(.triangle_list),
+                .rasterization_state = PipelineBuilder.buildRasterizationStateCreateInfo(.fill),
+                .color_blend_attachment = color_blend_attachments[0],
+                .color_blend_state = PipelineBuilder.buildColorBlendState(color_blend_attachments[0..]),
+                .multisample_state = PipelineBuilder.buildMultisampleStateCreateInfo(),
+                .depth_stencil_state = PipelineBuilder.buildDepthStencilState(),
+                .viewport_state = PipelineBuilder.buildViewportState(),
+
+                .pipeline_cache = &self.pipeline_cache,
+                .pipeline_layout = self.pipeline_layout,
             };
-
-            const color_blend_state: vk.PipelineColorBlendStateCreateInfo = .{
-                .attachment_count = 1,
-                .p_attachments = @ptrCast([*]const vk.PipelineColorBlendAttachmentState, &blend_attachment_state),
-
-                .flags = .{},
-                .logic_op_enable = vk.FALSE,
-                .logic_op = undefined,
-                .blend_constants = [4]f32{ 0.0, 0.0, 0.0, 0.0 },
-            };
-
-            const depth_stencil_state: vk.PipelineDepthStencilStateCreateInfo = .{
-                .depth_test_enable = vk.FALSE,
-                .depth_write_enable = vk.FALSE,
-                .depth_compare_op = .less_or_equal,
-                .back = .{
-                    .compare_op = .always,
-                    .fail_op = .keep,
-                    .pass_op = .keep,
-                    .depth_fail_op = .keep,
-                    .compare_mask = 0,
-                    .write_mask = 0,
-                    .reference = 0,
-                },
-                .front = .{
-                    .compare_op = .never,
-                    .fail_op = .keep,
-                    .pass_op = .keep,
-                    .depth_fail_op = .keep,
-                    .compare_mask = 0,
-                    .write_mask = 0,
-                    .reference = 0,
-                },
-
-                .depth_bounds_test_enable = vk.FALSE,
-                .stencil_test_enable = vk.FALSE,
-                .flags = .{},
-                .min_depth_bounds = 0.0,
-                .max_depth_bounds = 0.0,
-            };
-
-            const viewport_state: vk.PipelineViewportStateCreateInfo = .{
-                .viewport_count = 1,
-                .p_viewports = null,
-                .scissor_count = 1,
-                .p_scissors = null,
-                .flags = .{},
-            };
-
-            const multisample_state: vk.PipelineMultisampleStateCreateInfo = .{
-                .rasterization_samples = .{ .@"1_bit" = true },
-                .flags = .{},
-
-                .sample_shading_enable = vk.FALSE,
-                .min_sample_shading = 0,
-                .p_sample_mask = undefined,
-                .alpha_to_coverage_enable = vk.FALSE,
-                .alpha_to_one_enable = vk.FALSE,
-            };
-
-            const dynamic_enabled_states = [_]vk.DynamicState{ .viewport, .scissor };
-            const dynamic_state: vk.PipelineDynamicStateCreateInfo = .{
-                .p_dynamic_states = @ptrCast([*]const vk.DynamicState, &dynamic_enabled_states),
-                .dynamic_state_count = 2,
-                .flags = .{},
-            };
-
-            const vertex_input_state: vk.PipelineVertexInputStateCreateInfo = .{
-                .vertex_binding_description_count = 0,
-                .p_vertex_binding_descriptions = undefined,
-                .vertex_attribute_description_count = 0,
-                .p_vertex_attribute_descriptions = undefined,
-                .flags = .{},
-            };
-
-            const ui_vert_shader_stage: vk.PipelineShaderStageCreateInfo = .{
-                .stage = .{ .vertex_bit = true },
-                .module = self.vert_shader.vk_ref,
-                .p_name = "main",
-                .flags = .{},
-                .p_specialization_info = null,
-            };
-
-            const ui_frag_shader_stage: vk.PipelineShaderStageCreateInfo = .{
-                .stage = .{ .fragment_bit = true },
-                .module = self.frag_shader.*,
-                .p_name = "main",
-                .flags = .{},
-                .p_specialization_info = null,
-            };
-
-            const shader_stages = [_]vk.PipelineShaderStageCreateInfo{ ui_vert_shader_stage, ui_frag_shader_stage };
-
-            const pipeline_create_info: vk.GraphicsPipelineCreateInfo = .{
-                .layout = self.pipeline_layout,
-                .render_pass = self.render_pass.vk_ref,
-                .flags = .{},
-                .base_pipeline_index = -1,
-                .base_pipeline_handle = .null_handle,
-
-                .p_input_assembly_state = &input_assembly_state,
-                .p_rasterization_state = &rasterization_state,
-                .p_color_blend_state = &color_blend_state,
-                .p_multisample_state = &multisample_state,
-                .p_viewport_state = &viewport_state,
-                .p_depth_stencil_state = &depth_stencil_state,
-                .p_dynamic_state = &dynamic_state,
-                .p_vertex_input_state = &vertex_input_state,
-
-                .stage_count = 2,
-                .p_stages = @ptrCast([*]const vk.PipelineShaderStageCreateInfo, &shader_stages),
-
-                .p_tessellation_state = null,
-                .subpass = 0,
-            };
-
-            _ = vkfn.d.createGraphicsPipelines(
-                vkctxt.device,
-                self.pipeline_cache,
-                1,
-                @ptrCast([*]const vk.GraphicsPipelineCreateInfo, &pipeline_create_info),
-                null,
-                @ptrCast([*]vk.Pipeline, &self.pipeline),
-            ) catch |err| {
-                printVulkanError("Can't create graphics pipeline for screen render pass", err);
-                return;
-            };
+            self.pipeline = pipeline_builder.build(&self.render_pass);
         }
     };
 }
