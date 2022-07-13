@@ -25,6 +25,7 @@ const ShaderModule = @import("../vulkan_wrapper/shader_module.zig").ShaderModule
 const Pipeline = @import("../vulkan_wrapper/pipeline.zig").Pipeline;
 const PipelineBuilder = @import("../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 const PipelineCache = @import("../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
+const PipelineLayout = @import("../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -50,7 +51,7 @@ pub const UIVulkanContext = struct {
     index_buffer_counts: []usize,
 
     render_pass: RenderPass,
-    pipeline_layout: vk.PipelineLayout,
+    pipeline_layout: PipelineLayout,
     pipeline: Pipeline,
 
     pub fn init(self: *UIVulkanContext, parent: *UI) void {
@@ -73,7 +74,7 @@ pub const UIVulkanContext = struct {
         vkctxt.allocator.free(self.index_buffer_counts);
 
         self.pipeline.destroy();
-        vkfn.d.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
+        self.pipeline_layout.destroy();
         self.render_pass.destroy();
 
         self.vert_shader.destroy();
@@ -106,7 +107,7 @@ pub const UIVulkanContext = struct {
         vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
         defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
-        vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
+        vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout.vk_ref, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
         vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline.vk_ref);
 
         const viewport: vk.Viewport = .{
@@ -123,7 +124,7 @@ pub const UIVulkanContext = struct {
         const push_const_block: PushConstBlock = .{
             .scale_translate = [4]f32{ 2.0 / viewport.width, 2.0 / viewport.height, -1.0, -1.0 },
         };
-        vkfn.d.cmdPushConstants(command_buffer.vk_ref, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(PushConstBlock), @ptrCast([*]const PushConstBlock, &push_const_block));
+        vkfn.d.cmdPushConstants(command_buffer.vk_ref, self.pipeline_layout.vk_ref, .{ .vertex_bit = true }, 0, @sizeOf(PushConstBlock), @ptrCast([*]const PushConstBlock, &push_const_block));
 
         // Render commands
         const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return;
@@ -171,7 +172,7 @@ pub const UIVulkanContext = struct {
                 if (pcmd.TextureId != null) {
                     const alignment: u26 = @alignOf([*]const vk.DescriptorSet);
                     const descriptor_set: [*]const vk.DescriptorSet = @ptrCast([*]const vk.DescriptorSet, @alignCast(alignment, pcmd.TextureId.?));
-                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout, 0, 1, descriptor_set, 0, undefined);
+                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout.vk_ref, 0, 1, descriptor_set, 0, undefined);
                 }
 
                 vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, pcmd.ElemCount, 1, index_offset, vertex_offset, 0);
@@ -179,7 +180,7 @@ pub const UIVulkanContext = struct {
 
                 // Return font descriptor
                 if (pcmd.TextureId != null)
-                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
+                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout.vk_ref, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
             }
             vertex_offset += cmd_list.VtxBuffer.Size;
         }
@@ -266,18 +267,10 @@ pub const UIVulkanContext = struct {
             .size = @sizeOf(PushConstBlock),
         };
 
-        const pipeline_layout_create_info: vk.PipelineLayoutCreateInfo = .{
-            .set_layout_count = 1,
-            .p_set_layouts = @ptrCast([*]const vk.DescriptorSetLayout, &self.descriptor_set_layout),
-            .push_constant_range_count = 1,
-            .p_push_constant_ranges = @ptrCast([*]const vk.PushConstantRange, &push_constant_range),
-            .flags = .{},
-        };
-
-        self.pipeline_layout = vkfn.d.createPipelineLayout(vkctxt.device, pipeline_layout_create_info, null) catch |err| {
-            printVulkanError("Can't create pipeline layout", err);
-            return;
-        };
+        self.pipeline_layout = PipelineLayout.create(
+            &[_]vk.DescriptorSetLayout{self.descriptor_set_layout},
+            &[_]vk.PushConstantRange{push_constant_range},
+        );
 
         const vertex_input_bindings = [_]vk.VertexInputBindingDescription{
             .{
@@ -329,7 +322,7 @@ pub const UIVulkanContext = struct {
             .viewport_state = PipelineBuilder.buildViewportState(),
 
             .pipeline_cache = &self.pipeline_cache,
-            .pipeline_layout = self.pipeline_layout,
+            .pipeline_layout = &self.pipeline_layout,
         };
         self.pipeline = pipeline_builder.build(&self.render_pass);
     }

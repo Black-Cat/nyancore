@@ -19,6 +19,7 @@ pub const ShaderModule = @import("vulkan_wrapper/shader_module.zig").ShaderModul
 pub const Pipeline = @import("vulkan_wrapper/pipeline.zig").Pipeline;
 pub const PipelineBuilder = @import("vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 pub const PipelineCache = @import("vulkan_wrapper/pipeline_cache.zig").PipelineCache;
+pub const PipelineLayout = @import("vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 
 pub const Config = @import("application/config.zig").Config;
 

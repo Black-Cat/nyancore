@@ -8,6 +8,7 @@ const printVulkanError = @import("print_vulkan_error.zig").printVulkanError;
 const RenderPass = @import("render_pass.zig").RenderPass;
 const Pipeline = @import("pipeline.zig").Pipeline;
 const PipelineCache = @import("pipeline_cache.zig").PipelineCache;
+const PipelineLayout = @import("pipeline_layout.zig").PipelineLayout;
 const ShaderModule = @import("shader_module.zig").ShaderModule;
 
 pub const PipelineBuilder = struct {
@@ -22,7 +23,7 @@ pub const PipelineBuilder = struct {
     viewport_state: vk.PipelineViewportStateCreateInfo,
 
     pipeline_cache: *PipelineCache,
-    pipeline_layout: vk.PipelineLayout,
+    pipeline_layout: *PipelineLayout,
 
     pub fn build(self: *PipelineBuilder, render_pass: *RenderPass) Pipeline {
         const dynamic_enabled_states = [_]vk.DynamicState{ .viewport, .scissor };
@@ -33,7 +34,7 @@ pub const PipelineBuilder = struct {
         };
 
         const pipeline_create_info: vk.GraphicsPipelineCreateInfo = .{
-            .layout = self.pipeline_layout,
+            .layout = self.pipeline_layout.vk_ref,
             .render_pass = render_pass.vk_ref,
             .flags = .{},
             .base_pipeline_index = -1,

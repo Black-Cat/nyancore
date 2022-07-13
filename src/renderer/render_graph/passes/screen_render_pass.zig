@@ -16,6 +16,7 @@ const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").Shader
 const Pipeline = @import("../../../vulkan_wrapper/pipeline.zig").Pipeline;
 const PipelineBuilder = @import("../../../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
+const PipelineLayout = @import("../../../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
@@ -33,7 +34,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
         target: *TargetType,
 
         pipeline_cache: PipelineCache,
-        pipeline_layout: vk.PipelineLayout,
+        pipeline_layout: PipelineLayout,
         pipeline: Pipeline,
 
         vert_shader: ShaderModule,
@@ -104,7 +105,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             self.render_pass.destroy();
 
             self.pipeline.destroy();
-            vkfn.d.destroyPipelineLayout(vkctxt.device, self.pipeline_layout, null);
+            self.pipeline_layout.destroy();
             self.pipeline_cache.destroy();
 
             self.vert_shader.destroy();
@@ -166,7 +167,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
 
             vkfn.d.cmdPushConstants(
                 command_buffer.vk_ref,
-                self.pipeline_layout,
+                self.pipeline_layout.vk_ref,
                 .{ .vertex_bit = true },
                 0,
                 @sizeOf(VertPushConstBlock),
@@ -175,7 +176,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
 
             vkfn.d.cmdPushConstants(
                 command_buffer.vk_ref,
-                self.pipeline_layout,
+                self.pipeline_layout.vk_ref,
                 .{ .fragment_bit = true },
                 @sizeOf(VertPushConstBlock),
                 @intCast(u32, self.frag_push_const_size),
@@ -199,18 +200,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 },
             };
 
-            const pipeline_layout_create_info: vk.PipelineLayoutCreateInfo = .{
-                .set_layout_count = 0,
-                .p_set_layouts = undefined,
-                .push_constant_range_count = 2,
-                .p_push_constant_ranges = @ptrCast([*]const vk.PushConstantRange, &push_constant_range),
-                .flags = .{},
-            };
-
-            self.pipeline_layout = vkfn.d.createPipelineLayout(vkctxt.device, pipeline_layout_create_info, null) catch |err| {
-                printVulkanError("Can't create pipeline layout", err);
-                return;
-            };
+            self.pipeline_layout = PipelineLayout.create(&.{}, push_constant_range[0..]);
         }
 
         fn recreatePipeline(self: *SelfType) void {
@@ -245,7 +235,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 .viewport_state = PipelineBuilder.buildViewportState(),
 
                 .pipeline_cache = &self.pipeline_cache,
-                .pipeline_layout = self.pipeline_layout,
+                .pipeline_layout = &self.pipeline_layout,
             };
             self.pipeline = pipeline_builder.build(&self.render_pass);
         }
