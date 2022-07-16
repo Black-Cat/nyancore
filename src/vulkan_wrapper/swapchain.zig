@@ -66,7 +66,7 @@ pub const Swapchain = struct {
     }
 
     fn createSwapchain(self: *Swapchain, width: u32, height: u32) !void {
-        const swapchain_support: SwapchainSupportDetails = PhysicalDevice.getSwapchainSupport(vkctxt.physical_device.vk_reference) catch unreachable;
+        const swapchain_support: SwapchainSupportDetails = PhysicalDevice.getSwapchainSupport(vkctxt.physical_device.vk_ref) catch unreachable;
         defer vkctxt.allocator.free(swapchain_support.formats);
         defer vkctxt.allocator.free(swapchain_support.present_modes);
 

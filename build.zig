@@ -345,7 +345,7 @@ pub fn build(b: *Builder) void {
         mode,
         vulkan_validation,
         enable_tracing,
-        "Mesh Viewer",
+        "nyan_mesh_viewer",
         "src/main_mesh_viewer.zig",
         "run-mesh-viewer",
         "Run mesh viewer",

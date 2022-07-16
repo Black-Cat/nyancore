@@ -31,7 +31,7 @@ pub const PhysicalDevice = struct {
         present_mode_count: u32,
     };
 
-    vk_reference: vk.PhysicalDevice,
+    vk_ref: vk.PhysicalDevice,
     memory_properties: vk.PhysicalDeviceMemoryProperties,
     family_indices: QueueFamilyIndices,
 
@@ -56,7 +56,7 @@ pub const PhysicalDevice = struct {
         for (physical_devices) |device| {
             if (isDeviceSuitable(device)) {
                 const picked_device: PhysicalDevice = .{
-                    .vk_reference = device,
+                    .vk_ref = device,
                     .memory_properties = vkfn.i.getPhysicalDeviceMemoryProperties(device),
                     .family_indices = findQueueFamilyIndices(device) catch unreachable,
                 };

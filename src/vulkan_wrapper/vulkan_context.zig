@@ -102,6 +102,8 @@ pub var graphics_queue: vk.Queue = undefined;
 pub var present_queue: vk.Queue = undefined;
 pub var compute_queue: vk.Queue = undefined;
 
+pub var vma_allocator: c.VmaAllocator = undefined;
+
 pub fn init(a: Allocator, app: *Application) !void {
     // Workaround bug in amd driver, that reports zero vulkan capable gpu devices
     //https://github.com/KhronosGroup/Vulkan-Loader/issues/552
@@ -151,9 +153,32 @@ pub fn init(a: Allocator, app: *Application) !void {
     graphics_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.graphics_family, 0);
     present_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.present_family, 0);
     compute_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.compute_family, 0);
+
+    var vma_functions: c.VmaVulkanFunctions = std.mem.zeroes(c.VmaVulkanFunctions);
+    vma_functions.vkGetInstanceProcAddr = @ptrCast(*const fn (?*c.VkInstance_T, [*c]const u8) callconv(.C) ?fn () callconv(.C) void, &glfwGetInstanceProcAddress).*;
+    vma_functions.vkGetDeviceProcAddr = @ptrCast(*fn (?*c.VkDevice_T, [*c]const u8) callconv(.C) ?fn () callconv(.C) void, &vkfn.i.vkGetDeviceProcAddr).*;
+
+    const vma_allocator_info: c.VmaAllocatorCreateInfo = .{
+        // Bug in generated zig binding, all types are pointers =-=
+        .physicalDevice = @intToPtr(*c.VkPhysicalDevice_T, @bitCast(usize, physical_device.vk_ref)),
+        .device = @intToPtr(*c.VkDevice_T, @bitCast(usize, device)),
+        .instance = @intToPtr(*c.VkInstance_T, @bitCast(usize, instance)),
+        .pVulkanFunctions = &vma_functions,
+
+        .flags = 0,
+        .preferredLargeHeapBlockSize = 0,
+        .pAllocationCallbacks = null,
+        .pDeviceMemoryCallbacks = null,
+        .pHeapSizeLimit = null,
+        .vulkanApiVersion = 0,
+        .pTypeExternalMemoryHandleTypes = null,
+    };
+    _ = c.vmaCreateAllocator(&vma_allocator_info, &vma_allocator);
 }
 
 pub fn deinit() void {
+    c.vmaDestroyAllocator(vma_allocator.?);
+
     Device.destroy(device);
 
     if (nyancore_options.use_vulkan_sdk) {

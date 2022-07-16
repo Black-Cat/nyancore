@@ -7,6 +7,7 @@ const DefaultRenderer = @import("../../renderer/default_renderer.zig").DefaultRe
 const System = @import("../../system/system.zig").System;
 
 const ToolUI = @import("../tool_ui.zig").ToolUI;
+const DummyWindow = @import("../../ui/dummy_window.zig").DummyWindow;
 
 fn setDefaultSettings() void {
     var config: *Config = application.app.config;
@@ -24,6 +25,10 @@ pub fn main() !void {
     defer tool_ui.deinit();
 
     try rg.global_render_graph.passes.append(&tool_ui.ui.rg_pass);
+
+    var window: DummyWindow = undefined;
+    window.init("Window", allocator);
+    tool_ui.windows.append(&window.window) catch unreachable;
 
     const systems: []*System = &[_]*System{
         &renderer.system,

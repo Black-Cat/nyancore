@@ -4,6 +4,7 @@ const nyancore_options = @import("nyancore_options");
 pub const FncBase = struct {
     vkCreateInstance: vk.PfnCreateInstance,
     vkEnumerateInstanceLayerProperties: vk.PfnEnumerateInstanceLayerProperties,
+    vkGetInstanceProcAddr: vk.PfnGetInstanceProcAddr,
     usingnamespace vk.BaseWrapper(@This());
 };
 
