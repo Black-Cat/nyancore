@@ -331,3 +331,53 @@ pub fn addStaticLibrary(
 
     return nyancoreLib;
 }
+
+pub fn build(b: *Builder) void {
+    const target: std.zig.CrossTarget = b.standardTargetOptions(.{});
+    const mode: std.builtin.Mode = b.standardReleaseOptions();
+
+    const vulkan_validation: bool = b.option(bool, "vulkan-validation", "Use vulkan validation layer, useful for vulkan development. Needs Vulkan SDK") orelse false;
+    const enable_tracing: bool = b.option(bool, "enable-tracing", "Enable tracing with tracy v0.8") orelse false;
+
+    buildExe(
+        b,
+        target,
+        mode,
+        vulkan_validation,
+        enable_tracing,
+        "Mesh Viewer",
+        "src/main_mesh_viewer.zig",
+        "run-mesh-viewer",
+        "Run mesh viewer",
+    );
+}
+
+pub fn buildExe(
+    b: *Builder,
+    target: std.zig.CrossTarget,
+    mode: std.builtin.Mode,
+    vulkan_validation: bool,
+    enable_tracing: bool,
+    name: []const u8,
+    main_path: []const u8,
+    step_name: []const u8,
+    step_description: []const u8,
+) void {
+    var exe = b.addExecutable(name, main_path);
+
+    exe.setTarget(target);
+    exe.setBuildMode(mode);
+    exe.linkSystemLibrary("c");
+
+    var nyancoreLib = addStaticLibrary(b, exe, "./", vulkan_validation, enable_tracing, true);
+
+    exe.linkLibrary(nyancoreLib);
+    exe.step.dependOn(&nyancoreLib.step);
+
+    exe.install();
+
+    const run_target = b.step(step_name, step_description);
+    const run = exe.run();
+    run.step.dependOn(b.getInstallStep());
+    run_target.dependOn(&run.step);
+}
