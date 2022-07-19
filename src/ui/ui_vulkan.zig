@@ -26,6 +26,7 @@ const Pipeline = @import("../vulkan_wrapper/pipeline.zig").Pipeline;
 const PipelineBuilder = @import("../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 const PipelineCache = @import("../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 const PipelineLayout = @import("../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
+const Mesh = @import("../vulkan_wrapper/mesh.zig").Mesh;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -44,11 +45,7 @@ pub const UIVulkanContext = struct {
     frag_shader: ShaderModule,
     vert_shader: ShaderModule,
 
-    vertex_buffers: []Buffer,
-    index_buffers: []Buffer,
-
-    vertex_buffer_counts: []usize,
-    index_buffer_counts: []usize,
+    meshes: []Mesh,
 
     render_pass: RenderPass,
     pipeline_layout: PipelineLayout,
@@ -61,17 +58,10 @@ pub const UIVulkanContext = struct {
     }
     pub fn deinit(self: *UIVulkanContext) void {
         vkfn.d.deviceWaitIdle(vkctxt.device) catch return;
-        for (self.vertex_buffers) |*buffer|
-            if (buffer.buffer != .null_handle)
-                buffer.destroy();
-        vkctxt.allocator.free(self.vertex_buffers);
-        for (self.index_buffers) |*buffer|
-            if (buffer.buffer != .null_handle)
-                buffer.destroy();
-        vkctxt.allocator.free(self.index_buffers);
 
-        vkctxt.allocator.free(self.vertex_buffer_counts);
-        vkctxt.allocator.free(self.index_buffer_counts);
+        for (self.meshes) |*mesh|
+            mesh.destroy();
+        vkctxt.allocator.free(self.meshes);
 
         self.pipeline.destroy();
         self.pipeline_layout.destroy();
@@ -135,9 +125,7 @@ pub const UIVulkanContext = struct {
         if (draw_data.CmdListsCount == 0)
             return;
 
-        const offset: u64 = 0;
-        vkfn.d.cmdBindVertexBuffers(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffers[frame_index].buffer), @ptrCast([*]const u64, &offset));
-        vkfn.d.cmdBindIndexBuffer(command_buffer.vk_ref, self.index_buffers[frame_index].buffer, 0, .uint16);
+        self.meshes[frame_index].bind(command_buffer);
 
         const clip_off: c.ImVec2 = draw_data.DisplayPos;
         const clip_scale: c.ImVec2 = draw_data.FramebufferScale;
@@ -196,32 +184,15 @@ pub const UIVulkanContext = struct {
             return;
 
         // Update only if vertex or index count has changed
-        if (self.vertex_buffers[frame_index].buffer == .null_handle or self.vertex_buffer_counts[frame_index] < draw_data.TotalVtxCount) {
-            if (self.vertex_buffers[frame_index].buffer != .null_handle) {
-                vkfn.d.queueWaitIdle(vkctxt.present_queue) catch |err| {
-                    printVulkanError("Can't wait present queue", err);
-                };
-                self.vertex_buffers[frame_index].destroy();
-            }
+        const mesh: *Mesh = &self.meshes[frame_index];
+        if (mesh.vertex_buffer.allocation_info.size < vertex_buffer_size)
+            mesh.vertex_buffer.resize(vertex_buffer_size);
 
-            self.vertex_buffers[frame_index].init(vertex_buffer_size, .{ .vertex_buffer_bit = true }, .{ .host_visible_bit = true });
-            self.vertex_buffer_counts[frame_index] = @intCast(usize, draw_data.TotalVtxCount);
-        }
+        if (mesh.index_buffer.allocation_info.size < index_buffer_size)
+            mesh.index_buffer.resize(index_buffer_size);
 
-        if (self.index_buffers[frame_index].buffer == .null_handle or self.index_buffer_counts[frame_index] < draw_data.TotalIdxCount) {
-            if (self.index_buffers[frame_index].buffer != .null_handle) {
-                vkfn.d.queueWaitIdle(vkctxt.present_queue) catch |err| {
-                    printVulkanError("Can't wait present queue", err);
-                };
-                self.index_buffers[frame_index].destroy();
-            }
-
-            self.index_buffers[frame_index].init(index_buffer_size, .{ .index_buffer_bit = true }, .{ .host_visible_bit = true });
-            self.index_buffer_counts[frame_index] = @intCast(usize, draw_data.TotalIdxCount);
-        }
-
-        var vtx_dst: [*]c.ImDrawVert = @ptrCast([*]c.ImDrawVert, @alignCast(@alignOf(c.ImDrawVert), self.vertex_buffers[frame_index].mapped_memory));
-        var idx_dst: [*]c.ImDrawIdx = @ptrCast([*]c.ImDrawIdx, @alignCast(@alignOf(c.ImDrawIdx), self.index_buffers[frame_index].mapped_memory));
+        var vtx_dst: [*]c.ImDrawVert = @ptrCast([*]c.ImDrawVert, @alignCast(@alignOf(c.ImDrawVert), mesh.vertex_buffer.mapped_memory));
+        var idx_dst: [*]c.ImDrawIdx = @ptrCast([*]c.ImDrawIdx, @alignCast(@alignOf(c.ImDrawIdx), mesh.index_buffer.mapped_memory));
 
         var n: usize = 0;
         while (n < draw_data.CmdListsCount) : (n += 1) {
@@ -240,8 +211,8 @@ pub const UIVulkanContext = struct {
             idx_dst += @intCast(usize, cmd_list.IdxBuffer.Size);
         }
 
-        self.vertex_buffers[frame_index].flush();
-        self.index_buffers[frame_index].flush();
+        mesh.vertex_buffer.flushWhole();
+        mesh.index_buffer.flushWhole();
     }
 
     fn createRenderPass(self: *UIVulkanContext) void {
@@ -495,26 +466,10 @@ pub const UIVulkanContext = struct {
         self.createRenderPass();
         self.createGraphicsPipeline();
 
-        const buffer_count: u32 = rg.global_render_graph.final_swapchain.image_count;
+        const mesh_count: u32 = rg.global_render_graph.in_flight;
+        self.meshes = vkctxt.allocator.alloc(Mesh, mesh_count) catch unreachable;
 
-        self.vertex_buffers = vkctxt.allocator.alloc(Buffer, buffer_count) catch unreachable;
-        self.index_buffers = vkctxt.allocator.alloc(Buffer, buffer_count) catch unreachable;
-
-        self.vertex_buffer_counts = vkctxt.allocator.alloc(usize, buffer_count) catch unreachable;
-        self.index_buffer_counts = vkctxt.allocator.alloc(usize, buffer_count) catch unreachable;
-
-        for (self.vertex_buffers) |*buffer| {
-            buffer.* = undefined;
-            buffer.buffer = .null_handle;
-        }
-        for (self.index_buffers) |*buffer| {
-            buffer.* = undefined;
-            buffer.buffer = .null_handle;
-        }
-
-        for (self.vertex_buffer_counts) |*count|
-            count.* = 0;
-        for (self.index_buffer_counts) |*count|
-            count.* = 0;
+        for (self.meshes) |*mesh|
+            mesh.init(.sequential, @sizeOf(c.ImDrawVert), 1000, .uint16, 300);
     }
 };

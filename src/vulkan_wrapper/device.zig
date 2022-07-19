@@ -7,7 +7,6 @@ const vk = @import("../vk.zig");
 const vkctxt = @import("vulkan_context.zig");
 const vkfn = @import("vulkan_functions.zig");
 
-const printError = @import("../application/print_error.zig").printError;
 const printVulkanError = @import("print_vulkan_error.zig").printVulkanError;
 
 const PhysicalDevice = @import("physical_device.zig").PhysicalDevice;

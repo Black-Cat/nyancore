@@ -27,69 +27,6 @@ pub const validation_layers: [1][:0]const u8 = [_][:0]const u8{
     "VK_LAYER_KHRONOS_validation",
 };
 
-pub const Buffer = struct {
-    size: vk.DeviceSize,
-    buffer: vk.Buffer,
-    memory: vk.DeviceMemory,
-    mapped_memory: *anyopaque,
-
-    pub fn init(self: *Buffer, size: vk.DeviceSize, usage: vk.BufferUsageFlags, properties: vk.MemoryPropertyFlags) void {
-        const buffer_info: vk.BufferCreateInfo = .{
-            .size = size,
-            .usage = usage,
-            .sharing_mode = .exclusive,
-            .flags = .{},
-            .queue_family_index_count = 0,
-            .p_queue_family_indices = undefined,
-        };
-
-        self.buffer = vkfn.d.createBuffer(device, buffer_info, null) catch |err| {
-            printVulkanError("Can't create buffer for ui", err);
-            return;
-        };
-
-        var mem_req: vk.MemoryRequirements = vkfn.d.getBufferMemoryRequirements(device, self.buffer);
-
-        const alloc_info: vk.MemoryAllocateInfo = .{
-            .allocation_size = mem_req.size,
-            .memory_type_index = getMemoryType(mem_req.memory_type_bits, properties),
-        };
-
-        self.memory = vkfn.d.allocateMemory(device, alloc_info, null) catch |err| {
-            printVulkanError("Can't allocate buffer for ui", err);
-            return;
-        };
-
-        vkfn.d.bindBufferMemory(device, self.buffer, self.memory, 0) catch |err| {
-            printVulkanError("Can't bind buffer memory for ui", err);
-            return;
-        };
-
-        self.mapped_memory = vkfn.d.mapMemory(device, self.memory, 0, size, .{}) catch |err| {
-            printVulkanError("Can't map memory for ui", err);
-            return;
-        } orelse return;
-    }
-
-    pub fn flush(self: *Buffer) void {
-        const mapped_range: vk.MappedMemoryRange = .{
-            .memory = self.memory,
-            .offset = 0,
-            .size = vk.WHOLE_SIZE,
-        };
-
-        vkfn.d.flushMappedMemoryRanges(device, 1, @ptrCast([*]const vk.MappedMemoryRange, &mapped_range)) catch |err| {
-            printVulkanError("Can't flush buffer for ui", err);
-        };
-    }
-
-    pub fn destroy(self: *Buffer) void {
-        vkfn.d.unmapMemory(device, self.memory);
-        vkfn.d.destroyBuffer(device, self.buffer, null);
-        vkfn.d.freeMemory(device, self.memory, null);
-    }
-};
-
 pub var allocator: Allocator = undefined;
 pub var instance: vk.Instance = undefined;
 pub var physical_device: PhysicalDevice = undefined;
