@@ -76,6 +76,9 @@ pub const RenderGraph = struct {
         self.frame_index = 0;
         self.image_index = 0;
         self.needs_rebuilding = false;
+
+        // Swapchain is not initialized but we already know pointer
+        self.addResource(&self.final_swapchain, "Final Swapchain");
     }
 
     pub fn initVulkan(self: *RenderGraph, in_flight: u32) void {
@@ -136,7 +139,7 @@ pub const RenderGraph = struct {
     pub fn addResource(self: *RenderGraph, res: *anyopaque, name: []const u8) void {
         var rg_res: *RGResource = self.allocator.create(RGResource) catch unreachable;
         rg_res.init(name, self.allocator);
-        self.resources.put(res, rg_res);
+        self.resources.put(res, rg_res) catch unreachable;
     }
 
     pub fn getResource(self: *RenderGraph, res: *anyopaque) *RGResource {
@@ -196,15 +199,15 @@ pub const RenderGraph = struct {
         var visited: std.AutoHashMap(*RGPass, bool) = std.AutoHashMap(*RGPass, bool).init(self.allocator);
         defer visited.deinit();
 
-        queue_resources.append(&self.final_swapchain.rg_resource) catch unreachable;
+        const final_swapchain_res: *RGResource = self.getResource(&self.final_swapchain);
+        queue_resources.append(final_swapchain_res) catch unreachable;
 
         while (queue_resources.items.len > 0 or queue_passes.items.len > 0) {
             if (queue_resources.items.len > 0) {
                 const res: *RGResource = queue_resources.pop();
                 for (res.writers.items) |w| {
-                    if (visited.get(w) != null) {
+                    if (visited.get(w) != null)
                         continue;
-                    }
 
                     queue_passes.append(w) catch unreachable;
                     self.culled_passes.append(w) catch unreachable;

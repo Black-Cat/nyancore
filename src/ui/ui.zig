@@ -12,6 +12,8 @@ const DockSpace = @import("dockspace.zig").DockSpace;
 const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 const RGPass = @import("../renderer/render_graph/render_graph_pass.zig").RGPass;
+const RGResource = @import("../renderer/render_graph/render_graph_resource.zig").RGResource;
+
 const rg = @import("../renderer/render_graph/render_graph.zig");
 const RenderGraph = rg.RenderGraph;
 
@@ -124,12 +126,14 @@ pub const UI = struct {
 
     fn renderPassInit(rg_pass: *RGPass) void {
         const self: *UI = @fieldParentPtr(UI, "rg_pass", rg_pass);
-        self.rg_pass.appendWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
+        const res: *RGResource = rg.global_render_graph.getResource(&rg.global_render_graph.final_swapchain);
+        self.rg_pass.appendWriteResource(res);
     }
 
     fn renderPassDeinit(rg_pass: *RGPass) void {
         const self: *UI = @fieldParentPtr(UI, "rg_pass", rg_pass);
-        self.rg_pass.removeWriteResource(&rg.global_render_graph.final_swapchain.rg_resource);
+        const res: *RGResource = rg.global_render_graph.getResource(&rg.global_render_graph.final_swapchain);
+        self.rg_pass.removeWriteResource(res);
     }
 
     fn renderPassRender(rg_pass: *RGPass, command_buffer: *CommandBuffer, image_index: u32) void {

@@ -7,7 +7,7 @@ const DefaultRenderer = @import("../../renderer/default_renderer.zig").DefaultRe
 const System = @import("../../system/system.zig").System;
 
 const ToolUI = @import("../tool_ui.zig").ToolUI;
-const DummyWindow = @import("../../ui/dummy_window.zig").DummyWindow;
+const MeshViewerWindow = @import("mesh_viewer_window.zig").MeshViewerWindow;
 
 fn setDefaultSettings() void {
     var config: *Config = application.app.config;
@@ -24,11 +24,11 @@ pub fn main() !void {
     tool_ui.init(allocator);
     defer tool_ui.deinit();
 
-    try rg.global_render_graph.passes.append(&tool_ui.ui.rg_pass);
-
-    var window: DummyWindow = undefined;
-    window.init("Window", allocator);
+    var window: MeshViewerWindow = undefined;
+    window.init("Mesh Viewer", allocator, &tool_ui.ui.rg_pass);
     tool_ui.windows.append(&window.window) catch unreachable;
+
+    try rg.global_render_graph.passes.append(&tool_ui.ui.rg_pass);
 
     const systems: []*System = &[_]*System{
         &renderer.system,

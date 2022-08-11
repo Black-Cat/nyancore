@@ -44,12 +44,10 @@ pub const DefaultRenderer = struct {
 
         rg.global_render_graph.init(self.allocator);
 
-        rg.global_render_graph.final_swapchain.rg_resource.init("Final Swapchain", self.allocator);
+        @import("../vulkan_wrapper/shader_module.zig").initShaderCompilation();
     }
 
     fn systemInit(system: *System, app: *Application) void {
-        @import("../vulkan_wrapper/shader_module.zig").initShaderCompilation();
-
         const self: *DefaultRenderer = @fieldParentPtr(DefaultRenderer, "system", system);
 
         self.app = app;
@@ -67,6 +65,7 @@ pub const DefaultRenderer = struct {
             frames_in_flight,
             vsync,
         ) catch @panic("Error during swapchain creation");
+        rg.global_render_graph.addResource(&rg.global_render_graph.final_swapchain, "Final Swapchain");
 
         rg.global_render_graph.initVulkan(frames_in_flight);
 

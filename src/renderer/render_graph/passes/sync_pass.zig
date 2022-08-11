@@ -1,11 +1,12 @@
 const vk = @import("../../../vk.zig");
 const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
+const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
 
 const Allocator = @import("std").mem.Allocator;
 const RGPass = @import("../render_graph_pass.zig").RGPass;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 const SyncPoint = @import("../resources/sync_point.zig").SyncPoint;
-const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig");
+const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 pub const SyncPass = struct {
     rg_pass: RGPass,
@@ -38,7 +39,7 @@ pub const SyncPass = struct {
     fn passRender(render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void {
         _ = frame_index;
 
-        vkctxt.vkd.cmdPipelineBarrier(
+        vkfn.d.cmdPipelineBarrier(
             command_buffer.vk_ref,
             render_pass.pipeline_start,
             render_pass.pipeline_end,

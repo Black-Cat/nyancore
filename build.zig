@@ -10,6 +10,7 @@ pub fn addStaticLibrary(
     comptime path: []const u8,
     use_vulkan_sdk: bool,
     enable_tracing: bool,
+    panic_on_all_errors: bool,
     compile_glfw: bool,
 ) *std.build.LibExeObjStep {
     const os_tag = if (app.target.os_tag != null) app.target.os_tag.? else builtin.os.tag;
@@ -21,6 +22,7 @@ pub fn addStaticLibrary(
     const nyancore_options = b.addOptions();
     nyancore_options.addOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
     nyancore_options.addOption(bool, "enable_tracing", enable_tracing);
+    nyancore_options.addOption(bool, "panic_on_all_errors", panic_on_all_errors);
     nyancore_options.addOption(bool, "compile_glfw", compile_glfw);
     nyancoreLib.addOptions("nyancore_options", nyancore_options);
     app.addOptions("nyancore_options", nyancore_options);
@@ -338,6 +340,7 @@ pub fn build(b: *Builder) void {
 
     const vulkan_validation: bool = b.option(bool, "vulkan-validation", "Use vulkan validation layer, useful for vulkan development. Needs Vulkan SDK") orelse false;
     const enable_tracing: bool = b.option(bool, "enable-tracing", "Enable tracing with tracy v0.8") orelse false;
+    const panic_on_all_errors: bool = b.option(bool, "panic-on-all-errors", "Panic on non critical errors") orelse false;
 
     buildExe(
         b,
@@ -345,6 +348,7 @@ pub fn build(b: *Builder) void {
         mode,
         vulkan_validation,
         enable_tracing,
+        panic_on_all_errors,
         "nyan_mesh_viewer",
         "src/main_mesh_viewer.zig",
         "run-mesh-viewer",
@@ -358,6 +362,7 @@ pub fn buildExe(
     mode: std.builtin.Mode,
     vulkan_validation: bool,
     enable_tracing: bool,
+    panic_on_all_errors: bool,
     name: []const u8,
     main_path: []const u8,
     step_name: []const u8,
@@ -369,7 +374,7 @@ pub fn buildExe(
     exe.setBuildMode(mode);
     exe.linkSystemLibrary("c");
 
-    var nyancoreLib = addStaticLibrary(b, exe, "./", vulkan_validation, enable_tracing, true);
+    var nyancoreLib = addStaticLibrary(b, exe, "./", vulkan_validation, enable_tracing, panic_on_all_errors, true);
 
     exe.linkLibrary(nyancoreLib);
     exe.step.dependOn(&nyancoreLib.step);

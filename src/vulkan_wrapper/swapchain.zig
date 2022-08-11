@@ -7,14 +7,11 @@ const vkfn = @import("vulkan_functions.zig");
 const printError = @import("../application/print_error.zig").printError;
 const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
-const RGResource = @import("../renderer/render_graph/render_graph_resource.zig").RGResource;
 const PhysicalDevice = @import("physical_device.zig").PhysicalDevice;
 const SwapchainSupportDetails = PhysicalDevice.SwapchainSupportDetails;
 const Framebuffer = @import("framebuffer.zig").Framebuffer;
 
 pub const Swapchain = struct {
-    rg_resource: RGResource,
-
     swapchain: vk.SwapchainKHR,
 
     vsync: bool,
