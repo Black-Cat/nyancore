@@ -10,6 +10,7 @@ const vkfn = @import("../../../vulkan_wrapper/vulkan_functions.zig");
 const RGPass = @import("../render_graph_pass.zig").RGPass;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 
+const Camera = @import("../../../tools/mesh_viewer/camera.zig").Camera;
 const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 const Mesh = @import("../../../vulkan_wrapper/mesh.zig").Mesh;
 const Pipeline = @import("../../../vulkan_wrapper/pipeline.zig").Pipeline;
@@ -43,12 +44,14 @@ pub fn MeshPass(comptime TargetType: type) type {
 
         mesh: Mesh,
         model: ?*Model,
+        camera: *Camera,
 
         // Accepts *ViewportTexture or *Swapchain as target
         pub fn init(
             self: *SelfType,
             comptime name: []const u8,
             target: *TargetType,
+            camera: *Camera,
         ) void {
             const res: *RGResource = rg.global_render_graph.getResource(target);
 
@@ -57,6 +60,7 @@ pub fn MeshPass(comptime TargetType: type) type {
 
             self.target = target;
             self.model = null;
+            self.camera = camera;
 
             self.rg_pass.pipeline_start = .{ .vertex_input_bit = true };
             self.rg_pass.pipeline_end = .{ .color_attachment_output_bit = true };
@@ -155,7 +159,10 @@ pub fn MeshPass(comptime TargetType: type) type {
             vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
 
             var push_const_block: VertPushConstBlock = .{
-                .mvp = nm.Mat4x4.identity(),
+                .mvp = nm.Mat4x4.mul(
+                    self.camera.projectionFn(self.camera, nm.rad(60.0), viewport_info.width / viewport_info.height, 0.0001, 100.0),
+                    self.camera.viewMatrix(),
+                ),
             };
 
             vkfn.d.cmdPushConstants(

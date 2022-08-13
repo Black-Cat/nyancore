@@ -1,12 +1,17 @@
-const c = @import("../../c.zig");
 const std = @import("std");
+
+const c = @import("../../c.zig");
 const rg = @import("../../renderer/render_graph/render_graph.zig");
+const nm = @import("../../math/math.zig");
 
 const glb = @import("../../model/glb.zig");
 
 const Allocator = std.mem.Allocator;
 const Widget = @import("../../ui/widget.zig").Widget;
 const Window = @import("../../ui/window.zig").Window;
+
+const ArcballCameraController = @import("arcball_camera_controller.zig").ArcballCameraController;
+const Camera = @import("camera.zig").Camera;
 
 const Model = @import("../../model/model.zig").Model;
 const MeshPass = @import("../../renderer/render_graph/passes/mesh_pass.zig").MeshPass;
@@ -26,6 +31,9 @@ pub const MeshViewerWindow = struct {
     pass: MeshPass(Swapchain),
     ui_sync_pass: SyncPass,
 
+    camera: Camera,
+    camera_controller: ArcballCameraController,
+
     pub fn init(self: *MeshViewerWindow, name: []const u8, allocator: Allocator, ui_pass: *RGPass) void {
         self.allocator = allocator;
         self.window = .{
@@ -38,7 +46,7 @@ pub const MeshViewerWindow = struct {
             .strId = allocator.dupeZ(u8, name) catch unreachable,
         };
 
-        self.pass.init("Test Mesh Pass", &rg.global_render_graph.final_swapchain);
+        self.pass.init("Test Mesh Pass", &rg.global_render_graph.final_swapchain, &self.camera);
         self.pass.rg_pass.initial_layout = .@"undefined";
         self.pass.rg_pass.final_layout = .color_attachment_optimal;
         self.pass.rg_pass.load_op = .clear;
@@ -52,6 +60,12 @@ pub const MeshViewerWindow = struct {
         ui_pass.appendReadResource(&self.ui_sync_pass.output_sync_point.rg_resource);
 
         rg.global_render_graph.needs_rebuilding = true;
+
+        self.camera.target = nm.Vec3.zeros();
+        self.camera.position = .{ 0.0, 0.0, -10.0 };
+        self.camera.up = .{ 0.0, 1.0, 0.0 };
+        self.camera.setProjection(.perspective);
+        self.camera_controller = .{ .camera = &self.camera };
     }
 
     pub fn deinit(self: *MeshViewerWindow) void {
@@ -87,6 +101,8 @@ pub const MeshViewerWindow = struct {
         self.drawImportModelPopup();
 
         c.igEnd();
+
+        self.camera_controller.handleInput();
     }
 
     fn drawImportModelPopup(self: *MeshViewerWindow) void {
