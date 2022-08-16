@@ -6,6 +6,8 @@ const nm = @import("../../math/math.zig");
 
 const glb = @import("../../model/glb.zig");
 
+const asset = @import("../../application/asset.zig");
+
 const Allocator = std.mem.Allocator;
 const Widget = @import("../../ui/widget.zig").Widget;
 const Window = @import("../../ui/window.zig").Window;
@@ -98,26 +100,38 @@ pub const MeshViewerWindow = struct {
             c.igOpenPopup("Import Model", c.ImGuiPopupFlags_None);
         }
 
-        self.drawImportModelPopup();
+        if (c.igButton("Save Asset", .{ .x = 0, .y = 0 })) {
+            self.cleanSelectedPath();
+            c.igOpenPopup("Save Asset", c.ImGuiPopupFlags_None);
+        }
+
+        if (c.igButton("Load Asset", .{ .x = 0, .y = 0 })) {
+            self.cleanSelectedPath();
+            c.igOpenPopup("Load Asset", c.ImGuiPopupFlags_None);
+        }
+
+        self.drawPopup("Import Model", "Import", importModel);
+        self.drawPopup("Save Asset", "Save", saveAsset);
+        self.drawPopup("Load Asset", "Load", loadAsset);
 
         c.igEnd();
 
         self.camera_controller.handleInput();
     }
 
-    fn drawImportModelPopup(self: *MeshViewerWindow) void {
+    fn drawPopup(self: *MeshViewerWindow, comptime name: [*c]const u8, comptime action_name: [*c]const u8, callback: fn (self: *MeshViewerWindow) void) void {
         var open_modal: bool = true;
 
-        if (!c.igBeginPopupModal("Import Model", &open_modal, c.ImGuiWindowFlags_None))
+        if (!c.igBeginPopupModal(name, &open_modal, c.ImGuiWindowFlags_None))
             return;
 
         if (c.igInputText("Path", @ptrCast([*c]u8, &self.selected_file_path), MAX_FILE_PATH_LEN, c.ImGuiInputTextFlags_EnterReturnsTrue, null, null)) {
-            self.importModel();
+            callback(self);
             c.igCloseCurrentPopup();
         }
 
-        if (c.igButton("Import", .{ .x = 0, .y = 0 })) {
-            self.importModel();
+        if (c.igButton(action_name, .{ .x = 0, .y = 0 })) {
+            callback(self);
             c.igCloseCurrentPopup();
         }
 
@@ -139,6 +153,37 @@ pub const MeshViewerWindow = struct {
 
         _ = glb.check_header(reader) catch return;
         self.model = glb.parse(reader, self.allocator) catch return;
+        self.pass.setModel(&self.model);
+    }
+
+    fn saveAsset(self: *MeshViewerWindow) void {
+        const path: []const u8 = std.mem.sliceTo(&self.selected_file_path, 0);
+
+        const cwd: std.fs.Dir = std.fs.cwd();
+        const file: std.fs.File = cwd.createFile(path, .{ .read = true, .truncate = true }) catch return;
+        defer file.close();
+
+        const writer = file.writer();
+
+        var map: asset.AssetMap = self.model.generateAssetMap(self.allocator);
+        defer Model.deinitAssetMap(&map);
+
+        asset.serializeAsset(writer, "model", map) catch return;
+    }
+
+    fn loadAsset(self: *MeshViewerWindow) void {
+        const path: []const u8 = std.mem.sliceTo(&self.selected_file_path, 0);
+
+        const cwd: std.fs.Dir = std.fs.cwd();
+        const file: std.fs.File = cwd.openFile(path, .{ .read = true }) catch return;
+        defer file.close();
+
+        const reader = file.reader();
+
+        var map: asset.AssetMap = asset.deserializeAsset(reader, self.allocator) catch return;
+        defer Model.deinitAssetMap(&map);
+
+        self.model = Model.createFromAssetMap(&map, self.allocator);
         self.pass.setModel(&self.model);
     }
 };

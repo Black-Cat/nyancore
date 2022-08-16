@@ -3,6 +3,8 @@ const std = @import("std");
 const nm = @import("../math/math.zig");
 const vk = @import("../vk.zig");
 
+const AssetMap = @import("../application/asset.zig").AssetMap;
+
 pub const Model = struct {
     allocator: std.mem.Allocator,
 
@@ -53,5 +55,48 @@ pub const Model = struct {
             }) catch unreachable;
 
         return attributes.toOwnedSlice();
+    }
+
+    pub fn generateAssetMap(self: *Model, allocator: std.mem.Allocator) AssetMap {
+        var map: AssetMap = AssetMap.init(allocator);
+
+        map.put("name", allocator.dupe(u8, self.name) catch unreachable) catch unreachable;
+
+        if (self.indices) |buf|
+            map.put("indices", std.mem.sliceAsBytes(buf)) catch unreachable;
+
+        if (self.positions) |buf|
+            map.put("positions", std.mem.sliceAsBytes(buf)) catch unreachable;
+
+        if (self.normals) |buf|
+            map.put("normals", std.mem.sliceAsBytes(buf)) catch unreachable;
+
+        if (self.colors) |buf|
+            map.put("colors", std.mem.sliceAsBytes(buf)) catch unreachable;
+
+        return map;
+    }
+
+    pub fn deinitAssetMap(map: *AssetMap) void {
+        map.allocator.free(map.get("name") orelse unreachable);
+        map.deinit();
+    }
+
+    pub fn createFromAssetMap(map: *AssetMap, allocator: std.mem.Allocator) Model {
+        var model: Model = .{ .allocator = allocator };
+
+        model.name = allocator.dupe(u8, map.get("name") orelse unreachable) catch unreachable;
+
+        if (map.contains("indices"))
+            model.indices = std.mem.bytesAsSlice(u32, @alignCast(@alignOf(u32), map.get("indices") orelse unreachable));
+
+        if (map.contains("positions"))
+            model.positions = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("positions") orelse unreachable));
+        if (map.contains("normals"))
+            model.normals = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("normals") orelse unreachable));
+        if (map.contains("colors"))
+            model.colors = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("colors") orelse unreachable));
+
+        return model;
     }
 };
