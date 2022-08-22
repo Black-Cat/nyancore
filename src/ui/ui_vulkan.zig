@@ -185,14 +185,14 @@ pub const UIVulkanContext = struct {
 
         // Update only if vertex or index count has changed
         const mesh: *Mesh = &self.meshes[frame_index];
-        if (mesh.vertex_buffer.allocation_info.size < vertex_buffer_size)
+        if (mesh.vertex_buffer.allocation.allocation_info.size < vertex_buffer_size)
             mesh.vertex_buffer.resize(vertex_buffer_size);
 
-        if (mesh.index_buffer.allocation_info.size < index_buffer_size)
+        if (mesh.index_buffer.allocation.allocation_info.size < index_buffer_size)
             mesh.index_buffer.resize(index_buffer_size);
 
-        var vtx_dst: [*]c.ImDrawVert = @ptrCast([*]c.ImDrawVert, @alignCast(@alignOf(c.ImDrawVert), mesh.vertex_buffer.mapped_memory));
-        var idx_dst: [*]c.ImDrawIdx = @ptrCast([*]c.ImDrawIdx, @alignCast(@alignOf(c.ImDrawIdx), mesh.index_buffer.mapped_memory));
+        var vtx_dst: [*]c.ImDrawVert = @ptrCast([*]c.ImDrawVert, @alignCast(@alignOf(c.ImDrawVert), mesh.vertex_buffer.allocation.mapped_memory));
+        var idx_dst: [*]c.ImDrawIdx = @ptrCast([*]c.ImDrawIdx, @alignCast(@alignOf(c.ImDrawIdx), mesh.index_buffer.allocation.mapped_memory));
 
         var n: usize = 0;
         while (n < draw_data.CmdListsCount) : (n += 1) {
@@ -228,7 +228,13 @@ pub const UIVulkanContext = struct {
             .flags = .{},
         }};
 
-        self.render_pass.init(&rg.global_render_graph.final_swapchain, color_attachment[0..]);
+        self.render_pass.init(&rg.global_render_graph.final_swapchain, &.{}, color_attachment[0..]);
+        self.render_pass.target_recreated_callback = targetRecreatedCallback;
+    }
+
+    fn targetRecreatedCallback(render_pass: *RenderPass) void {
+        const self: *UIVulkanContext = @fieldParentPtr(UIVulkanContext, "render_pass", render_pass);
+        self.render_pass.recreateFramebuffers(&rg.global_render_graph.final_swapchain, &.{});
     }
 
     fn createGraphicsPipeline(self: *UIVulkanContext) void {
@@ -289,7 +295,7 @@ pub const UIVulkanContext = struct {
             .color_blend_attachment = color_blend_attachments[0],
             .color_blend_state = PipelineBuilder.buildColorBlendState(color_blend_attachments[0..]),
             .multisample_state = PipelineBuilder.buildMultisampleStateCreateInfo(),
-            .depth_stencil_state = PipelineBuilder.buildDepthStencilState(),
+            .depth_stencil_state = PipelineBuilder.buildDepthStencilState(false, false, .always),
             .viewport_state = PipelineBuilder.buildViewportState(),
 
             .pipeline_cache = &self.pipeline_cache,

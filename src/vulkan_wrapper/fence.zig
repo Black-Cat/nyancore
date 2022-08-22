@@ -30,7 +30,7 @@ pub const Fence = struct {
         vkfn.d.destroyFence(vkctxt.device, self.vk_ref, null);
     }
 
-    pub fn waitFor(self: *Fence) void {
+    pub fn waitFor(self: *const Fence) void {
         _ = vkfn.d.waitForFences(vkctxt.device, 1, @ptrCast([*]const vk.Fence, &self.vk_ref), vk.TRUE, std.math.maxInt(u64)) catch |err| {
             printVulkanError("Error waiting for fence", err);
             unreachable;

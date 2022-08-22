@@ -29,4 +29,8 @@ pub const CommandPool = struct {
     pub fn destroy(self: *CommandPool) void {
         vkfn.d.destroyCommandPool(vkctxt.device, self.vk_ref, null);
     }
+
+    pub fn reset(self: *CommandPool) void {
+        _ = vkfn.d.vkResetCommandPool(vkctxt.device, self.vk_ref, 0);
+    }
 };

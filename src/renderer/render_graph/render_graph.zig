@@ -25,8 +25,8 @@ pub var global_render_graph: RenderGraph = undefined;
 
 pub const RenderGraph = struct {
     pub const ResourceChangeFn = struct {
-        res: *RGResource,
-        change_fn: fn (res: *RGResource) void,
+        res: *anyopaque,
+        change_fn: fn (res: *anyopaque) void,
     };
 
     allocator: std.mem.Allocator,
@@ -151,7 +151,7 @@ pub const RenderGraph = struct {
         _ = tex;
     }
 
-    pub fn changeResourceBetweenFrames(self: *RenderGraph, res: *RGResource, change_fn: fn (res: *RGResource) void) void {
+    pub fn changeResourceBetweenFrames(self: *RenderGraph, res: *anyopaque, change_fn: fn (res: *anyopaque) void) void {
         const fn_cxt: ResourceChangeFn = .{
             .res = res,
             .change_fn = change_fn,
@@ -159,21 +159,13 @@ pub const RenderGraph = struct {
         self.resource_changes.append(fn_cxt) catch unreachable;
     }
 
+    pub fn hasResourceChanges(self: *RenderGraph) bool {
+        return self.resource_changes.items.len == 0;
+    }
+
     pub fn executeResourceChanges(self: *RenderGraph) void {
-        if (self.resource_changes.items.len == 0)
-            return;
-
-        vkfn.d.deviceWaitIdle(vkctxt.device) catch |err| {
-            printVulkanError("Can't wait for device idle in order to change resources", err);
-            return;
-        };
-
         for (self.resource_changes.items) |ctx|
             ctx.change_fn(ctx.res);
-
-        for (self.resource_changes.items) |ctx|
-            for (ctx.res.on_change_callbacks.items) |cb|
-                cb.callback(cb.pass);
 
         self.resource_changes.clearRetainingCapacity();
     }

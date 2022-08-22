@@ -3,6 +3,7 @@ const std = @import("std");
 const c = @import("../../c.zig");
 const rg = @import("../../renderer/render_graph/render_graph.zig");
 const nm = @import("../../math/math.zig");
+const vk = @import("../../vk.zig");
 
 const glb = @import("../../model/glb.zig");
 
@@ -21,6 +22,8 @@ const Swapchain = @import("../../vulkan_wrapper/swapchain.zig").Swapchain;
 const SyncPass = @import("../../renderer/render_graph/passes/sync_pass.zig").SyncPass;
 const RGPass = @import("../../renderer/render_graph/render_graph_pass.zig").RGPass;
 
+const ImageWithView = @import("../../renderer/render_graph/resources/image_with_view.zig").ImageWithView;
+
 pub const MeshViewerWindow = struct {
     const MAX_FILE_PATH_LEN = 256;
 
@@ -31,13 +34,17 @@ pub const MeshViewerWindow = struct {
 
     model: Model,
     pass: MeshPass(Swapchain),
+    depth_buffer: ImageWithView,
     ui_sync_pass: SyncPass,
+    ui_pass: *RGPass,
 
     camera: Camera,
     camera_controller: ArcballCameraController,
 
     pub fn init(self: *MeshViewerWindow, name: []const u8, allocator: Allocator, ui_pass: *RGPass) void {
         self.allocator = allocator;
+        self.ui_pass = ui_pass;
+
         self.window = .{
             .widget = .{
                 .init = windowInit,
@@ -48,7 +55,33 @@ pub const MeshViewerWindow = struct {
             .strId = allocator.dupeZ(u8, name) catch unreachable,
         };
 
-        self.pass.init("Test Mesh Pass", &rg.global_render_graph.final_swapchain, &self.camera);
+        self.camera.target = nm.Vec3.zeros();
+        self.camera.position = .{ 0.0, 0.0, -10.0 };
+        self.camera.up = .{ 0.0, 1.0, 0.0 };
+        self.camera.setProjection(.perspective);
+        self.camera_controller = .{ .camera = &self.camera };
+    }
+
+    pub fn deinit(self: *MeshViewerWindow) void {
+        self.depth_buffer.deinit();
+        self.pass.deinit();
+
+        self.allocator.free(self.window.strId);
+    }
+
+    fn windowInit(widget: *Widget) void {
+        const window: *Window = @fieldParentPtr(Window, "widget", widget);
+        const self: *MeshViewerWindow = @fieldParentPtr(MeshViewerWindow, "window", window);
+
+        const extent: vk.Extent3D = .{
+            .width = rg.global_render_graph.final_swapchain.image_extent.width,
+            .height = rg.global_render_graph.final_swapchain.image_extent.height,
+            .depth = 1.0,
+        };
+        self.depth_buffer.init(extent, .d32_sfloat, .{ .depth_stencil_attachment_bit = true });
+        rg.global_render_graph.addResource(&self.depth_buffer, "Depth Buffer");
+
+        self.pass.init("Test Mesh Pass", &rg.global_render_graph.final_swapchain, &self.depth_buffer, &self.camera);
         self.pass.rg_pass.initial_layout = .@"undefined";
         self.pass.rg_pass.final_layout = .color_attachment_optimal;
         self.pass.rg_pass.load_op = .clear;
@@ -59,23 +92,9 @@ pub const MeshViewerWindow = struct {
         rg.global_render_graph.sync_passes.append(&self.ui_sync_pass) catch unreachable;
 
         self.pass.rg_pass.appendWriteResource(&self.ui_sync_pass.input_sync_point.rg_resource);
-        ui_pass.appendReadResource(&self.ui_sync_pass.output_sync_point.rg_resource);
+        self.ui_pass.appendReadResource(&self.ui_sync_pass.output_sync_point.rg_resource);
 
         rg.global_render_graph.needs_rebuilding = true;
-
-        self.camera.target = nm.Vec3.zeros();
-        self.camera.position = .{ 0.0, 0.0, -10.0 };
-        self.camera.up = .{ 0.0, 1.0, 0.0 };
-        self.camera.setProjection(.perspective);
-        self.camera_controller = .{ .camera = &self.camera };
-    }
-
-    pub fn deinit(self: *MeshViewerWindow) void {
-        self.allocator.free(self.window.strId);
-    }
-
-    fn windowInit(widget: *Widget) void {
-        _ = widget;
     }
 
     fn windowDeinit(widget: *Widget) void {

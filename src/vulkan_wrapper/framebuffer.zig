@@ -9,29 +9,49 @@ const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").pri
 const RenderPass = @import("render_pass.zig").RenderPass;
 const Swapchain = @import("swapchain.zig").Swapchain;
 const ViewportTexture = @import("../renderer/render_graph/resources/viewport_texture.zig").ViewportTexture;
+const ImageView = @import("image_view.zig").ImageView;
 
 pub const Framebuffer = struct {
     vk_ref: vk.Framebuffer,
     render_pass: *RenderPass,
 
-    pub fn create(render_pass: *RenderPass, target: anytype) []Framebuffer {
+    pub fn create(render_pass: *RenderPass, target: anytype, image_views: []ImageView) []Framebuffer {
+        var vk_image_views: []vk.ImageView = vkctxt.allocator.alloc(vk.ImageView, image_views.len) catch unreachable;
+        defer vkctxt.allocator.free(vk_image_views);
+
+        for (vk_image_views) |*iv, ind|
+            iv.* = image_views[ind].vk_ref;
+
         switch (@TypeOf(target)) {
-            *Swapchain => return createFromSwapchain(render_pass, target),
-            *ViewportTexture => return createFromViewportTexture(render_pass, target),
+            *Swapchain => return createFromSwapchain(render_pass, target, vk_image_views),
+            *ViewportTexture => return createFromViewportTexture(render_pass, target, vk_image_views),
             else => @compileError("Unsupported target for frame buffer: " ++ @typeName(@TypeOf(target))),
         }
         unreachable;
     }
 
-    pub fn createFromParams(render_pass: *RenderPass, count: usize, width: u32, height: u32, image_views: []vk.ImageView) []Framebuffer {
+    pub fn createFromParams(
+        render_pass: *RenderPass,
+        count: usize,
+        width: u32,
+        height: u32,
+        target_image_views: []vk.ImageView,
+        image_views: []vk.ImageView,
+    ) []Framebuffer {
         var framebuffers: []Framebuffer = vkctxt.allocator.alloc(Framebuffer, count) catch unreachable;
 
-        for (framebuffers) |*framebuffer, i| {
+        var frame_image_views: []vk.ImageView = vkctxt.allocator.alloc(vk.ImageView, image_views.len + 1) catch unreachable;
+        defer vkctxt.allocator.free(frame_image_views);
+        std.mem.copy(vk.ImageView, frame_image_views[1..], image_views);
+
+        for (framebuffers) |*framebuffer, ind| {
+            frame_image_views[0] = target_image_views[ind];
+
             const create_info: vk.FramebufferCreateInfo = .{
                 .flags = .{},
                 .render_pass = render_pass.vk_ref,
-                .attachment_count = 1,
-                .p_attachments = @ptrCast([*]const vk.ImageView, &image_views[i]),
+                .attachment_count = @intCast(u32, frame_image_views.len),
+                .p_attachments = @ptrCast([*]const vk.ImageView, frame_image_views.ptr),
                 .width = width,
                 .height = height,
                 .layers = 1,
@@ -47,18 +67,32 @@ pub const Framebuffer = struct {
         return framebuffers;
     }
 
-    pub fn createFromSwapchain(render_pass: *RenderPass, swapchain: *Swapchain) []Framebuffer {
-        return createFromParams(render_pass, swapchain.image_count, swapchain.image_extent.width, swapchain.image_extent.height, swapchain.image_views);
+    pub fn createFromSwapchain(render_pass: *RenderPass, swapchain: *Swapchain, image_views: []vk.ImageView) []Framebuffer {
+        return createFromParams(
+            render_pass,
+            swapchain.image_count,
+            swapchain.image_extent.width,
+            swapchain.image_extent.height,
+            swapchain.image_views,
+            image_views,
+        );
     }
 
-    pub fn createFromViewportTexture(render_pass: *RenderPass, viewport_texture: *ViewportTexture) []Framebuffer {
-        var image_views: []vk.ImageView = vkctxt.allocator.alloc(vk.ImageView, viewport_texture.textures.len) catch unreachable;
-        defer vkctxt.allocator.free(image_views);
+    pub fn createFromViewportTexture(render_pass: *RenderPass, viewport_texture: *ViewportTexture, image_views: []vk.ImageView) []Framebuffer {
+        var target_image_views: []vk.ImageView = vkctxt.allocator.alloc(vk.ImageView, viewport_texture.textures.len) catch unreachable;
+        defer vkctxt.allocator.free(target_image_views);
 
-        for (image_views) |*iv, ind|
+        for (target_image_views) |*iv, ind|
             iv.* = viewport_texture.textures[ind].view;
 
-        return createFromParams(render_pass, viewport_texture.textures.len, viewport_texture.extent.width, viewport_texture.extent.height, image_views);
+        return createFromParams(
+            render_pass,
+            viewport_texture.textures.len,
+            viewport_texture.extent.width,
+            viewport_texture.extent.height,
+            target_image_views,
+            image_views,
+        );
     }
 
     pub fn destroy(self: *Framebuffer) void {
@@ -71,9 +105,9 @@ pub const Framebuffer = struct {
         vkctxt.allocator.free(framebuffers);
     }
 
-    pub fn recreateFramebuffers(framebuffers: *[]Framebuffer, target: anytype) void {
+    pub fn recreateFramebuffers(framebuffers: *[]Framebuffer, target: anytype, image_views: []ImageView) void {
         const rp: *RenderPass = framebuffers.*[0].render_pass;
         destroyFramebuffers(framebuffers.*);
-        framebuffers.* = create(rp, target);
+        framebuffers.* = create(rp, target, image_views);
     }
 };

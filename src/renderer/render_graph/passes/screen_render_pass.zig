@@ -231,7 +231,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 .color_blend_attachment = color_blend_attachments[0],
                 .color_blend_state = PipelineBuilder.buildColorBlendState(color_blend_attachments[0..]),
                 .multisample_state = PipelineBuilder.buildMultisampleStateCreateInfo(),
-                .depth_stencil_state = PipelineBuilder.buildDepthStencilState(),
+                .depth_stencil_state = PipelineBuilder.buildDepthStencilState(false, false, .always),
                 .viewport_state = PipelineBuilder.buildViewportState(),
 
                 .pipeline_cache = &self.pipeline_cache,

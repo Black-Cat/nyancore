@@ -118,6 +118,7 @@ pub const DeviceDispatch = struct {
     vkQueueSubmit: vk.PfnQueueSubmit,
     vkQueueWaitIdle: vk.PfnQueueWaitIdle,
     vkResetCommandBuffer: vk.PfnResetCommandBuffer,
+    vkResetCommandPool: vk.PfnResetCommandPool,
     vkResetFences: vk.PfnResetFences,
     vkUnmapMemory: vk.PfnUnmapMemory,
     vkUpdateDescriptorSets: vk.PfnUpdateDescriptorSets,

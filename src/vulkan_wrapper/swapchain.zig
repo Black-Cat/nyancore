@@ -9,7 +9,7 @@ const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").pri
 
 const PhysicalDevice = @import("physical_device.zig").PhysicalDevice;
 const SwapchainSupportDetails = PhysicalDevice.SwapchainSupportDetails;
-const Framebuffer = @import("framebuffer.zig").Framebuffer;
+const RenderPass = @import("render_pass.zig").RenderPass;
 
 pub const Swapchain = struct {
     swapchain: vk.SwapchainKHR,
@@ -23,19 +23,20 @@ pub const Swapchain = struct {
     images: []vk.Image,
     image_views: []vk.ImageView,
 
-    framebuffers: std.ArrayList(*[]Framebuffer),
+    // Used to callback during swapchain recreation
+    render_passes: std.ArrayList(*RenderPass),
 
     pub fn init(self: *Swapchain, width: u32, height: u32, images_count: u32, vsync: bool) !void {
         self.image_count = images_count;
         self.vsync = vsync;
-        self.framebuffers = std.ArrayList(*[]Framebuffer).init(vkctxt.allocator);
+        self.render_passes = std.ArrayList(*RenderPass).init(vkctxt.allocator);
 
         try self.createSwapchain(width, height);
         try self.createImageViews();
     }
 
     pub fn deinit(self: *Swapchain) void {
-        self.framebuffers.deinit();
+        self.render_passes.deinit();
         self.cleanup();
     }
 
@@ -44,8 +45,8 @@ pub const Swapchain = struct {
         try self.createSwapchain(width, height);
         try self.createImageViews();
 
-        for (self.framebuffers.items) |fbs|
-            Framebuffer.recreateFramebuffers(fbs, self);
+        for (self.render_passes.items) |rp|
+            rp.target_recreated_callback(rp);
     }
 
     pub fn recreateWithSameSize(self: *Swapchain) !void {
@@ -53,9 +54,8 @@ pub const Swapchain = struct {
     }
 
     fn cleanup(self: *Swapchain) void {
-        for (self.image_views) |image_view| {
+        for (self.image_views) |image_view|
             vkfn.d.destroyImageView(vkctxt.device, image_view, null);
-        }
 
         vkctxt.allocator.free(self.image_views);
 

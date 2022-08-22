@@ -9,6 +9,7 @@ const nm = @import("../math/math.zig");
 const Buffer = @import("buffer.zig").Buffer;
 const CommandBuffer = @import("command_buffer.zig").CommandBuffer;
 const Model = @import("../model/model.zig").Model;
+const VmaAllocation = @import("vma_allocation.zig").VmaAllocation;
 
 pub const Mesh = struct {
     vertex_buffer: Buffer,
@@ -26,7 +27,7 @@ pub const Mesh = struct {
 
     pub fn init(
         self: *Mesh,
-        mapping_usage: Buffer.MappingUsage,
+        mapping_usage: VmaAllocation.MappingUsage,
         vertex_size: usize,
         vertex_count: usize,
         index_type: vk.IndexType,
@@ -46,13 +47,13 @@ pub const Mesh = struct {
         self.init(.sequential, vertex_size, model.positions.?.len, .uint32, model.indices.?.len);
 
         var index_mapped_buffer: []u8 = undefined;
-        index_mapped_buffer.ptr = @ptrCast([*]u8, self.index_buffer.mapped_memory);
+        index_mapped_buffer.ptr = @ptrCast([*]u8, self.index_buffer.allocation.mapped_memory);
         index_mapped_buffer.len = model.indices.?.len * @sizeOf(u32);
 
         std.mem.copy(u8, index_mapped_buffer, std.mem.sliceAsBytes(model.indices.?));
 
         var mapped_buffer: []u8 = undefined;
-        mapped_buffer.ptr = @ptrCast([*]u8, self.vertex_buffer.mapped_memory);
+        mapped_buffer.ptr = @ptrCast([*]u8, self.vertex_buffer.allocation.mapped_memory);
         mapped_buffer.len = model.positions.?.len * vertex_size;
 
         var offset: usize = 0;

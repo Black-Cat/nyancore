@@ -118,6 +118,7 @@ pub const DefaultRenderer = struct {
             c.glfwWaitEvents();
         }
 
+        vkfn.d.deviceWaitIdle(vkctxt.device) catch unreachable;
         try rg.global_render_graph.final_swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
     }
 
@@ -205,7 +206,12 @@ pub const DefaultRenderer = struct {
 
         rg.global_render_graph.frame_index = (rg.global_render_graph.frame_index + 1) % frames_in_flight;
 
-        rg.global_render_graph.executeResourceChanges();
+        if (rg.global_render_graph.hasResourceChanges()) {
+            for (self.in_flight_fences) |f|
+                f.waitFor();
+            rg.global_render_graph.executeResourceChanges();
+        }
+
         if (rg.global_render_graph.needs_rebuilding)
             rg.global_render_graph.build();
     }

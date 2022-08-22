@@ -167,11 +167,11 @@ pub const PipelineBuilder = struct {
         };
     }
 
-    pub fn buildDepthStencilState() vk.PipelineDepthStencilStateCreateInfo {
+    pub fn buildDepthStencilState(depth_test: bool, depth_write: bool, compare_op: vk.CompareOp) vk.PipelineDepthStencilStateCreateInfo {
         return .{
-            .depth_test_enable = vk.FALSE,
-            .depth_write_enable = vk.FALSE,
-            .depth_compare_op = .less_or_equal,
+            .depth_test_enable = if (depth_test) vk.TRUE else vk.FALSE,
+            .depth_write_enable = if (depth_write) vk.TRUE else vk.FALSE,
+            .depth_compare_op = if (depth_test) compare_op else .always,
             .back = .{
                 .compare_op = .always,
                 .fail_op = .keep,

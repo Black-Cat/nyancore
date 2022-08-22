@@ -19,6 +19,9 @@ const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").Pipe
 const PipelineLayout = @import("../../../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").ShaderModule;
+const ImageView = @import("../../../vulkan_wrapper/image_view.zig").ImageView;
+
+const ImageWithView = @import("../resources/image_with_view.zig").ImageWithView;
 
 const Model = @import("../../../model/model.zig").Model;
 
@@ -46,21 +49,26 @@ pub fn MeshPass(comptime TargetType: type) type {
         model: ?*Model,
         camera: *Camera,
 
+        depth_buffer: *ImageWithView,
+
         // Accepts *ViewportTexture or *Swapchain as target
         pub fn init(
             self: *SelfType,
             comptime name: []const u8,
             target: *TargetType,
+            depth_buffer: *ImageWithView,
             camera: *Camera,
         ) void {
             const res: *RGResource = rg.global_render_graph.getResource(target);
 
             self.rg_pass.init(name, rg.global_render_graph.allocator, passInit, passDeinit, passRender);
             self.rg_pass.appendWriteResource(res);
+            self.rg_pass.appendWriteResource(rg.global_render_graph.getResource(depth_buffer));
 
             self.target = target;
             self.model = null;
             self.camera = camera;
+            self.depth_buffer = depth_buffer;
 
             self.rg_pass.pipeline_start = .{ .vertex_input_bit = true };
             self.rg_pass.pipeline_end = .{ .color_attachment_output_bit = true };
@@ -85,19 +93,11 @@ pub fn MeshPass(comptime TargetType: type) type {
             const frag_code = @embedFile("mesh_pass.frag");
             self.frag_shader = ShaderModule.load(frag_code, .fragment);
 
-            var color_attachment: [1]vk.AttachmentDescription = .{.{
-                .format = self.target.image_format,
-                .samples = .{ .@"1_bit" = true },
-                .load_op = self.rg_pass.load_op,
-                .store_op = .store,
-                .stencil_load_op = .dont_care,
-                .stencil_store_op = .dont_care,
-                .initial_layout = self.rg_pass.initial_layout,
-                .final_layout = self.rg_pass.final_layout,
-                .flags = .{},
-            }};
+            var attachments: [2]vk.AttachmentDescription = self.getAttachmentsDescriptions();
+            var views: [1]ImageView = self.getImageViews();
 
-            self.render_pass.init(self.target, color_attachment[0..]);
+            self.render_pass.init(self.target, views[0..], attachments[0..]);
+            self.render_pass.target_recreated_callback = targetRecreatedCallback;
 
             self.pipeline_cache = PipelineCache.createEmpty();
             self.createPipelineLayout();
@@ -120,7 +120,10 @@ pub fn MeshPass(comptime TargetType: type) type {
 
             const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", render_pass);
 
-            const clear_color: vk.ClearValue = .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } };
+            const clear_color: [2]vk.ClearValue = .{
+                .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } },
+                .{ .depth_stencil = .{ .depth = 1.0, .stencil = 0.0 } },
+            };
             const render_pass_info: vk.RenderPassBeginInfo = .{
                 .render_pass = self.render_pass.vk_ref,
                 .framebuffer = self.render_pass.getCurrentFramebuffer().vk_ref,
@@ -128,8 +131,8 @@ pub fn MeshPass(comptime TargetType: type) type {
                     .offset = .{ .x = 0, .y = 0 },
                     .extent = self.target.image_extent,
                 },
-                .clear_value_count = 1,
-                .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
+                .clear_value_count = @intCast(u32, clear_color.len),
+                .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color[0]),
             };
 
             vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
@@ -178,6 +181,51 @@ pub fn MeshPass(comptime TargetType: type) type {
             vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, @intCast(u32, self.model.?.indices.?.len), 1, 0, 0, 0);
         }
 
+        fn targetRecreatedCallback(render_pass: *RenderPass) void {
+            const self: *SelfType = @fieldParentPtr(SelfType, "render_pass", render_pass);
+
+            const extent: vk.Extent3D = .{
+                .width = self.target.image_extent.width,
+                .height = self.target.image_extent.height,
+                .depth = 1.0,
+            };
+            self.depth_buffer.resize(extent);
+
+            var views: [1]ImageView = self.getImageViews();
+            self.render_pass.recreateFramebuffers(self.target, views[0..]);
+        }
+
+        fn getAttachmentsDescriptions(self: *SelfType) [2]vk.AttachmentDescription {
+            return .{
+                .{
+                    .format = self.target.image_format,
+                    .samples = .{ .@"1_bit" = true },
+                    .load_op = self.rg_pass.load_op,
+                    .store_op = .store,
+                    .stencil_load_op = .dont_care,
+                    .stencil_store_op = .dont_care,
+                    .initial_layout = self.rg_pass.initial_layout,
+                    .final_layout = self.rg_pass.final_layout,
+                    .flags = .{},
+                },
+                .{
+                    .format = self.depth_buffer.image.format,
+                    .samples = .{ .@"1_bit" = true },
+                    .load_op = .clear,
+                    .store_op = .store,
+                    .stencil_load_op = .clear,
+                    .stencil_store_op = .dont_care,
+                    .initial_layout = .@"undefined",
+                    .final_layout = .depth_stencil_attachment_optimal,
+                    .flags = .{},
+                },
+            };
+        }
+
+        fn getImageViews(self: *SelfType) [1]ImageView {
+            return .{self.depth_buffer.view};
+        }
+
         fn createPipelineLayout(self: *SelfType) void {
             const push_constant_range: [1]vk.PushConstantRange = [_]vk.PushConstantRange{
                 .{
@@ -221,7 +269,7 @@ pub fn MeshPass(comptime TargetType: type) type {
                 .color_blend_attachment = color_blend_attachments[0],
                 .color_blend_state = PipelineBuilder.buildColorBlendState(color_blend_attachments[0..]),
                 .multisample_state = PipelineBuilder.buildMultisampleStateCreateInfo(),
-                .depth_stencil_state = PipelineBuilder.buildDepthStencilState(),
+                .depth_stencil_state = PipelineBuilder.buildDepthStencilState(true, true, .less_or_equal),
                 .viewport_state = PipelineBuilder.buildViewportState(),
 
                 .pipeline_cache = &self.pipeline_cache,
