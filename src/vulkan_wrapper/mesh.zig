@@ -16,6 +16,7 @@ pub const Mesh = struct {
 
     index_buffer: Buffer,
     index_type: vk.IndexType,
+    index_count: usize,
 
     pub fn indexType2size(index_type: vk.IndexType) u64 {
         return switch (index_type) {
@@ -36,6 +37,7 @@ pub const Mesh = struct {
         self.index_type = index_type;
         self.vertex_buffer.init(vertex_size * vertex_count, .{ .vertex_buffer_bit = true }, mapping_usage);
         self.index_buffer.init(indexType2size(index_type) * index_count, .{ .index_buffer_bit = true }, mapping_usage);
+        self.index_count = index_count;
     }
 
     pub fn initFromModel(self: *Mesh, model: *Model) void {
@@ -76,7 +78,7 @@ pub const Mesh = struct {
         return @sizeOf(nm.vec3);
     }
 
-    pub fn bind(self: *Mesh, command_buffer: *CommandBuffer) void {
+    pub fn bind(self: *const Mesh, command_buffer: *CommandBuffer) void {
         const offset: u64 = 0;
         vkfn.d.cmdBindVertexBuffers(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffer.vk_ref), @ptrCast([*]const u64, &offset));
         vkfn.d.cmdBindIndexBuffer(command_buffer.vk_ref, self.index_buffer.vk_ref, 0, self.index_type);

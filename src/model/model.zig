@@ -9,6 +9,7 @@ pub const Model = struct {
     allocator: std.mem.Allocator,
 
     name: []const u8 = "NO MODEL NAME",
+    transform: nm.mat4x4 = nm.Mat4x4.identity(),
 
     indices: ?[]u32 = null,
 
@@ -61,6 +62,7 @@ pub const Model = struct {
         var map: AssetMap = AssetMap.init(allocator);
 
         map.put("name", allocator.dupe(u8, self.name) catch unreachable) catch unreachable;
+        map.put("transform", std.mem.sliceAsBytes(@ptrCast(*[16]f32, &self.transform)[0..])) catch unreachable;
 
         if (self.indices) |buf|
             map.put("indices", std.mem.sliceAsBytes(buf)) catch unreachable;
@@ -86,6 +88,8 @@ pub const Model = struct {
         var model: Model = .{ .allocator = allocator };
 
         model.name = allocator.dupe(u8, map.get("name") orelse unreachable) catch unreachable;
+        var transform = map.get("transform") orelse unreachable;
+        model.transform = @ptrCast(*nm.mat4x4, @alignCast(@alignOf(nm.mat4x4), transform)).*;
 
         if (map.contains("indices"))
             model.indices = std.mem.bytesAsSlice(u32, @alignCast(@alignOf(u32), map.get("indices") orelse unreachable));

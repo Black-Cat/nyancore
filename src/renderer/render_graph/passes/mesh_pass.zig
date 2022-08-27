@@ -16,12 +16,14 @@ const Mesh = @import("../../../vulkan_wrapper/mesh.zig").Mesh;
 const Pipeline = @import("../../../vulkan_wrapper/pipeline.zig").Pipeline;
 const PipelineBuilder = @import("../../../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
-const PipelineLayout = @import("../../../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").ShaderModule;
 const ImageView = @import("../../../vulkan_wrapper/image_view.zig").ImageView;
 
 const ImageWithView = @import("../resources/image_with_view.zig").ImageWithView;
+const Material = @import("../resources/material.zig").Material;
+const MaterialSignature = @import("../resources/material_signature.zig").MaterialSignature;
+const RenderObject = @import("../resources/render_object.zig").RenderObject;
 
 const Model = @import("../../../model/model.zig").Model;
 
@@ -29,8 +31,6 @@ const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig
 
 pub fn MeshPass(comptime TargetType: type) type {
     return struct {
-        const VertPushConstBlock = struct { mvp: nm.mat4x4 };
-
         const SelfType = MeshPass(TargetType);
 
         rg_pass: RGPass,
@@ -42,14 +42,14 @@ pub fn MeshPass(comptime TargetType: type) type {
         frag_shader: ShaderModule,
 
         pipeline_cache: PipelineCache,
-        pipeline_layout: PipelineLayout,
-        pipeline: Pipeline,
 
         mesh: Mesh,
-        model: ?*Model,
         camera: *Camera,
 
         depth_buffer: *ImageWithView,
+
+        signature_materials_map: std.AutoArrayHashMap(u32, *Material),
+        material_render_objects_map: std.AutoArrayHashMap(*Material, *std.ArrayList(RenderObject)),
 
         // Accepts *ViewportTexture or *Swapchain as target
         pub fn init(
@@ -66,22 +66,53 @@ pub fn MeshPass(comptime TargetType: type) type {
             self.rg_pass.appendWriteResource(rg.global_render_graph.getResource(depth_buffer));
 
             self.target = target;
-            self.model = null;
             self.camera = camera;
             self.depth_buffer = depth_buffer;
 
             self.rg_pass.pipeline_start = .{ .vertex_input_bit = true };
             self.rg_pass.pipeline_end = .{ .color_attachment_output_bit = true };
+
+            self.signature_materials_map = @TypeOf(self.signature_materials_map).init(vkctxt.allocator);
+            self.material_render_objects_map = @TypeOf(self.material_render_objects_map).init(vkctxt.allocator);
         }
 
         pub fn deinit(self: *SelfType) void {
-            self.mesh.destroy();
+            for (self.signature_materials_map.values()) |mat| {
+                mat.deinit();
+                vkctxt.allocator.destroy(mat);
+            }
+            self.signature_materials_map.deinit();
+
+            for (self.material_render_objects_map.values()) |list| {
+                for (list.items) |ro|
+                    ro.deinit();
+                list.deinit();
+                vkctxt.allocator.destroy(list);
+            }
+            self.material_render_objects_map.deinit();
         }
 
-        pub fn setModel(self: *SelfType, model: *Model) void {
-            self.model = model;
-            self.mesh.initFromModel(model);
-            self.createPipeline();
+        pub fn setModels(self: *SelfType, models: []Model) void {
+            for (models) |*m| {
+                const ms: MaterialSignature = MaterialSignature.createFromModel(m);
+                const ms_int: u32 = ms.toInt();
+
+                if (!self.signature_materials_map.contains(ms_int)) {
+                    var mat: *Material = vkctxt.allocator.create(Material) catch unreachable;
+                    mat.* = self.createMaterial(m);
+                    self.signature_materials_map.put(ms_int, mat) catch unreachable;
+
+                    var list: *std.ArrayList(RenderObject) = vkctxt.allocator.create(std.ArrayList(RenderObject)) catch unreachable;
+                    list.* = std.ArrayList(RenderObject).init(vkctxt.allocator);
+                    self.material_render_objects_map.put(mat, list) catch unreachable;
+                }
+
+                const mat: *Material = self.signature_materials_map.get(ms_int).?;
+                const list: *std.ArrayList(RenderObject) = self.material_render_objects_map.get(mat).?;
+
+                const ro: *RenderObject = list.addOne() catch unreachable;
+                ro.initFromModel(m);
+            }
         }
 
         fn passInit(rg_pass: *RGPass) void {
@@ -100,15 +131,12 @@ pub fn MeshPass(comptime TargetType: type) type {
             self.render_pass.target_recreated_callback = targetRecreatedCallback;
 
             self.pipeline_cache = PipelineCache.createEmpty();
-            self.createPipelineLayout();
         }
 
         fn passDeinit(render_pass: *RGPass) void {
             const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", render_pass);
             self.render_pass.destroy();
 
-            self.pipeline.destroy();
-            self.pipeline_layout.destroy();
             self.pipeline_cache.destroy();
 
             self.vert_shader.destroy();
@@ -138,9 +166,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
             defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
-            if (self.model == null) return;
-
-            vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline.vk_ref);
+            if (self.material_render_objects_map.count() == 0) return;
 
             const viewport_info: vk.Viewport = .{
                 .width = @intToFloat(f32, self.target.image_extent.width),
@@ -151,34 +177,44 @@ pub fn MeshPass(comptime TargetType: type) type {
                 .y = 0,
             };
 
-            vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
-
             var scissor_rect: vk.Rect2D = .{
                 .offset = .{ .x = 0, .y = 0 },
                 .extent = self.target.image_extent,
             };
-
             const scissor_rect_ptr: *vk.Rect2D = &scissor_rect;
-            vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
-
-            var push_const_block: VertPushConstBlock = .{
-                .mvp = nm.Mat4x4.mul(
-                    self.camera.projectionFn(self.camera, nm.rad(60.0), viewport_info.width / viewport_info.height, 0.0001, 100.0),
-                    self.camera.viewMatrix(),
-                ),
-            };
-
-            vkfn.d.cmdPushConstants(
-                command_buffer.vk_ref,
-                self.pipeline_layout.vk_ref,
-                .{ .vertex_bit = true },
-                0,
-                @sizeOf(VertPushConstBlock),
-                @ptrCast([*]const VertPushConstBlock, &push_const_block),
+            const view_projection: nm.mat4x4 = nm.Mat4x4.mul(
+                self.camera.projectionFn(self.camera, nm.rad(60.0), viewport_info.width / viewport_info.height, 0.0001, 100.0),
+                self.camera.viewMatrix(),
             );
 
-            self.mesh.bind(command_buffer);
-            vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, @intCast(u32, self.model.?.indices.?.len), 1, 0, 0, 0);
+            var it = self.material_render_objects_map.iterator();
+            while (it.next()) |kv| {
+                const mat: *Material = kv.key_ptr.*;
+                const render_objects: *std.ArrayList(RenderObject) = kv.value_ptr.*;
+
+                vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, mat.pipeline.vk_ref);
+
+                vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
+                vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
+
+                for (render_objects.items) |ro| {
+                    var push_const_block: Material.VertPushConstBlock = .{
+                        .mvp = nm.Mat4x4.mul(view_projection, ro.transform),
+                    };
+
+                    vkfn.d.cmdPushConstants(
+                        command_buffer.vk_ref,
+                        mat.pipeline_layout.vk_ref,
+                        .{ .vertex_bit = true },
+                        0,
+                        @sizeOf(Material.VertPushConstBlock),
+                        @ptrCast([*]const Material.VertPushConstBlock, &push_const_block),
+                    );
+
+                    ro.mesh.bind(command_buffer);
+                    vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, @intCast(u32, ro.mesh.index_count), 1, 0, 0, 0);
+                }
+            }
         }
 
         fn targetRecreatedCallback(render_pass: *RenderPass) void {
@@ -226,29 +262,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             return .{self.depth_buffer.view};
         }
 
-        fn createPipelineLayout(self: *SelfType) void {
-            const push_constant_range: [1]vk.PushConstantRange = [_]vk.PushConstantRange{
-                .{
-                    .stage_flags = .{ .vertex_bit = true },
-                    .offset = 0,
-                    .size = @sizeOf(VertPushConstBlock),
-                },
-            };
-
-            self.pipeline_layout = PipelineLayout.create(&.{}, push_constant_range[0..]);
-        }
-
-        fn recreatePipeline(self: *SelfType) void {
-            self.pipeline.destroy();
-            self.createPipeline();
-        }
-
-        pub fn recreatePipelineOnShaderChange(pass: *RGPass) void {
-            const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", pass);
-            self.recreatePipeline();
-        }
-
-        fn createPipeline(self: *SelfType) void {
+        fn createMaterial(self: *SelfType, model: *Model) Material {
             const shader_stages = [_]vk.PipelineShaderStageCreateInfo{
                 PipelineBuilder.buildShaderStageCreateInfo(.{ .vertex_bit = true }, &self.vert_shader),
                 PipelineBuilder.buildShaderStageCreateInfo(.{ .fragment_bit = true }, &self.frag_shader),
@@ -258,24 +272,20 @@ pub fn MeshPass(comptime TargetType: type) type {
                 PipelineBuilder.buildBlendAttachmentState(false),
             };
 
-            var vertex_attributes = self.model.?.generateAttributeDescriptions(rg.global_render_graph.allocator);
+            var vertex_attributes = model.generateAttributeDescriptions(rg.global_render_graph.allocator);
             defer rg.global_render_graph.allocator.free(vertex_attributes);
 
-            var pipeline_builder: PipelineBuilder = .{
-                .shader_stages = shader_stages[0..],
-                .vertex_input_state = PipelineBuilder.buildVertexInputStateCreateInfo(&.{self.model.?.generateInputBindings()}, vertex_attributes),
-                .input_assembly_state = PipelineBuilder.buildInputAssemblyStateCreateInfo(.triangle_list),
-                .rasterization_state = PipelineBuilder.buildRasterizationStateCreateInfo(.fill),
-                .color_blend_attachment = color_blend_attachments[0],
-                .color_blend_state = PipelineBuilder.buildColorBlendState(color_blend_attachments[0..]),
-                .multisample_state = PipelineBuilder.buildMultisampleStateCreateInfo(),
-                .depth_stencil_state = PipelineBuilder.buildDepthStencilState(true, true, .less_or_equal),
-                .viewport_state = PipelineBuilder.buildViewportState(),
+            var material: Material = .{};
+            material.init(
+                shader_stages[0..],
+                color_blend_attachments[0..],
+                vertex_attributes,
+                model.generateInputBindings(),
+                &self.pipeline_cache,
+                &self.render_pass,
+            );
 
-                .pipeline_cache = &self.pipeline_cache,
-                .pipeline_layout = &self.pipeline_layout,
-            };
-            self.pipeline = pipeline_builder.build(&self.render_pass);
+            return material;
         }
     };
 }

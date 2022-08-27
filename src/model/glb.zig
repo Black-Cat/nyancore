@@ -30,6 +30,22 @@ fn getOptionalInt(comptime T: type, node: std.json.Value, comptime field_name: [
     }
 }
 
+fn getFloat(val: std.json.Value) f32 {
+    return switch (val) {
+        .Integer => @intToFloat(f32, val.Integer),
+        .Float => @floatCast(f32, val.Float),
+        else => @panic("Can't cast json value to float =c"),
+    };
+}
+
+fn getVec3(array: *const std.json.Array) nm.vec3 {
+    return .{
+        getFloat(array.items[0]),
+        getFloat(array.items[1]),
+        getFloat(array.items[2]),
+    };
+}
+
 const Buffer = struct {
     byte_length: usize,
 
@@ -175,7 +191,7 @@ fn parseArray(comptime ElementType: type, comptime name: []const u8, root: std.j
     return array;
 }
 
-pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Model {
+pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
     const json_chunk_length: u32 = try reader.readIntLittle(u32);
 
     const json_valid_signature: bool = (try reader.readIntLittle(u32)) == json_chunk_type;
@@ -190,9 +206,6 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Model {
 
     var json_tree = try parser.parse(buffer);
     defer json_tree.deinit();
-
-    var meshes = json_tree.root.Object.get("meshes").?.Array;
-    var main_mesh = meshes.items[0];
 
     var buffers: []Buffer = parseArray(Buffer, "buffers", json_tree.root, allocator);
     defer allocator.free(buffers);
@@ -213,23 +226,40 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Model {
 
     var bin_buffer: []u8 = try readData(reader, allocator, bin_chunk_size);
 
-    var primitives = main_mesh.Object.get("primitives").?.Array.items[0].Object;
+    var meshes = json_tree.root.Object.get("meshes").?.Array;
+    var models: []Model = allocator.alloc(Model, meshes.items.len) catch unreachable;
+    var nodes = json_tree.root.Object.get("nodes").?.Array;
 
-    var model: Model = .{ .allocator = allocator };
-    model.name = allocator.dupe(u8, main_mesh.Object.get("name").?.String) catch unreachable;
+    for (nodes.items) |n, ind| {
+        var mesh_ind: usize = getInt(usize, n, "mesh");
+        var mesh = meshes.items[mesh_ind];
 
-    const indices: usize = @intCast(usize, primitives.get("indices").?.Integer);
-    model.indices = extractBuffer(u32, bin_buffer, &accessors[indices], allocator);
+        var primitives = mesh.Object.get("primitives").?.Array.items[0].Object;
 
-    primitives = primitives.get("attributes").?.Object;
-    if (primitives.get("POSITION")) |val|
-        model.positions = extractBuffer(nm.vec3, bin_buffer, &accessors[@intCast(usize, val.Integer)], allocator);
-    if (primitives.get("NORMAL")) |val|
-        model.normals = extractBuffer(nm.vec3, bin_buffer, &accessors[@intCast(usize, val.Integer)], allocator);
-    if (primitives.get("COLOR_0")) |val|
-        model.colors = extractBuffer(nm.vec3, bin_buffer, &accessors[@intCast(usize, val.Integer)], allocator);
+        var model: Model = .{ .allocator = allocator };
+        model.transform = nm.Mat4x4.identity();
+        model.name = allocator.dupe(u8, n.Object.get("name").?.String) catch unreachable;
 
-    return model;
+        if (n.Object.get("translation")) |tr| {
+            const vec: nm.vec3 = getVec3(&tr.Array);
+            model.transform = nm.Mat4x4.translate(model.transform, vec);
+        }
+
+        const indices: usize = @intCast(usize, primitives.get("indices").?.Integer);
+        model.indices = extractBuffer(u32, bin_buffer, &accessors[indices], allocator);
+
+        primitives = primitives.get("attributes").?.Object;
+        if (primitives.get("POSITION")) |val|
+            model.positions = extractBuffer(nm.vec3, bin_buffer, &accessors[@intCast(usize, val.Integer)], allocator);
+        if (primitives.get("NORMAL")) |val|
+            model.normals = extractBuffer(nm.vec3, bin_buffer, &accessors[@intCast(usize, val.Integer)], allocator);
+        if (primitives.get("COLOR_0")) |val|
+            model.colors = extractBuffer(nm.vec3, bin_buffer, &accessors[@intCast(usize, val.Integer)], allocator);
+
+        models[ind] = model;
+    }
+
+    return models;
 }
 
 fn extractBuffer(comptime ElementType: type, buffer: []u8, accessor: *Accessor, allocator: std.mem.Allocator) []ElementType {

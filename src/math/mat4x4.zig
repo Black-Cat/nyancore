@@ -68,6 +68,12 @@ pub fn lookAt(pos: math.vec3, target: math.vec3, up: math.vec3) math.mat4x4 {
     };
 }
 
+pub fn translate(mat: math.mat4x4, translation: math.vec3) math.mat4x4 {
+    var res = mat;
+    res[3] += math.Vec4.fromVec3(translation, 0.0);
+    return res;
+}
+
 pub fn perspective(fov_y: f32, aspect: f32, near: f32, far: f32) math.mat4x4 {
     var res: math.mat4x4 = .{math.Vec4.zeros()} ** 4;
 

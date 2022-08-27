@@ -32,7 +32,7 @@ pub const MeshViewerWindow = struct {
 
     selected_file_path: [MAX_FILE_PATH_LEN]u8,
 
-    model: Model,
+    models: []Model,
     pass: MeshPass(Swapchain),
     depth_buffer: ImageWithView,
     ui_sync_pass: SyncPass,
@@ -60,6 +60,8 @@ pub const MeshViewerWindow = struct {
         self.camera.up = .{ 0.0, 1.0, 0.0 };
         self.camera.setProjection(.perspective);
         self.camera_controller = .{ .camera = &self.camera };
+
+        self.models = self.allocator.alloc(Model, 0) catch unreachable;
     }
 
     pub fn deinit(self: *MeshViewerWindow) void {
@@ -98,7 +100,10 @@ pub const MeshViewerWindow = struct {
     }
 
     fn windowDeinit(widget: *Widget) void {
-        _ = widget;
+        const window: *Window = @fieldParentPtr(Window, "widget", widget);
+        const self: *MeshViewerWindow = @fieldParentPtr(MeshViewerWindow, "window", window);
+
+        self.allocator.free(self.models);
     }
 
     fn cleanSelectedPath(self: *MeshViewerWindow) void {
@@ -171,8 +176,8 @@ pub const MeshViewerWindow = struct {
         const reader = file.reader();
 
         _ = glb.check_header(reader) catch return;
-        self.model = glb.parse(reader, self.allocator) catch return;
-        self.pass.setModel(&self.model);
+        self.models = glb.parse(reader, self.allocator) catch return;
+        self.pass.setModels(self.models);
     }
 
     fn saveAsset(self: *MeshViewerWindow) void {
@@ -184,10 +189,13 @@ pub const MeshViewerWindow = struct {
 
         const writer = file.writer();
 
-        var map: asset.AssetMap = self.model.generateAssetMap(self.allocator);
-        defer Model.deinitAssetMap(&map);
+        writer.writeIntLittle(u32, @intCast(u32, self.models.len)) catch return;
 
-        asset.serializeAsset(writer, "model", map) catch return;
+        for (self.models) |*m| {
+            var map: asset.AssetMap = m.generateAssetMap(self.allocator);
+            defer Model.deinitAssetMap(&map);
+            asset.serializeAsset(writer, "model", map) catch return;
+        }
     }
 
     fn loadAsset(self: *MeshViewerWindow) void {
@@ -199,10 +207,17 @@ pub const MeshViewerWindow = struct {
 
         const reader = file.reader();
 
-        var map: asset.AssetMap = asset.deserializeAsset(reader, self.allocator) catch return;
-        defer Model.deinitAssetMap(&map);
+        const models_count: usize = @intCast(usize, reader.readIntLittle(u32) catch return);
+        self.allocator.free(self.models);
+        self.models = self.allocator.alloc(Model, models_count) catch unreachable;
 
-        self.model = Model.createFromAssetMap(&map, self.allocator);
-        self.pass.setModel(&self.model);
+        for (self.models) |*m| {
+            var map: asset.AssetMap = asset.deserializeAsset(reader, self.allocator) catch return;
+            defer Model.deinitAssetMap(&map);
+
+            m.* = Model.createFromAssetMap(&map, self.allocator);
+        }
+
+        self.pass.setModels(self.models);
     }
 };
