@@ -19,6 +19,9 @@ const rg = @import("../renderer/render_graph/render_graph.zig");
 const RenderGraph = rg.RenderGraph;
 const Texture = @import("../renderer/render_graph/resources/texture.zig").Texture;
 const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
+const DescriptorPool = @import("../vulkan_wrapper/descriptor_pool.zig").DescriptorPool;
+const DescriptorSets = @import("../vulkan_wrapper/descriptor_sets.zig").DescriptorSets;
+const DescriptorSetLayout = @import("../vulkan_wrapper/descriptor_set_layout.zig").DescriptorSetLayout;
 const SingleCommandBuffer = @import("../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
 const RenderPass = @import("../vulkan_wrapper/render_pass.zig").RenderPass;
 const ShaderModule = @import("../vulkan_wrapper/shader_module.zig").ShaderModule;
@@ -36,9 +39,9 @@ pub const UIVulkanContext = struct {
     parent: *UI,
     font_texture: Texture,
 
-    descriptor_pool: vk.DescriptorPool,
-    descriptor_set_layout: vk.DescriptorSetLayout,
-    descriptor_set: vk.DescriptorSet,
+    descriptor_pool: DescriptorPool,
+    descriptor_set_layout: DescriptorSetLayout,
+    descriptor_sets: DescriptorSets,
 
     pipeline_cache: PipelineCache,
 
@@ -72,8 +75,9 @@ pub const UIVulkanContext = struct {
 
         self.pipeline_cache.destroy();
 
-        vkfn.d.destroyDescriptorSetLayout(vkctxt.device, self.descriptor_set_layout, null);
-        vkfn.d.destroyDescriptorPool(vkctxt.device, self.descriptor_pool, null);
+        self.descriptor_sets.deinit();
+        self.descriptor_set_layout.deinit();
+        self.descriptor_pool.deinit();
 
         self.font_texture.destroy();
     }
@@ -97,7 +101,9 @@ pub const UIVulkanContext = struct {
         vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
         defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
-        vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout.vk_ref, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
+        self.descriptor_sets.bind(.graphics, command_buffer, &self.pipeline_layout);
+        var current_descriptor_sets: *DescriptorSets = &self.descriptor_sets;
+
         vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline.vk_ref);
 
         const viewport: vk.Viewport = .{
@@ -156,19 +162,19 @@ pub const UIVulkanContext = struct {
                 };
                 vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
 
-                // Bind descriptor that user specified with igImage
-                if (pcmd.TextureId != null) {
-                    const alignment: u26 = @alignOf([*]const vk.DescriptorSet);
-                    const descriptor_set: [*]const vk.DescriptorSet = @ptrCast([*]const vk.DescriptorSet, @alignCast(alignment, pcmd.TextureId.?));
-                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout.vk_ref, 0, 1, descriptor_set, 0, undefined);
+                // Bind descriptor that user specified with igImage or default font descriptor
+                const descriptors_ptr: *DescriptorSets = if (pcmd.TextureId) |ti|
+                    @ptrCast(*DescriptorSets, @alignCast(@alignOf(DescriptorSets), ti))
+                else
+                    &self.descriptor_sets;
+
+                if (descriptors_ptr != current_descriptor_sets) {
+                    current_descriptor_sets = descriptors_ptr;
+                    current_descriptor_sets.bind(.graphics, command_buffer, &self.pipeline_layout);
                 }
 
                 vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, pcmd.ElemCount, 1, index_offset, vertex_offset, 0);
                 index_offset += pcmd.ElemCount;
-
-                // Return font descriptor
-                if (pcmd.TextureId != null)
-                    vkfn.d.cmdBindDescriptorSets(command_buffer.vk_ref, .graphics, self.pipeline_layout.vk_ref, 0, 1, @ptrCast([*]const vk.DescriptorSet, &self.descriptor_set), 0, undefined);
             }
             vertex_offset += cmd_list.VtxBuffer.Size;
         }
@@ -245,7 +251,7 @@ pub const UIVulkanContext = struct {
         };
 
         self.pipeline_layout = PipelineLayout.create(
-            &[_]vk.DescriptorSetLayout{self.descriptor_set_layout},
+            &[_]vk.DescriptorSetLayout{self.descriptor_set_layout.vk_ref},
             &[_]vk.PushConstantRange{push_constant_range},
         );
 
@@ -397,17 +403,7 @@ pub const UIVulkanContext = struct {
             .descriptor_count = 1,
         };
 
-        const descriptor_pool_info: vk.DescriptorPoolCreateInfo = .{
-            .pool_size_count = 1,
-            .p_pool_sizes = @ptrCast([*]const vk.DescriptorPoolSize, &pool_size),
-            .max_sets = 2,
-            .flags = .{},
-        };
-
-        self.descriptor_pool = vkfn.d.createDescriptorPool(vkctxt.device, descriptor_pool_info, null) catch |err| {
-            printVulkanError("Can't create descriptor pool for ui", err);
-            return;
-        };
+        self.descriptor_pool.init(&.{pool_size}, 2);
 
         const set_layout_bindings: vk.DescriptorSetLayoutBinding = .{
             .stage_flags = .{ .fragment_bit = true },
@@ -417,27 +413,8 @@ pub const UIVulkanContext = struct {
             .p_immutable_samplers = undefined,
         };
 
-        const set_layout_create_info: vk.DescriptorSetLayoutCreateInfo = .{
-            .binding_count = 1,
-            .p_bindings = @ptrCast([*]const vk.DescriptorSetLayoutBinding, &set_layout_bindings),
-            .flags = .{},
-        };
-
-        self.descriptor_set_layout = vkfn.d.createDescriptorSetLayout(vkctxt.device, set_layout_create_info, null) catch |err| {
-            printVulkanError("Can't create descriptor set layout for ui", err);
-            return;
-        };
-
-        const descriptor_set_allocate_info: vk.DescriptorSetAllocateInfo = .{
-            .descriptor_pool = self.descriptor_pool,
-            .p_set_layouts = @ptrCast([*]const vk.DescriptorSetLayout, &self.descriptor_set_layout),
-            .descriptor_set_count = 1,
-        };
-
-        vkfn.d.allocateDescriptorSets(vkctxt.device, descriptor_set_allocate_info, @ptrCast([*]vk.DescriptorSet, &self.descriptor_set)) catch |err| {
-            printVulkanError("Can't allocate descriptor set for ui", err);
-            return;
-        };
+        self.descriptor_set_layout.init(&.{set_layout_bindings});
+        self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref});
 
         const font_descriptor_image_info: vk.DescriptorImageInfo = .{
             .sampler = self.font_texture.sampler,
@@ -445,18 +422,7 @@ pub const UIVulkanContext = struct {
             .image_layout = .shader_read_only_optimal,
         };
 
-        const write_descriptor_set: vk.WriteDescriptorSet = .{
-            .dst_set = self.descriptor_set,
-            .descriptor_type = .combined_image_sampler,
-            .dst_binding = 0,
-            .p_image_info = @ptrCast([*]const vk.DescriptorImageInfo, &font_descriptor_image_info),
-            .descriptor_count = 1,
-            .dst_array_element = 0,
-            .p_buffer_info = undefined,
-            .p_texel_buffer_view = undefined,
-        };
-
-        vkfn.d.updateDescriptorSets(vkctxt.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
+        self.descriptor_sets.write(0, &.{font_descriptor_image_info});
     }
 
     fn initResources(self: *UIVulkanContext) void {
