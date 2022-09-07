@@ -19,6 +19,7 @@ pub const Material = struct {
         color_blend_attachments: []const vk.PipelineColorBlendAttachmentState,
         vertex_attributes: []const vk.VertexInputAttributeDescription,
         vertex_input_bindings: vk.VertexInputBindingDescription,
+        descriptor_bindings: []vk.DescriptorSetLayout,
         pipeline_cache: *PipelineCache,
         render_pass: *RenderPass,
     ) void {
@@ -30,7 +31,7 @@ pub const Material = struct {
             },
         };
 
-        self.pipeline_layout = PipelineLayout.create(&.{}, push_constant_range[0..]);
+        self.pipeline_layout = PipelineLayout.create(descriptor_bindings, push_constant_range[0..]);
 
         var pipeline_builder: PipelineBuilder = .{
             .shader_stages = shader_stages[0..],

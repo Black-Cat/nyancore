@@ -25,14 +25,14 @@ pub const DescriptorSets = struct {
         );
     }
 
-    pub fn init(self: *DescriptorSets, pool: *DescriptorPool, layouts: []vk.DescriptorSetLayout) void {
+    pub fn init(self: *DescriptorSets, pool: *DescriptorPool, layouts: []vk.DescriptorSetLayout, count: usize) void {
         const descriptor_set_allocate_info: vk.DescriptorSetAllocateInfo = .{
             .descriptor_pool = pool.vk_ref,
             .p_set_layouts = @ptrCast([*]const vk.DescriptorSetLayout, layouts.ptr),
-            .descriptor_set_count = @intCast(u32, layouts.len),
+            .descriptor_set_count = @intCast(u32, count),
         };
 
-        self.vk_ref = vkctxt.allocator.alloc(vk.DescriptorSet, layouts.len) catch unreachable;
+        self.vk_ref = vkctxt.allocator.alloc(vk.DescriptorSet, count) catch unreachable;
 
         vkfn.d.allocateDescriptorSets(vkctxt.device, descriptor_set_allocate_info, @ptrCast([*]vk.DescriptorSet, self.vk_ref.ptr)) catch |err| {
             printVulkanError("Can't allocate descriptor sets", err);
@@ -52,6 +52,21 @@ pub const DescriptorSets = struct {
             .descriptor_count = 1,
             .dst_array_element = 0,
             .p_buffer_info = undefined,
+            .p_texel_buffer_view = undefined,
+        };
+
+        vkfn.d.updateDescriptorSets(vkctxt.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
+    }
+
+    pub fn writeBuffer(self: *DescriptorSets, index: usize, buffer_infos: []vk.DescriptorBufferInfo) void {
+        const write_descriptor_set: vk.WriteDescriptorSet = .{
+            .dst_set = self.vk_ref[index],
+            .descriptor_type = .uniform_buffer_dynamic,
+            .dst_binding = 0,
+            .p_image_info = undefined,
+            .descriptor_count = 1,
+            .dst_array_element = 0,
+            .p_buffer_info = @ptrCast([*]const vk.DescriptorBufferInfo, buffer_infos.ptr),
             .p_texel_buffer_view = undefined,
         };
 

@@ -33,6 +33,7 @@ pub const PhysicalDevice = struct {
 
     vk_ref: vk.PhysicalDevice,
     memory_properties: vk.PhysicalDeviceMemoryProperties,
+    device_properties: vk.PhysicalDeviceProperties,
     family_indices: QueueFamilyIndices,
 
     pub fn pick() !PhysicalDevice {
@@ -58,6 +59,7 @@ pub const PhysicalDevice = struct {
                 const picked_device: PhysicalDevice = .{
                     .vk_ref = device,
                     .memory_properties = vkfn.i.getPhysicalDeviceMemoryProperties(device),
+                    .device_properties = vkfn.i.getPhysicalDeviceProperties(device),
                     .family_indices = findQueueFamilyIndices(device) catch unreachable,
                 };
                 return picked_device;

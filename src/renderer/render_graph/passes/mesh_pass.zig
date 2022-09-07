@@ -12,14 +12,18 @@ const RGResource = @import("../render_graph_resource.zig").RGResource;
 
 const Camera = @import("../../../tools/mesh_viewer/camera.zig").Camera;
 const CommandBuffer = @import("../../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
+const DescriptorPool = @import("../../../vulkan_wrapper/descriptor_pool.zig").DescriptorPool;
+const DescriptorSetLayout = @import("../../../vulkan_wrapper/descriptor_set_layout.zig").DescriptorSetLayout;
+const DescriptorSets = @import("../../../vulkan_wrapper/descriptor_sets.zig").DescriptorSets;
+const ImageView = @import("../../../vulkan_wrapper/image_view.zig").ImageView;
 const Mesh = @import("../../../vulkan_wrapper/mesh.zig").Mesh;
 const Pipeline = @import("../../../vulkan_wrapper/pipeline.zig").Pipeline;
 const PipelineBuilder = @import("../../../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").ShaderModule;
-const ImageView = @import("../../../vulkan_wrapper/image_view.zig").ImageView;
 
+const DynamicUniformBuffer = @import("../resources/dynamic_uniform_buffer.zig").DynamicUniformBuffer;
 const ImageWithView = @import("../resources/image_with_view.zig").ImageWithView;
 const Material = @import("../resources/material.zig").Material;
 const MaterialSignature = @import("../resources/material_signature.zig").MaterialSignature;
@@ -28,6 +32,10 @@ const RenderObject = @import("../resources/render_object.zig").RenderObject;
 const Model = @import("../../../model/model.zig").Model;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
+
+const SceneData = struct {
+    light_dir: nm.vec3,
+};
 
 pub fn MeshPass(comptime TargetType: type) type {
     return struct {
@@ -47,6 +55,12 @@ pub fn MeshPass(comptime TargetType: type) type {
         camera: *Camera,
 
         depth_buffer: *ImageWithView,
+
+        time: f32, // Temporary
+        scene_buffer: DynamicUniformBuffer(SceneData),
+        descriptor_pool: DescriptorPool,
+        descriptor_set_layout: DescriptorSetLayout,
+        descriptor_sets: DescriptorSets,
 
         signature_materials_map: std.AutoArrayHashMap(u32, *Material),
         material_render_objects_map: std.AutoArrayHashMap(*Material, *std.ArrayList(RenderObject)),
@@ -74,6 +88,8 @@ pub fn MeshPass(comptime TargetType: type) type {
 
             self.signature_materials_map = @TypeOf(self.signature_materials_map).init(vkctxt.allocator);
             self.material_render_objects_map = @TypeOf(self.material_render_objects_map).init(vkctxt.allocator);
+
+            self.time = 0.0;
         }
 
         pub fn deinit(self: *SelfType) void {
@@ -131,10 +147,45 @@ pub fn MeshPass(comptime TargetType: type) type {
             self.render_pass.target_recreated_callback = targetRecreatedCallback;
 
             self.pipeline_cache = PipelineCache.createEmpty();
+
+            self.scene_buffer.init();
+
+            const pool_size: vk.DescriptorPoolSize = .{
+                .type = .uniform_buffer_dynamic,
+                .descriptor_count = 1,
+            };
+            self.descriptor_pool.init(&.{pool_size}, rg.global_render_graph.in_flight);
+
+            const set_layout_bindings: vk.DescriptorSetLayoutBinding = .{
+                .stage_flags = .{ .fragment_bit = true },
+                .binding = 0,
+                .descriptor_count = 1,
+                .descriptor_type = .uniform_buffer_dynamic,
+                .p_immutable_samplers = undefined,
+            };
+
+            self.descriptor_set_layout.init(&.{set_layout_bindings});
+            self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, @intCast(usize, rg.global_render_graph.in_flight));
+
+            const scene_descriptor_info: vk.DescriptorBufferInfo = .{
+                .buffer = self.scene_buffer.buffer.vk_ref,
+                .offset = 0,
+                .range = @sizeOf(SceneData),
+            };
+            _ = scene_descriptor_info;
+
+            self.descriptor_sets.writeBuffer(0, &.{scene_descriptor_info});
+            self.descriptor_sets.writeBuffer(1, &.{scene_descriptor_info});
         }
 
         fn passDeinit(render_pass: *RGPass) void {
             const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", render_pass);
+
+            self.scene_buffer.deinit();
+            self.descriptor_sets.deinit();
+            self.descriptor_set_layout.deinit();
+            self.descriptor_pool.deinit();
+
             self.render_pass.destroy();
 
             self.pipeline_cache.destroy();
@@ -144,9 +195,15 @@ pub fn MeshPass(comptime TargetType: type) type {
         }
 
         fn passRender(render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void {
-            _ = frame_index;
-
             const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", render_pass);
+
+            // Temporary place to update light pos
+            const io: *@import("../../../c.zig").ImGuiIO = @import("../../../c.zig").igGetIO();
+            const delta: f32 = io.DeltaTime;
+            self.time += delta;
+            if (self.time > 2.0 * 3.14)
+                self.time -= 2.0 * 3.14;
+            self.scene_buffer.data[frame_index].light_dir = .{ std.math.sin(self.time), 1.0, std.math.cos(self.time) };
 
             const clear_color: [2]vk.ClearValue = .{
                 .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } },
@@ -193,6 +250,18 @@ pub fn MeshPass(comptime TargetType: type) type {
                 const render_objects: *std.ArrayList(RenderObject) = kv.value_ptr.*;
 
                 vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, mat.pipeline.vk_ref);
+
+                const uniform_offset: u32 = @intCast(u32, frame_index * self.scene_buffer.data_offset);
+                vkfn.d.cmdBindDescriptorSets(
+                    command_buffer.vk_ref,
+                    .graphics,
+                    mat.pipeline_layout.vk_ref,
+                    0,
+                    1,
+                    @ptrCast([*]const vk.DescriptorSet, &self.descriptor_sets.vk_ref[frame_index]),
+                    1,
+                    @ptrCast([*]const u32, &uniform_offset),
+                );
 
                 vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
                 vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
@@ -281,6 +350,7 @@ pub fn MeshPass(comptime TargetType: type) type {
                 color_blend_attachments[0..],
                 vertex_attributes,
                 model.generateInputBindings(),
+                &.{self.descriptor_set_layout.vk_ref},
                 &self.pipeline_cache,
                 &self.render_pass,
             );

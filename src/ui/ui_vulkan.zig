@@ -414,7 +414,7 @@ pub const UIVulkanContext = struct {
         };
 
         self.descriptor_set_layout.init(&.{set_layout_bindings});
-        self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref});
+        self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, 1);
 
         const font_descriptor_image_info: vk.DescriptorImageInfo = .{
             .sampler = self.font_texture.sampler,
