@@ -156,7 +156,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             };
             self.descriptor_pool.init(&.{pool_size}, rg.global_render_graph.in_flight);
 
-            const set_layout_bindings: vk.DescriptorSetLayoutBinding = .{
+            const scene_bindings: vk.DescriptorSetLayoutBinding = .{
                 .stage_flags = .{ .fragment_bit = true },
                 .binding = 0,
                 .descriptor_count = 1,
@@ -164,18 +164,18 @@ pub fn MeshPass(comptime TargetType: type) type {
                 .p_immutable_samplers = undefined,
             };
 
-            self.descriptor_set_layout.init(&.{set_layout_bindings});
+            self.descriptor_set_layout.init(&.{scene_bindings});
             self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, @intCast(usize, rg.global_render_graph.in_flight));
 
-            const scene_descriptor_info: vk.DescriptorBufferInfo = .{
-                .buffer = self.scene_buffer.buffer.vk_ref,
-                .offset = 0,
-                .range = @sizeOf(SceneData),
-            };
-            _ = scene_descriptor_info;
+            for (self.descriptor_sets.vk_ref) |_, ind| {
+                const scene_descriptor_info: vk.DescriptorBufferInfo = .{
+                    .buffer = self.scene_buffer.buffer.vk_ref,
+                    .offset = ind * self.scene_buffer.data_offset,
+                    .range = @sizeOf(SceneData),
+                };
 
-            self.descriptor_sets.writeBuffer(0, &.{scene_descriptor_info});
-            self.descriptor_sets.writeBuffer(1, &.{scene_descriptor_info});
+                self.descriptor_sets.writeBuffer(ind, &.{scene_descriptor_info});
+            }
         }
 
         fn passDeinit(render_pass: *RGPass) void {
@@ -251,7 +251,7 @@ pub fn MeshPass(comptime TargetType: type) type {
 
                 vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, mat.pipeline.vk_ref);
 
-                const uniform_offset: u32 = @intCast(u32, frame_index * self.scene_buffer.data_offset);
+                const uniform_offset: u32 = 0;
                 vkfn.d.cmdBindDescriptorSets(
                     command_buffer.vk_ref,
                     .graphics,
