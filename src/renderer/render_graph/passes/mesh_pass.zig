@@ -33,6 +33,10 @@ const Model = @import("../../../model/model.zig").Model;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
+const CameraData = struct {
+    view_proj: nm.mat4x4,
+};
+
 const SceneData = struct {
     light_dir: nm.vec3,
 };
@@ -57,10 +61,13 @@ pub fn MeshPass(comptime TargetType: type) type {
         depth_buffer: *ImageWithView,
 
         time: f32, // Temporary
+
+        camera_buffer: DynamicUniformBuffer(CameraData),
         scene_buffer: DynamicUniformBuffer(SceneData),
+
+        descriptor_sets: DescriptorSets,
         descriptor_pool: DescriptorPool,
         descriptor_set_layout: DescriptorSetLayout,
-        descriptor_sets: DescriptorSets,
 
         signature_materials_map: std.AutoArrayHashMap(u32, *Material),
         material_render_objects_map: std.AutoArrayHashMap(*Material, *std.ArrayList(RenderObject)),
@@ -148,40 +155,55 @@ pub fn MeshPass(comptime TargetType: type) type {
 
             self.pipeline_cache = PipelineCache.createEmpty();
 
+            self.camera_buffer.init();
             self.scene_buffer.init();
 
-            const pool_size: vk.DescriptorPoolSize = .{
-                .type = .uniform_buffer_dynamic,
-                .descriptor_count = 1,
+            const pool_sizes = &[_]vk.DescriptorPoolSize{
+                .{ .type = .uniform_buffer_dynamic, .descriptor_count = 2 },
             };
-            self.descriptor_pool.init(&.{pool_size}, rg.global_render_graph.in_flight);
+            self.descriptor_pool.init(pool_sizes[0..], rg.global_render_graph.in_flight * 2);
 
-            const scene_bindings: vk.DescriptorSetLayoutBinding = .{
-                .stage_flags = .{ .fragment_bit = true },
+            const camera_bindings: vk.DescriptorSetLayoutBinding = .{
+                .stage_flags = .{ .vertex_bit = true },
                 .binding = 0,
                 .descriptor_count = 1,
                 .descriptor_type = .uniform_buffer_dynamic,
                 .p_immutable_samplers = undefined,
             };
 
-            self.descriptor_set_layout.init(&.{scene_bindings});
+            const scene_bindings: vk.DescriptorSetLayoutBinding = .{
+                .stage_flags = .{ .fragment_bit = true },
+                .binding = 1,
+                .descriptor_count = 1,
+                .descriptor_type = .uniform_buffer_dynamic,
+                .p_immutable_samplers = undefined,
+            };
+
+            self.descriptor_set_layout.init(&.{ camera_bindings, scene_bindings });
             self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, @intCast(usize, rg.global_render_graph.in_flight));
 
-            for (self.descriptor_sets.vk_ref) |_, ind| {
-                const scene_descriptor_info: vk.DescriptorBufferInfo = .{
+            self.descriptor_sets.writeBufferAll(0, &[_]vk.DescriptorBufferInfo{
+                .{
+                    .buffer = self.camera_buffer.buffer.vk_ref,
+                    .offset = 0,
+                    .range = @sizeOf(CameraData),
+                },
+            });
+            self.descriptor_sets.writeBufferAll(1, &[_]vk.DescriptorBufferInfo{
+                .{
                     .buffer = self.scene_buffer.buffer.vk_ref,
-                    .offset = ind * self.scene_buffer.data_offset,
+                    .offset = 0,
                     .range = @sizeOf(SceneData),
-                };
-
-                self.descriptor_sets.writeBuffer(ind, &.{scene_descriptor_info});
-            }
+                },
+            });
         }
 
         fn passDeinit(render_pass: *RGPass) void {
             const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", render_pass);
 
+            self.camera_buffer.deinit();
             self.scene_buffer.deinit();
+
             self.descriptor_sets.deinit();
             self.descriptor_set_layout.deinit();
             self.descriptor_pool.deinit();
@@ -239,7 +261,8 @@ pub fn MeshPass(comptime TargetType: type) type {
                 .extent = self.target.image_extent,
             };
             const scissor_rect_ptr: *vk.Rect2D = &scissor_rect;
-            const view_projection: nm.mat4x4 = nm.Mat4x4.mul(
+
+            self.camera_buffer.data[frame_index].view_proj = nm.Mat4x4.mul(
                 self.camera.projectionFn(self.camera, nm.rad(60.0), viewport_info.width / viewport_info.height, 0.0001, 100.0),
                 self.camera.viewMatrix(),
             );
@@ -251,16 +274,23 @@ pub fn MeshPass(comptime TargetType: type) type {
 
                 vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, mat.pipeline.vk_ref);
 
-                const uniform_offset: u32 = 0;
+                const offsets = [_]u32{
+                    @intCast(u32, frame_index * self.camera_buffer.data_offset),
+                    @intCast(u32, frame_index * self.scene_buffer.data_offset),
+                };
+                const descriptors = [_]vk.DescriptorSet{
+                    self.descriptor_sets.vk_ref[frame_index],
+                };
+
                 vkfn.d.cmdBindDescriptorSets(
                     command_buffer.vk_ref,
                     .graphics,
                     mat.pipeline_layout.vk_ref,
                     0,
-                    1,
-                    @ptrCast([*]const vk.DescriptorSet, &self.descriptor_sets.vk_ref[frame_index]),
-                    1,
-                    @ptrCast([*]const u32, &uniform_offset),
+                    @intCast(u32, descriptors.len),
+                    @ptrCast([*]const vk.DescriptorSet, &descriptors),
+                    @intCast(u32, offsets.len),
+                    @ptrCast([*]const u32, &offsets),
                 );
 
                 vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
@@ -268,7 +298,7 @@ pub fn MeshPass(comptime TargetType: type) type {
 
                 for (render_objects.items) |ro| {
                     var push_const_block: Material.VertPushConstBlock = .{
-                        .mvp = nm.Mat4x4.mul(view_projection, ro.transform),
+                        .transform = ro.transform,
                     };
 
                     vkfn.d.cmdPushConstants(

@@ -58,11 +58,11 @@ pub const DescriptorSets = struct {
         vkfn.d.updateDescriptorSets(vkctxt.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
     }
 
-    pub fn writeBuffer(self: *DescriptorSets, index: usize, buffer_infos: []vk.DescriptorBufferInfo) void {
+    pub fn writeBuffer(dst_set: vk.DescriptorSet, dst_binding: u32, buffer_infos: []vk.DescriptorBufferInfo) void {
         const write_descriptor_set: vk.WriteDescriptorSet = .{
-            .dst_set = self.vk_ref[index],
+            .dst_set = dst_set,
             .descriptor_type = .uniform_buffer_dynamic,
-            .dst_binding = 0,
+            .dst_binding = dst_binding,
             .p_image_info = undefined,
             .descriptor_count = 1,
             .dst_array_element = 0,
@@ -71,5 +71,10 @@ pub const DescriptorSets = struct {
         };
 
         vkfn.d.updateDescriptorSets(vkctxt.device, 1, @ptrCast([*]const vk.WriteDescriptorSet, &write_descriptor_set), 0, undefined);
+    }
+
+    pub fn writeBufferAll(self: *DescriptorSets, dst_binding: u32, infos: []vk.DescriptorBufferInfo) void {
+        for (self.vk_ref) |ds|
+            writeBuffer(ds, dst_binding, infos);
     }
 };

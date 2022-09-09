@@ -8,7 +8,7 @@ const PipelineLayout = @import("../../../vulkan_wrapper/pipeline_layout.zig").Pi
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 
 pub const Material = struct {
-    pub const VertPushConstBlock = struct { mvp: nm.mat4x4 };
+    pub const VertPushConstBlock = struct { transform: nm.mat4x4 };
 
     pipeline: Pipeline = undefined,
     pipeline_layout: PipelineLayout = undefined,
