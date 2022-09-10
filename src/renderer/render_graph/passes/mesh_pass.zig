@@ -28,6 +28,7 @@ const ImageWithView = @import("../resources/image_with_view.zig").ImageWithView;
 const Material = @import("../resources/material.zig").Material;
 const MaterialSignature = @import("../resources/material_signature.zig").MaterialSignature;
 const RenderObject = @import("../resources/render_object.zig").RenderObject;
+const StorageBuffer = @import("../resources/storage_buffer.zig").StorageBuffer;
 
 const Model = @import("../../../model/model.zig").Model;
 
@@ -68,9 +69,9 @@ pub fn MeshPass(comptime TargetType: type) type {
 
         time: f32, // Temporary
 
-        camera_buffer: DynamicBuffer(CameraData, .{ .uniform_buffer_bit = true }),
-        scene_buffer: DynamicBuffer(SceneData, .{ .uniform_buffer_bit = true }),
-        object_buffer: DynamicBuffer(ObjectData, .{ .storage_buffer_bit = true }),
+        camera_buffer: DynamicBuffer(CameraData),
+        scene_buffer: DynamicBuffer(SceneData),
+        object_buffer: StorageBuffer(ObjectData),
 
         descriptor_pool: DescriptorPool,
 
@@ -166,8 +167,8 @@ pub fn MeshPass(comptime TargetType: type) type {
 
             self.pipeline_cache = PipelineCache.createEmpty();
 
-            self.camera_buffer.init(1);
-            self.scene_buffer.init(1);
+            self.camera_buffer.init();
+            self.scene_buffer.init();
             self.object_buffer.init(max_object_count);
 
             const pool_sizes = &[_]vk.DescriptorPoolSize{
@@ -218,23 +219,25 @@ pub fn MeshPass(comptime TargetType: type) type {
                 .{
                     .buffer = self.camera_buffer.buffer.vk_ref,
                     .offset = 0,
-                    .range = @intCast(u32, self.camera_buffer.single_buffer_size),
+                    .range = @sizeOf(CameraData),
                 },
             });
             self.descriptor_sets.writeBufferAll(1, .uniform_buffer_dynamic, &[_]vk.DescriptorBufferInfo{
                 .{
                     .buffer = self.scene_buffer.buffer.vk_ref,
                     .offset = 0,
-                    .range = @intCast(u32, self.scene_buffer.single_buffer_size),
+                    .range = @sizeOf(SceneData),
                 },
             });
-            self.objects_descriptor_sets.writeBufferAll(0, .storage_buffer, &[_]vk.DescriptorBufferInfo{
-                .{
-                    .buffer = self.object_buffer.buffer.vk_ref,
-                    .offset = 0,
-                    .range = @intCast(u32, self.object_buffer.single_buffer_size),
-                },
-            });
+
+            for (self.object_buffer.buffers) |b, ind|
+                DescriptorSets.writeBuffer(self.objects_descriptor_sets.vk_ref[ind], 0, .storage_buffer, &[_]vk.DescriptorBufferInfo{
+                    .{
+                        .buffer = b.vk_ref,
+                        .offset = 0,
+                        .range = @sizeOf(ObjectData) * max_object_count,
+                    },
+                });
         }
 
         fn passDeinit(render_pass: *RGPass) void {
@@ -264,7 +267,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             self.time += delta;
             if (self.time > 2.0 * 3.14)
                 self.time -= 2.0 * 3.14;
-            self.scene_buffer.data[frame_index][0].light_dir = .{ std.math.sin(self.time), 1.0, std.math.cos(self.time) };
+            self.scene_buffer.data[frame_index].light_dir = .{ std.math.sin(self.time), 1.0, std.math.cos(self.time) };
 
             const clear_color: [2]vk.ClearValue = .{
                 .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } },
@@ -301,7 +304,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             };
             const scissor_rect_ptr: *vk.Rect2D = &scissor_rect;
 
-            self.camera_buffer.data[frame_index][0].view_proj = nm.Mat4x4.mul(
+            self.camera_buffer.data[frame_index].view_proj = nm.Mat4x4.mul(
                 self.camera.projectionFn(self.camera, nm.rad(60.0), viewport_info.width / viewport_info.height, 0.0001, 100.0),
                 self.camera.viewMatrix(),
             );
