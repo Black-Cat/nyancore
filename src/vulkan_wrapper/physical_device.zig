@@ -79,7 +79,9 @@ pub const PhysicalDevice = struct {
             return err;
         };
 
-        if (!extensions_supported) {
+        const features_supported: bool = checkDeviceFeatures(device);
+
+        if (!extensions_supported or !features_supported) {
             return false;
         }
 
@@ -144,6 +146,19 @@ pub const PhysicalDevice = struct {
         }
 
         return indices;
+    }
+
+    fn checkDeviceFeatures(device: vk.PhysicalDevice) bool {
+        const features: vk.PhysicalDeviceFeatures = vkfn.i.getPhysicalDeviceFeatures(device);
+        var shader_draw_feature: vk.PhysicalDeviceShaderDrawParametersFeatures = .{ .shader_draw_parameters = vk.FALSE };
+        var features2: vk.PhysicalDeviceFeatures2 = .{
+            .p_next = &shader_draw_feature,
+            .features = features,
+        };
+
+        vkfn.i.vkGetPhysicalDeviceFeatures2(device, &features2);
+
+        return shader_draw_feature.shader_draw_parameters == vk.TRUE;
     }
 
     fn checkDeviceExtensionsSupport(device: vk.PhysicalDevice) !bool {

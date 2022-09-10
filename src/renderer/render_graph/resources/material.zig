@@ -8,8 +8,6 @@ const PipelineLayout = @import("../../../vulkan_wrapper/pipeline_layout.zig").Pi
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 
 pub const Material = struct {
-    pub const VertPushConstBlock = struct { transform: nm.mat4x4 };
-
     pipeline: Pipeline = undefined,
     pipeline_layout: PipelineLayout = undefined,
 
@@ -23,15 +21,7 @@ pub const Material = struct {
         pipeline_cache: *PipelineCache,
         render_pass: *RenderPass,
     ) void {
-        const push_constant_range: [1]vk.PushConstantRange = [_]vk.PushConstantRange{
-            .{
-                .stage_flags = .{ .vertex_bit = true },
-                .offset = 0,
-                .size = @sizeOf(VertPushConstBlock),
-            },
-        };
-
-        self.pipeline_layout = PipelineLayout.create(descriptor_bindings, push_constant_range[0..]);
+        self.pipeline_layout = PipelineLayout.create(descriptor_bindings, &.{});
 
         var pipeline_builder: PipelineBuilder = .{
             .shader_stages = shader_stages[0..],

@@ -23,7 +23,7 @@ const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").Pipe
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").ShaderModule;
 
-const DynamicUniformBuffer = @import("../resources/dynamic_uniform_buffer.zig").DynamicUniformBuffer;
+const DynamicBuffer = @import("../resources/dynamic_buffer.zig").DynamicBuffer;
 const ImageWithView = @import("../resources/image_with_view.zig").ImageWithView;
 const Material = @import("../resources/material.zig").Material;
 const MaterialSignature = @import("../resources/material_signature.zig").MaterialSignature;
@@ -41,9 +41,15 @@ const SceneData = struct {
     light_dir: nm.vec3,
 };
 
+const ObjectData = struct {
+    transform: nm.mat4x4,
+};
+
 pub fn MeshPass(comptime TargetType: type) type {
     return struct {
         const SelfType = MeshPass(TargetType);
+
+        const max_object_count: comptime_int = 10000;
 
         rg_pass: RGPass,
 
@@ -62,12 +68,17 @@ pub fn MeshPass(comptime TargetType: type) type {
 
         time: f32, // Temporary
 
-        camera_buffer: DynamicUniformBuffer(CameraData),
-        scene_buffer: DynamicUniformBuffer(SceneData),
+        camera_buffer: DynamicBuffer(CameraData, .{ .uniform_buffer_bit = true }),
+        scene_buffer: DynamicBuffer(SceneData, .{ .uniform_buffer_bit = true }),
+        object_buffer: DynamicBuffer(ObjectData, .{ .storage_buffer_bit = true }),
 
-        descriptor_sets: DescriptorSets,
         descriptor_pool: DescriptorPool,
+
         descriptor_set_layout: DescriptorSetLayout,
+        descriptor_sets: DescriptorSets,
+
+        objects_descriptor_set_layout: DescriptorSetLayout,
+        objects_descriptor_sets: DescriptorSets,
 
         signature_materials_map: std.AutoArrayHashMap(u32, *Material),
         material_render_objects_map: std.AutoArrayHashMap(*Material, *std.ArrayList(RenderObject)),
@@ -155,11 +166,13 @@ pub fn MeshPass(comptime TargetType: type) type {
 
             self.pipeline_cache = PipelineCache.createEmpty();
 
-            self.camera_buffer.init();
-            self.scene_buffer.init();
+            self.camera_buffer.init(1);
+            self.scene_buffer.init(1);
+            self.object_buffer.init(max_object_count);
 
             const pool_sizes = &[_]vk.DescriptorPoolSize{
                 .{ .type = .uniform_buffer_dynamic, .descriptor_count = 2 },
+                .{ .type = .storage_buffer, .descriptor_count = 1 },
             };
             self.descriptor_pool.init(pool_sizes[0..], rg.global_render_graph.in_flight * 2);
 
@@ -179,21 +192,47 @@ pub fn MeshPass(comptime TargetType: type) type {
                 .p_immutable_samplers = undefined,
             };
 
-            self.descriptor_set_layout.init(&.{ camera_bindings, scene_bindings });
-            self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, @intCast(usize, rg.global_render_graph.in_flight));
+            const object_bindings: vk.DescriptorSetLayoutBinding = .{
+                .stage_flags = .{ .vertex_bit = true },
+                .binding = 0,
+                .descriptor_count = 1,
+                .descriptor_type = .storage_buffer,
+                .p_immutable_samplers = undefined,
+            };
 
-            self.descriptor_sets.writeBufferAll(0, &[_]vk.DescriptorBufferInfo{
+            self.descriptor_set_layout.init(&.{ camera_bindings, scene_bindings });
+            self.objects_descriptor_set_layout.init(&.{object_bindings});
+
+            self.descriptor_sets.init(
+                &self.descriptor_pool,
+                &.{self.descriptor_set_layout.vk_ref},
+                @intCast(usize, rg.global_render_graph.in_flight),
+            );
+            self.objects_descriptor_sets.init(
+                &self.descriptor_pool,
+                &.{self.objects_descriptor_set_layout.vk_ref},
+                @intCast(usize, rg.global_render_graph.in_flight),
+            );
+
+            self.descriptor_sets.writeBufferAll(0, .uniform_buffer_dynamic, &[_]vk.DescriptorBufferInfo{
                 .{
                     .buffer = self.camera_buffer.buffer.vk_ref,
                     .offset = 0,
-                    .range = @sizeOf(CameraData),
+                    .range = @intCast(u32, self.camera_buffer.single_buffer_size),
                 },
             });
-            self.descriptor_sets.writeBufferAll(1, &[_]vk.DescriptorBufferInfo{
+            self.descriptor_sets.writeBufferAll(1, .uniform_buffer_dynamic, &[_]vk.DescriptorBufferInfo{
                 .{
                     .buffer = self.scene_buffer.buffer.vk_ref,
                     .offset = 0,
-                    .range = @sizeOf(SceneData),
+                    .range = @intCast(u32, self.scene_buffer.single_buffer_size),
+                },
+            });
+            self.objects_descriptor_sets.writeBufferAll(0, .storage_buffer, &[_]vk.DescriptorBufferInfo{
+                .{
+                    .buffer = self.object_buffer.buffer.vk_ref,
+                    .offset = 0,
+                    .range = @intCast(u32, self.object_buffer.single_buffer_size),
                 },
             });
         }
@@ -225,7 +264,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             self.time += delta;
             if (self.time > 2.0 * 3.14)
                 self.time -= 2.0 * 3.14;
-            self.scene_buffer.data[frame_index].light_dir = .{ std.math.sin(self.time), 1.0, std.math.cos(self.time) };
+            self.scene_buffer.data[frame_index][0].light_dir = .{ std.math.sin(self.time), 1.0, std.math.cos(self.time) };
 
             const clear_color: [2]vk.ClearValue = .{
                 .{ .color = .{ .float_32 = [_]f32{ 0.6, 0.3, 0.6, 1.0 } } },
@@ -262,12 +301,23 @@ pub fn MeshPass(comptime TargetType: type) type {
             };
             const scissor_rect_ptr: *vk.Rect2D = &scissor_rect;
 
-            self.camera_buffer.data[frame_index].view_proj = nm.Mat4x4.mul(
+            self.camera_buffer.data[frame_index][0].view_proj = nm.Mat4x4.mul(
                 self.camera.projectionFn(self.camera, nm.rad(60.0), viewport_info.width / viewport_info.height, 0.0001, 100.0),
                 self.camera.viewMatrix(),
             );
 
+            var object_instance: u32 = 0;
             var it = self.material_render_objects_map.iterator();
+            while (it.next()) |kv| {
+                const render_objects: *std.ArrayList(RenderObject) = kv.value_ptr.*;
+                for (render_objects.items) |ro| {
+                    self.object_buffer.data[frame_index][object_instance].transform = ro.transform;
+                    object_instance += 1;
+                }
+            }
+
+            object_instance = 0;
+            it = self.material_render_objects_map.iterator();
             while (it.next()) |kv| {
                 const mat: *Material = kv.key_ptr.*;
                 const render_objects: *std.ArrayList(RenderObject) = kv.value_ptr.*;
@@ -280,6 +330,7 @@ pub fn MeshPass(comptime TargetType: type) type {
                 };
                 const descriptors = [_]vk.DescriptorSet{
                     self.descriptor_sets.vk_ref[frame_index],
+                    self.objects_descriptor_sets.vk_ref[frame_index],
                 };
 
                 vkfn.d.cmdBindDescriptorSets(
@@ -297,21 +348,9 @@ pub fn MeshPass(comptime TargetType: type) type {
                 vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
 
                 for (render_objects.items) |ro| {
-                    var push_const_block: Material.VertPushConstBlock = .{
-                        .transform = ro.transform,
-                    };
-
-                    vkfn.d.cmdPushConstants(
-                        command_buffer.vk_ref,
-                        mat.pipeline_layout.vk_ref,
-                        .{ .vertex_bit = true },
-                        0,
-                        @sizeOf(Material.VertPushConstBlock),
-                        @ptrCast([*]const Material.VertPushConstBlock, &push_const_block),
-                    );
-
                     ro.mesh.bind(command_buffer);
-                    vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, @intCast(u32, ro.mesh.index_count), 1, 0, 0, 0);
+                    vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, @intCast(u32, ro.mesh.index_count), 1, 0, 0, object_instance);
+                    object_instance += 1;
                 }
             }
         }
@@ -380,7 +419,10 @@ pub fn MeshPass(comptime TargetType: type) type {
                 color_blend_attachments[0..],
                 vertex_attributes,
                 model.generateInputBindings(),
-                &.{self.descriptor_set_layout.vk_ref},
+                &.{
+                    self.descriptor_set_layout.vk_ref,
+                    self.objects_descriptor_set_layout.vk_ref,
+                },
                 &self.pipeline_cache,
                 &self.render_pass,
             );
