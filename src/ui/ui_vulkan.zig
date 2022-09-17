@@ -30,6 +30,7 @@ const PipelineBuilder = @import("../vulkan_wrapper/pipeline_builder.zig").Pipeli
 const PipelineCache = @import("../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 const PipelineLayout = @import("../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 const Mesh = @import("../vulkan_wrapper/mesh.zig").Mesh;
+const TransferContext = @import("../renderer/render_graph/resources/transfer_context.zig").TransferContext;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -324,79 +325,13 @@ pub const UIVulkanContext = struct {
 
         const tex_size: usize = @intCast(usize, 4 * tex_dim[0] * tex_dim[1]);
 
-        const buffer_info: vk.BufferCreateInfo = .{
-            .size = tex_size,
-            .usage = .{
-                .transfer_src_bit = true,
-            },
-            .sharing_mode = .exclusive,
-            .flags = .{},
-            .queue_family_index_count = 0,
-            .p_queue_family_indices = undefined,
-        };
-
-        var staging_buffer: vk.Buffer = vkfn.d.createBuffer(vkctxt.device, buffer_info, null) catch |err| {
-            printVulkanError("Can't crete buffer for font texture", err);
-            return;
-        };
-        defer vkfn.d.destroyBuffer(vkctxt.device, staging_buffer, null);
-
-        var mem_req: vk.MemoryRequirements = vkfn.d.getBufferMemoryRequirements(vkctxt.device, staging_buffer);
-
-        const alloc_info: vk.MemoryAllocateInfo = .{
-            .allocation_size = mem_req.size,
-            .memory_type_index = vkctxt.getMemoryType(mem_req.memory_type_bits, .{ .host_visible_bit = true, .host_coherent_bit = true }),
-        };
-
-        var staging_buffer_memory: vk.DeviceMemory = vkfn.d.allocateMemory(vkctxt.device, alloc_info, null) catch |err| {
-            printVulkanError("Can't allocate buffer for font texture", err);
-            return;
-        };
-        defer vkfn.d.freeMemory(vkctxt.device, staging_buffer_memory, null);
-
-        vkfn.d.bindBufferMemory(vkctxt.device, staging_buffer, staging_buffer_memory, 0) catch |err| {
-            printVulkanError("Can't bind buffer memory for font texture", err);
-            return;
-        };
-        var mapped_memory: *anyopaque = vkfn.d.mapMemory(vkctxt.device, staging_buffer_memory, 0, tex_size, .{}) catch |err| {
-            printVulkanError("Can't map memory for font texture", err);
-            return;
-        } orelse return;
-        @memcpy(@ptrCast([*]u8, mapped_memory), font_data, tex_size);
-        vkfn.d.unmapMemory(vkctxt.device, staging_buffer_memory);
+        var font_data_slice: []u8 = undefined;
+        font_data_slice.ptr = font_data;
+        font_data_slice.len = tex_size;
 
         self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .r8g8b8a8_unorm, vkctxt.allocator);
         self.font_texture.alloc();
-
-        var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(&rg.global_render_graph.command_pool) catch unreachable;
-        scb.command_buffer.beginSingleTimeCommands();
-
-        self.font_texture.transitionImageLayout(scb.command_buffer.vk_ref, .@"undefined", .transfer_dst_optimal);
-
-        const region: vk.BufferImageCopy = .{
-            .buffer_offset = 0,
-            .buffer_row_length = 0,
-            .buffer_image_height = 0,
-            .image_subresource = .{
-                .aspect_mask = .{ .color_bit = true },
-                .mip_level = 0,
-                .base_array_layer = 0,
-                .layer_count = 1,
-            },
-            .image_offset = .{ .x = 0, .y = 0, .z = 0 },
-            .image_extent = .{
-                .width = @intCast(u32, tex_dim[0]),
-                .height = @intCast(u32, tex_dim[1]),
-                .depth = 1,
-            },
-        };
-
-        vkfn.d.cmdCopyBufferToImage(scb.command_buffer.vk_ref, staging_buffer, self.font_texture.image, .transfer_dst_optimal, 1, @ptrCast([*]const vk.BufferImageCopy, &region));
-
-        self.font_texture.transitionImageLayout(scb.command_buffer.vk_ref, .transfer_dst_optimal, .shader_read_only_optimal);
-
-        scb.command_buffer.endSingleTimeCommands();
-        scb.submit(vkctxt.graphics_queue);
+        TransferContext.transfer(&self.font_texture, .shader_read_only_optimal, font_data_slice);
 
         const pool_size: vk.DescriptorPoolSize = .{
             .type = .combined_image_sampler,
