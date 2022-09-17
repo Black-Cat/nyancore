@@ -10,6 +10,7 @@ const Buffer = @import("buffer.zig").Buffer;
 const CommandBuffer = @import("command_buffer.zig").CommandBuffer;
 const Model = @import("../model/model.zig").Model;
 const VmaAllocation = @import("vma_allocation.zig").VmaAllocation;
+const TransferContext = @import("transfer_context.zig").TransferContext;
 
 pub const Mesh = struct {
     vertex_buffer: Buffer,
@@ -35,8 +36,8 @@ pub const Mesh = struct {
         index_count: usize,
     ) void {
         self.index_type = index_type;
-        self.vertex_buffer.init(vertex_size * vertex_count, .{ .vertex_buffer_bit = true }, mapping_usage);
-        self.index_buffer.init(indexType2size(index_type) * index_count, .{ .index_buffer_bit = true }, mapping_usage);
+        self.vertex_buffer.init(vertex_size * vertex_count, .{ .vertex_buffer_bit = true, .transfer_dst_bit = true }, mapping_usage);
+        self.index_buffer.init(indexType2size(index_type) * index_count, .{ .index_buffer_bit = true, .transfer_dst_bit = true }, mapping_usage);
         self.index_count = index_count;
     }
 
@@ -46,25 +47,19 @@ pub const Mesh = struct {
         if (model.normals) |_| vertex_size += @sizeOf(nm.vec3);
         if (model.colors) |_| vertex_size += @sizeOf(nm.vec3);
 
-        self.init(.sequential, vertex_size, model.positions.?.len, .uint32, model.indices.?.len);
+        self.init(.no_mapping, vertex_size, model.positions.?.len, .uint32, model.indices.?.len);
 
-        var index_mapped_buffer: []u8 = undefined;
-        index_mapped_buffer.ptr = @ptrCast([*]u8, self.index_buffer.allocation.mapped_memory);
-        index_mapped_buffer.len = model.indices.?.len * @sizeOf(u32);
+        TransferContext.transfer_buffer(&self.index_buffer, std.mem.sliceAsBytes(model.indices.?));
 
-        std.mem.copy(u8, index_mapped_buffer, std.mem.sliceAsBytes(model.indices.?));
-
-        var mapped_buffer: []u8 = undefined;
-        mapped_buffer.ptr = @ptrCast([*]u8, self.vertex_buffer.allocation.mapped_memory);
-        mapped_buffer.len = model.positions.?.len * vertex_size;
+        var temp_buffer: []u8 = vkctxt.allocator.alloc(u8, model.positions.?.len * vertex_size) catch unreachable;
+        defer vkctxt.allocator.free(temp_buffer);
 
         var offset: usize = 0;
-        offset += copyBufferIfExist(model.positions, mapped_buffer, offset, vertex_size);
-        offset += copyBufferIfExist(model.normals, mapped_buffer, offset, vertex_size);
-        offset += copyBufferIfExist(model.colors, mapped_buffer, offset, vertex_size);
+        offset += copyBufferIfExist(model.positions, temp_buffer, offset, vertex_size);
+        offset += copyBufferIfExist(model.normals, temp_buffer, offset, vertex_size);
+        offset += copyBufferIfExist(model.colors, temp_buffer, offset, vertex_size);
 
-        self.index_buffer.flushWhole();
-        self.vertex_buffer.flushWhole();
+        TransferContext.transfer_buffer(&self.vertex_buffer, temp_buffer);
     }
 
     fn copyBufferIfExist(buffer: ?[]nm.vec3, dst: []u8, offset: usize, vertex_size: usize) usize {

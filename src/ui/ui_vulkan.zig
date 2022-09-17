@@ -30,7 +30,7 @@ const PipelineBuilder = @import("../vulkan_wrapper/pipeline_builder.zig").Pipeli
 const PipelineCache = @import("../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 const PipelineLayout = @import("../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 const Mesh = @import("../vulkan_wrapper/mesh.zig").Mesh;
-const TransferContext = @import("../renderer/render_graph/resources/transfer_context.zig").TransferContext;
+const TransferContext = @import("../vulkan_wrapper/transfer_context.zig").TransferContext;
 
 const PushConstBlock = packed struct {
     scale_translate: [4]f32,
@@ -331,7 +331,7 @@ pub const UIVulkanContext = struct {
 
         self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .r8g8b8a8_unorm, vkctxt.allocator);
         self.font_texture.alloc();
-        TransferContext.transfer(&self.font_texture, .shader_read_only_optimal, font_data_slice);
+        TransferContext.transfer_texture(&self.font_texture, .shader_read_only_optimal, font_data_slice);
 
         const pool_size: vk.DescriptorPoolSize = .{
             .type = .combined_image_sampler,
