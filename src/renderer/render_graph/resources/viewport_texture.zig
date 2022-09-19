@@ -5,7 +5,7 @@ const printError = @import("../../../application/print_error.zig").printError;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 const RenderGraph = @import("../render_graph.zig").RenderGraph;
 
-const Texture = @import("texture.zig").Texture;
+const Texture = @import("../../../vulkan_wrapper/texture.zig").Texture;
 
 pub const ViewportTexture = struct {
     rg_resource: RGResource,

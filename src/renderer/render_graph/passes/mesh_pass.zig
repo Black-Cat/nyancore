@@ -22,9 +22,9 @@ const PipelineBuilder = @import("../../../vulkan_wrapper/pipeline_builder.zig").
 const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
 const ShaderModule = @import("../../../vulkan_wrapper/shader_module.zig").ShaderModule;
+const Texture = @import("../../../vulkan_wrapper/texture.zig").Texture;
 
 const DynamicBuffer = @import("../resources/dynamic_buffer.zig").DynamicBuffer;
-const ImageWithView = @import("../resources/image_with_view.zig").ImageWithView;
 const Material = @import("../resources/material.zig").Material;
 const MaterialSignature = @import("../resources/material_signature.zig").MaterialSignature;
 const RenderObject = @import("../resources/render_object.zig").RenderObject;
@@ -65,7 +65,7 @@ pub fn MeshPass(comptime TargetType: type) type {
         mesh: Mesh,
         camera: *Camera,
 
-        depth_buffer: *ImageWithView,
+        depth_buffer: *Texture,
 
         time: f32, // Temporary
 
@@ -89,7 +89,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             self: *SelfType,
             comptime name: []const u8,
             target: *TargetType,
-            depth_buffer: *ImageWithView,
+            depth_buffer: *Texture,
             camera: *Camera,
         ) void {
             const res: *RGResource = rg.global_render_graph.getResource(target);

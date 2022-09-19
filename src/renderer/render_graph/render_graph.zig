@@ -15,7 +15,6 @@ const ResourceMap = std.AutoArrayHashMap(*anyopaque, *RGResource);
 
 const SyncPass = @import("passes/sync_pass.zig").SyncPass;
 const Swapchain = @import("../../vulkan_wrapper/swapchain.zig").Swapchain;
-const Texture = @import("resources/texture.zig").Texture;
 const ViewportTexture = @import("resources/viewport_texture.zig").ViewportTexture;
 const CommandPool = @import("../../vulkan_wrapper/command_pool.zig").CommandPool;
 const CommandBuffers = @import("../../vulkan_wrapper/command_buffers.zig").CommandBuffers;
@@ -53,9 +52,6 @@ pub const RenderGraph = struct {
 
     resource_changes: std.ArrayList(ResourceChangeFn),
 
-    textures: std.ArrayList(*Texture),
-    viewport_textures: std.ArrayList(*ViewportTexture),
-
     pub fn init(self: *RenderGraph, allocator: std.mem.Allocator) void {
         self.allocator = allocator;
 
@@ -69,9 +65,6 @@ pub const RenderGraph = struct {
         self.sync_passes = std.ArrayList(*SyncPass).init(allocator);
 
         self.resource_changes = std.ArrayList(ResourceChangeFn).init(allocator);
-
-        self.textures = std.ArrayList(*Texture).init(allocator);
-        self.viewport_textures = std.ArrayList(*ViewportTexture).init(allocator);
 
         self.frame_index = 0;
         self.image_index = 0;
@@ -126,16 +119,6 @@ pub const RenderGraph = struct {
         self.command_buffers.free();
     }
 
-    pub fn addTexture(self: *RenderGraph, tex: *Texture) void {
-        self.textures.append(tex) catch unreachable;
-        self.resources.put(tex, &tex.rg_resource) catch unreachable;
-    }
-
-    pub fn addViewportTexture(self: *RenderGraph, tex: *ViewportTexture) void {
-        self.viewport_textures.append(tex) catch unreachable;
-        self.resources.put(tex, &tex.rg_resource) catch unreachable;
-    }
-
     pub fn addResource(self: *RenderGraph, res: *anyopaque, name: []const u8) void {
         var rg_res: *RGResource = self.allocator.create(RGResource) catch unreachable;
         rg_res.init(name, self.allocator);
@@ -144,11 +127,6 @@ pub const RenderGraph = struct {
 
     pub fn getResource(self: *RenderGraph, res: *anyopaque) *RGResource {
         return self.resources.get(res).?;
-    }
-
-    pub fn removeTexture(self: *RenderGraph, tex: *Texture) void {
-        _ = self;
-        _ = tex;
     }
 
     pub fn changeResourceBetweenFrames(self: *RenderGraph, res: *anyopaque, change_fn: fn (res: *anyopaque) void) void {

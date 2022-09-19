@@ -4,11 +4,11 @@ const vkctxt = @import("vulkan_context.zig");
 const vkfn = @import("vulkan_functions.zig");
 
 const Buffer = @import("buffer.zig").Buffer;
+const Image = @import("image.zig").Image;
 const SingleCommandBuffer = @import("single_command_buffer.zig").SingleCommandBuffer;
-const Texture = @import("../renderer/render_graph/resources/texture.zig").Texture;
 
 pub const TransferContext = struct {
-    pub fn transfer_texture(target: *Texture, final_layout: vk.ImageLayout, data: []u8) void {
+    pub fn transfer_image(target: *Image, final_layout: vk.ImageLayout, data: []u8) void {
         var staging_buffer: Buffer = undefined;
         staging_buffer.init(data.len, .{ .transfer_src_bit = true }, .sequential);
         defer staging_buffer.destroy();
@@ -18,7 +18,7 @@ pub const TransferContext = struct {
         var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(&rg.global_render_graph.command_pool) catch unreachable;
         scb.command_buffer.beginSingleTimeCommands();
 
-        target.transitionImageLayout(scb.command_buffer.vk_ref, .@"undefined", .transfer_dst_optimal);
+        target.transitionImageLayout(scb.command_buffer.vk_ref, .transfer_dst_optimal);
 
         const region: vk.BufferImageCopy = .{
             .buffer_offset = 0,
@@ -37,13 +37,13 @@ pub const TransferContext = struct {
         vkfn.d.cmdCopyBufferToImage(
             scb.command_buffer.vk_ref,
             staging_buffer.vk_ref,
-            target.image,
+            target.vk_ref,
             .transfer_dst_optimal,
             1,
             @ptrCast([*]const vk.BufferImageCopy, &region),
         );
 
-        target.transitionImageLayout(scb.command_buffer.vk_ref, .transfer_dst_optimal, final_layout);
+        target.transitionImageLayout(scb.command_buffer.vk_ref, final_layout);
 
         scb.command_buffer.endSingleTimeCommands();
         scb.submit(vkctxt.graphics_queue);

@@ -22,7 +22,7 @@ const Swapchain = @import("../../vulkan_wrapper/swapchain.zig").Swapchain;
 const SyncPass = @import("../../renderer/render_graph/passes/sync_pass.zig").SyncPass;
 const RGPass = @import("../../renderer/render_graph/render_graph_pass.zig").RGPass;
 
-const ImageWithView = @import("../../renderer/render_graph/resources/image_with_view.zig").ImageWithView;
+const Texture = @import("../../vulkan_wrapper/texture.zig").Texture;
 
 pub const MeshViewerWindow = struct {
     const MAX_FILE_PATH_LEN = 256;
@@ -34,7 +34,7 @@ pub const MeshViewerWindow = struct {
 
     models: []Model,
     pass: MeshPass(Swapchain),
-    depth_buffer: ImageWithView,
+    depth_buffer: Texture,
     ui_sync_pass: SyncPass,
     ui_pass: *RGPass,
 

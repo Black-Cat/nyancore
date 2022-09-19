@@ -17,19 +17,21 @@ const printVulkanError = @import("../vulkan_wrapper/print_vulkan_error.zig").pri
 
 const rg = @import("../renderer/render_graph/render_graph.zig");
 const RenderGraph = rg.RenderGraph;
-const Texture = @import("../renderer/render_graph/resources/texture.zig").Texture;
+
 const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 const DescriptorPool = @import("../vulkan_wrapper/descriptor_pool.zig").DescriptorPool;
-const DescriptorSets = @import("../vulkan_wrapper/descriptor_sets.zig").DescriptorSets;
 const DescriptorSetLayout = @import("../vulkan_wrapper/descriptor_set_layout.zig").DescriptorSetLayout;
-const SingleCommandBuffer = @import("../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
-const RenderPass = @import("../vulkan_wrapper/render_pass.zig").RenderPass;
-const ShaderModule = @import("../vulkan_wrapper/shader_module.zig").ShaderModule;
+const DescriptorSets = @import("../vulkan_wrapper/descriptor_sets.zig").DescriptorSets;
+const Mesh = @import("../vulkan_wrapper/mesh.zig").Mesh;
 const Pipeline = @import("../vulkan_wrapper/pipeline.zig").Pipeline;
 const PipelineBuilder = @import("../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 const PipelineCache = @import("../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 const PipelineLayout = @import("../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
-const Mesh = @import("../vulkan_wrapper/mesh.zig").Mesh;
+const RenderPass = @import("../vulkan_wrapper/render_pass.zig").RenderPass;
+const Sampler = @import("../vulkan_wrapper/sampler.zig").Sampler;
+const ShaderModule = @import("../vulkan_wrapper/shader_module.zig").ShaderModule;
+const SingleCommandBuffer = @import("../vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
+const Texture = @import("../vulkan_wrapper/texture.zig").Texture;
 const TransferContext = @import("../vulkan_wrapper/transfer_context.zig").TransferContext;
 
 const PushConstBlock = packed struct {
@@ -39,6 +41,7 @@ const PushConstBlock = packed struct {
 pub const UIVulkanContext = struct {
     parent: *UI,
     font_texture: Texture,
+    font_sampler: Sampler,
 
     descriptor_pool: DescriptorPool,
     descriptor_set_layout: DescriptorSetLayout,
@@ -80,7 +83,8 @@ pub const UIVulkanContext = struct {
         self.descriptor_set_layout.deinit();
         self.descriptor_pool.deinit();
 
-        self.font_texture.destroy();
+        self.font_sampler.deinit();
+        self.font_texture.deinit();
     }
     pub fn render(self: *UIVulkanContext, command_buffer: *CommandBuffer, frame_index: u32) void {
         self.updateBuffers(frame_index);
@@ -329,9 +333,14 @@ pub const UIVulkanContext = struct {
         font_data_slice.ptr = font_data;
         font_data_slice.len = tex_size;
 
-        self.font_texture.init("Font Texture", @intCast(u32, tex_dim[0]), @intCast(u32, tex_dim[1]), .r8g8b8a8_unorm, vkctxt.allocator);
-        self.font_texture.alloc();
-        TransferContext.transfer_texture(&self.font_texture, .shader_read_only_optimal, font_data_slice);
+        const extent: vk.Extent3D = .{
+            .width = @intCast(u32, tex_dim[0]),
+            .height = @intCast(u32, tex_dim[1]),
+            .depth = 1.0,
+        };
+        self.font_texture.init(extent, .r8g8b8a8_unorm, .{ .transfer_dst_bit = true, .sampled_bit = true });
+        rg.global_render_graph.addResource(&self.font_texture, "Font Texture");
+        TransferContext.transfer_image(&self.font_texture.image, .shader_read_only_optimal, font_data_slice);
 
         const pool_size: vk.DescriptorPoolSize = .{
             .type = .combined_image_sampler,
@@ -351,9 +360,11 @@ pub const UIVulkanContext = struct {
         self.descriptor_set_layout.init(&.{set_layout_bindings});
         self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, 1);
 
+        self.font_sampler.init();
+
         const font_descriptor_image_info: vk.DescriptorImageInfo = .{
-            .sampler = self.font_texture.sampler,
-            .image_view = self.font_texture.view,
+            .sampler = self.font_sampler.vk_ref,
+            .image_view = self.font_texture.view.vk_ref,
             .image_layout = .shader_read_only_optimal,
         };
 
