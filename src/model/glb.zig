@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const nm = @import("../math/math.zig");
 
@@ -288,7 +289,12 @@ fn extractBuffer(comptime ElementType: type, buffer: []u8, accessor: *Accessor, 
 
 fn readData(reader: anytype, allocator: std.mem.Allocator, chunk_length: u32) ![]u8 {
     var buffer: []u8 = allocator.alloc(u8, chunk_length) catch unreachable;
-    for (std.mem.bytesAsSlice(u32, buffer)) |*v|
-        v.* = try reader.readIntLittle(u32);
+    _ = try reader.readNoEof(buffer);
+
+    if (builtin.target.cpu.arch.endian() != .Little) {
+        for (std.mem.bytesAsSlice(u32, buffer)) |*v|
+            v.* = @byteSwap(u32, v.*);
+    }
+
     return buffer;
 }

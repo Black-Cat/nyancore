@@ -172,7 +172,7 @@ pub fn MeshPass(comptime TargetType: type) type {
             self.object_buffer.init(max_object_count);
 
             const pool_sizes = &[_]vk.DescriptorPoolSize{
-                .{ .type = .uniform_buffer_dynamic, .descriptor_count = 2 },
+                .{ .type = .uniform_buffer_dynamic, .descriptor_count = 5 },
                 .{ .type = .storage_buffer, .descriptor_count = 1 },
             };
             self.descriptor_pool.init(pool_sizes[0..], rg.global_render_graph.in_flight * 2);
