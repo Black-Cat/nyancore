@@ -360,6 +360,7 @@ pub const UIVulkanContext = struct {
         self.descriptor_set_layout.init(&.{set_layout_bindings});
         self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, 1);
 
+        self.font_sampler.sampler_info = Sampler.default_sampler_info;
         self.font_sampler.init();
 
         const font_descriptor_image_info: vk.DescriptorImageInfo = .{

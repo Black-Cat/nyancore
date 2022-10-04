@@ -2,8 +2,10 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const nm = @import("../math/math.zig");
+const vk = @import("../vk.zig");
 
 const Model = @import("model.zig").Model;
+const Sampler = @import("../vulkan_wrapper/sampler.zig").Sampler;
 
 const glb_signature: u32 = 0x46546C67;
 const glb_version: u32 = 2;
@@ -72,6 +74,55 @@ const BufferView = struct {
 
             .target = getOptionalInt(u32, json_node, "target"),
             .byte_stride = getOptionalInt(usize, json_node, "byteStride"),
+        };
+    }
+};
+
+const GltfSampler = struct {
+    sampler: Sampler,
+
+    pub fn fromJson(json_node: std.json.Value) GltfSampler {
+        const mag_filter: usize = getInt(usize, json_node, "magFilter");
+        const min_filter: usize = getInt(usize, json_node, "minFilter");
+        const wrap_s: ?usize = getOptionalInt(usize, json_node, "wrapS");
+        const wrap_t: ?usize = getOptionalInt(usize, json_node, "wrapT");
+
+        var sampler: GltfSampler = undefined;
+        sampler.sampler.sampler_info = Sampler.default_sampler_info;
+
+        sampler.sampler.sampler_info.mag_filter = switch (mag_filter) {
+            0x2600 => .nearest,
+            0x2601 => .linear,
+            else => @panic("Unknown mag filter"),
+        };
+
+        sampler.sampler.sampler_info.min_filter = switch (min_filter) {
+            0x2600, 0x2700, 0x2702 => .nearest,
+            0x2601, 0x2701, 0x2703 => .linear,
+            else => @panic("Unknown min filter"),
+        };
+
+        sampler.sampler.sampler_info.mipmap_mode = switch (min_filter) {
+            0x2600, 0x2601, 0x2700, 0x2701 => .nearest,
+            0x2702, 0x2703 => .linear,
+            else => @panic("Unknown min filter"),
+        };
+
+        if (wrap_s) |w|
+            sampler.sampler.sampler_info.address_mode_u = addressModeFromOpenGL(w);
+        if (wrap_t) |w|
+            sampler.sampler.sampler_info.address_mode_v = addressModeFromOpenGL(w);
+
+        return sampler;
+    }
+
+    fn addressModeFromOpenGL(val: usize) vk.SamplerAddressMode {
+        return switch (val) {
+            0x2901 => .repeat,
+            0x8370 => .mirrored_repeat,
+            0x812F => .clamp_to_edge,
+            0x2900 => .clamp_to_border,
+            else => @panic("Unknown address mode"),
         };
     }
 };
@@ -219,6 +270,9 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
 
     for (accessors) |*a|
         a.buffer_view_ptr = &buffer_views[a.buffer_view];
+
+    var samplers: []GltfSampler = parseArray(GltfSampler, "samplers", json_tree.root, allocator);
+    defer allocator.free(samplers);
 
     const bin_chunk_size: u32 = try reader.readIntLittle(u32);
     const valid_bin_signature: bool = (try reader.readIntLittle(u32)) == bin_chunk_type;
