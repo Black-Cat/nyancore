@@ -4,6 +4,8 @@ const builtin = @import("builtin");
 const nm = @import("../math/math.zig");
 const vk = @import("../vk.zig");
 
+const jpg = @import("../image/jpg.zig");
+
 const Model = @import("model.zig").Model;
 const Sampler = @import("../vulkan_wrapper/sampler.zig").Sampler;
 
@@ -124,6 +126,18 @@ const GltfSampler = struct {
             0x2900 => .clamp_to_border,
             else => @panic("Unknown address mode"),
         };
+    }
+};
+
+const GltfImage = struct {
+    buffer_view: usize,
+    mime_type: []const u8,
+
+    pub fn fromJson(json_node: std.json.Value) GltfImage {
+        var image: GltfImage = undefined;
+        image.buffer_view = getInt(usize, json_node, "bufferView");
+        image.mime_type = json_node.Object.get("mimeType").?.String;
+        return image;
     }
 };
 
@@ -274,12 +288,26 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
     var samplers: []GltfSampler = parseArray(GltfSampler, "samplers", json_tree.root, allocator);
     defer allocator.free(samplers);
 
+    var images: []GltfImage = parseArray(GltfImage, "images", json_tree.root, allocator);
+    defer allocator.free(images);
+
     const bin_chunk_size: u32 = try reader.readIntLittle(u32);
     const valid_bin_signature: bool = (try reader.readIntLittle(u32)) == bin_chunk_type;
     if (!valid_bin_signature)
         return error.InvalidBinSignature;
 
     var bin_buffer: []u8 = try readData(reader, allocator, bin_chunk_size);
+
+    for (images) |im| {
+        const buffer_view: *BufferView = &buffer_views[im.buffer_view];
+        var image_data: []u8 = extractImageBuffer(bin_buffer, buffer_view);
+
+        var stream = std.io.fixedBufferStream(image_data);
+        const stream_reader = stream.reader();
+
+        _ = jpg.checkHeader(stream_reader) catch unreachable;
+        _ = jpg.parse(stream_reader, allocator) catch unreachable;
+    }
 
     var meshes = json_tree.root.Object.get("meshes").?.Array;
     var models: []Model = allocator.alloc(Model, meshes.items.len) catch unreachable;
@@ -339,6 +367,10 @@ fn extractBuffer(comptime ElementType: type, buffer: []u8, accessor: *Accessor, 
     }
 
     return result;
+}
+
+fn extractImageBuffer(buffer: []u8, buffer_view: *BufferView) []u8 {
+    return buffer[buffer_view.byte_offset .. buffer_view.byte_offset + buffer_view.byte_length];
 }
 
 fn readData(reader: anytype, allocator: std.mem.Allocator, chunk_length: u32) ![]u8 {
