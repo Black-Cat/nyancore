@@ -67,8 +67,8 @@ const HuffmanTable = struct {
         _ = try reader.readIntBig(u16); // Chunk length
 
         const ht_information: u8 = try reader.readIntBig(u8);
-        table.ht_count = @truncate(u4, ht_information >> 4);
-        table.ht_type = @truncate(u1, ht_information >> 3);
+        table.ht_count = @truncate(u4, ht_information);
+        table.ht_type = @truncate(u1, ht_information >> 4);
 
         _ = try reader.readAll(table.symbols_count[0..]);
 
@@ -123,6 +123,32 @@ const HuffmanTable = struct {
     }
 };
 
+const QuantizationTable = struct {
+    number: u4,
+    precision: u4,
+    values: []u8,
+
+    allocator: std.mem.Allocator,
+
+    pub fn parse(reader: anytype, allocator: std.mem.Allocator) !QuantizationTable {
+        var table: QuantizationTable = undefined;
+        table.allocator = allocator;
+
+        const qt_information: u8 = try reader.readIntBig(u8);
+        table.number = @truncate(u4, qt_information);
+        table.precision = @truncate(u4, qt_information >> 4);
+
+        table.values = allocator.alloc(u8, 64 * @intCast(usize, (table.precision + 1))) catch unreachable;
+        _ = try reader.readAll(table.values);
+
+        return table;
+    }
+
+    pub fn deinit(self: *QuantizationTable) void {
+        self.allocator.free(self.values);
+    }
+};
+
 // Without header
 pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     var image: Image = undefined;
@@ -133,6 +159,10 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     var huffman_tables: [4]HuffmanTable = undefined;
     defer for (huffman_tables) |*ht| ht.deinit();
     var current_huffman_table: usize = 0;
+
+    var quantization_tables: [2]QuantizationTable = undefined;
+    defer for (quantization_tables) |*qt| qt.deinit();
+    var current_quantization_table: usize = 0;
 
     var marker: u16 = undefined;
     var chunk_length: u16 = undefined;
@@ -146,12 +176,19 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
                 huffman_tables[current_huffman_table] = try HuffmanTable.parse(reader, allocator);
                 current_huffman_table += 1;
             },
+            0xFFDB => {
+                quantization_tables[current_quantization_table] = try QuantizationTable.parse(reader, allocator);
+                current_quantization_table += 1;
+            },
             else => {
                 chunk_length = try reader.readIntBig(u16);
                 try reader.skipBytes(chunk_length - 2, .{});
             },
         }
     }
+
+    if (quantization_tables[0].number != 0)
+        std.mem.swap(QuantizationTable, &quantization_tables[0], &quantization_tables[1]);
 
     return image;
 }
