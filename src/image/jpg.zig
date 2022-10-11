@@ -134,6 +134,8 @@ const QuantizationTable = struct {
         var table: QuantizationTable = undefined;
         table.allocator = allocator;
 
+        _ = try reader.readIntBig(u16); // Chunk length
+
         const qt_information: u8 = try reader.readIntBig(u8);
         table.number = @truncate(u4, qt_information);
         table.precision = @truncate(u4, qt_information >> 4);
@@ -149,13 +151,110 @@ const QuantizationTable = struct {
     }
 };
 
+const Frame = struct {
+    pub const ComponentData = struct {
+        id: u8,
+        sampling_factor_vertical: u4,
+        sampling_factor_horizontal: u4,
+        quantization_table: u8,
+    };
+
+    allocator: std.mem.Allocator,
+
+    precision: u8,
+    height: u16,
+    width: u16,
+    components_count: u8,
+    components: []ComponentData,
+
+    pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Frame {
+        var frame: Frame = undefined;
+        frame.allocator = allocator;
+
+        _ = try reader.readIntBig(u16); // Chunk length
+
+        frame.precision = try reader.readIntBig(u8);
+        frame.height = try reader.readIntBig(u16);
+        frame.width = try reader.readIntBig(u16);
+        frame.components_count = try reader.readIntBig(u8);
+
+        frame.components = allocator.alloc(ComponentData, frame.components_count) catch unreachable;
+        for (frame.components) |*c| {
+            c.id = try reader.readIntBig(u8);
+            const sampling_factors: u8 = try reader.readIntBig(u8);
+            c.sampling_factor_vertical = @truncate(u4, sampling_factors);
+            c.sampling_factor_horizontal = @truncate(u4, sampling_factors >> 4);
+            c.quantization_table = try reader.readIntBig(u8);
+        }
+
+        return frame;
+    }
+
+    pub fn deinit(self: *Frame) void {
+        self.allocator.free(self.components);
+    }
+};
+
+const ScanData = struct {
+    pub const Selector = struct {
+        dc: u4,
+        ac: u4,
+    };
+
+    allocator: std.mem.Allocator,
+
+    components: u8,
+    selectors: []Selector,
+    spectral_select: [2]u8,
+    successive_approx: u8,
+
+    data: []u8,
+
+    pub fn parse(reader: anytype, allocator: std.mem.Allocator) !ScanData {
+        var scan: ScanData = undefined;
+        scan.allocator = allocator;
+
+        _ = try reader.readIntBig(u16); // Chunk length
+
+        scan.components = try reader.readIntBig(u8);
+        scan.selectors = allocator.alloc(Selector, scan.components) catch unreachable;
+        for (scan.selectors) |_| {
+            const index: u8 = try reader.readIntBig(u8);
+            const selector_data: u8 = try reader.readIntBig(u8);
+            scan.selectors[index - 1].ac = @truncate(u4, selector_data);
+            scan.selectors[index - 1].dc = @truncate(u4, selector_data >> 4);
+        }
+
+        _ = try reader.readAll(scan.spectral_select[0..]);
+        scan.successive_approx = try reader.readIntBig(u8);
+
+        var data_array_list = std.ArrayList(u8).init(allocator);
+        defer data_array_list.deinit();
+
+        while (true) {
+            const b: u8 = try reader.readByte();
+            if (b == 0xFF) {
+                const next_b: u8 = try reader.readByte();
+                if (next_b == 0xD9)
+                    break;
+            }
+
+            data_array_list.append(b) catch unreachable;
+        }
+
+        scan.data = data_array_list.toOwnedSlice();
+
+        return scan;
+    }
+
+    pub fn deinit(self: *ScanData) void {
+        self.allocator.free(self.selectors);
+        self.allocator.free(self.data);
+    }
+};
+
 // Without header
 pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
-    var image: Image = undefined;
-    image.width = 0;
-    image.height = 0;
-    image.data = allocator.alloc(u8, 100) catch unreachable;
-
     var huffman_tables: [4]HuffmanTable = undefined;
     defer for (huffman_tables) |*ht| ht.deinit();
     var current_huffman_table: usize = 0;
@@ -164,6 +263,12 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     defer for (quantization_tables) |*qt| qt.deinit();
     var current_quantization_table: usize = 0;
 
+    var frame: Frame = undefined;
+    defer frame.deinit();
+
+    var scan_data: ScanData = undefined;
+    defer scan_data.deinit();
+
     var marker: u16 = undefined;
     var chunk_length: u16 = undefined;
 
@@ -171,7 +276,10 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
         marker = try reader.readIntBig(u16);
 
         switch (marker) {
-            0xFFDA => break,
+            0xFFDA => {
+                scan_data = try ScanData.parse(reader, allocator);
+                break;
+            },
             0xFFC4 => {
                 huffman_tables[current_huffman_table] = try HuffmanTable.parse(reader, allocator);
                 current_huffman_table += 1;
@@ -179,6 +287,9 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
             0xFFDB => {
                 quantization_tables[current_quantization_table] = try QuantizationTable.parse(reader, allocator);
                 current_quantization_table += 1;
+            },
+            0xFFC0 => {
+                frame = try Frame.parse(reader, allocator);
             },
             else => {
                 chunk_length = try reader.readIntBig(u16);
@@ -189,6 +300,11 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
 
     if (quantization_tables[0].number != 0)
         std.mem.swap(QuantizationTable, &quantization_tables[0], &quantization_tables[1]);
+
+    var image: Image = undefined;
+    image.width = 0;
+    image.height = 0;
+    image.data = allocator.alloc(u8, 100) catch unreachable;
 
     return image;
 }
