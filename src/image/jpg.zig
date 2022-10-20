@@ -3,6 +3,8 @@ const std = @import("std");
 const Image = @import("image.zig").Image;
 const printError = @import("../application/print_error.zig").printError;
 
+const print_header = false;
+
 pub fn checkHeader(reader: anytype) !bool {
     const jpg_signature = [_]u8{ 0xFF, 0xD8 };
     return reader.isBytes(&jpg_signature);
@@ -20,56 +22,20 @@ const zig_zag: [64]u8 = .{
 };
 
 const HuffmanTable = struct {
-    const HuffmanTreeNode = struct {
-        nodes: [2]?*HuffmanTreeNode = .{null} ** 2,
-        symbol: ?u8 = null,
-
-        pub fn bitsFromLength(self: *HuffmanTreeNode, symbol_to_add: u8, pos: usize, allocator: std.mem.Allocator) bool {
-            if (pos == 0) {
-                if (self.nodes[1] != null)
-                    return false;
-                var symbol_node: *HuffmanTreeNode = allocator.create(HuffmanTreeNode) catch unreachable;
-                symbol_node.* = .{};
-                symbol_node.symbol = symbol_to_add;
-                for (self.nodes) |*n| {
-                    if (n.* == null) {
-                        n.* = symbol_node;
-                        return true;
-                    }
-                }
-            }
-
-            for (self.nodes) |*n| {
-                if (n.* == null) {
-                    n.* = allocator.create(HuffmanTreeNode) catch unreachable;
-                    n.*.?.* = .{};
-                }
-                if (n.*.?.bitsFromLength(symbol_to_add, pos - 1, allocator))
-                    return true;
-            }
-
-            return false;
-        }
-
-        pub fn deinit(self: *HuffmanTreeNode, allocator: std.mem.Allocator) void {
-            for (self.nodes) |*n| {
-                if (n.*) |nn| {
-                    if (nn.symbol == null)
-                        nn.deinit(allocator);
-                    allocator.destroy(nn);
-                }
-            }
-        }
-    };
-
     allocator: std.mem.Allocator,
 
     ht_number: u4,
     ht_type: u1, // 0 = DC, 1 = AC
-    symbols_count: [16]u8,
-    symbols: []u8,
 
-    tree_root: HuffmanTreeNode,
+    length_counts: [16]u8,
+    code_lengths: [256]u8,
+    codes: [255]u16,
+
+    min_codes: [17]u16,
+    max_codes: [17]u16,
+    first_codes: [17]usize,
+
+    symbols: []u8,
 
     pub fn parse(reader: anytype, allocator: std.mem.Allocator) !HuffmanTable {
         var table: HuffmanTable = undefined;
@@ -81,48 +47,71 @@ const HuffmanTable = struct {
         table.ht_number = @truncate(u4, ht_information);
         table.ht_type = @truncate(u1, ht_information >> 4);
 
-        _ = try reader.readAll(table.symbols_count[0..]);
+        _ = try reader.readAll(table.length_counts[0..]);
 
         var total_symbol_count: usize = 0;
-        for (table.symbols_count) |sc|
+        for (table.length_counts) |sc|
             total_symbol_count += sc;
 
         table.symbols = allocator.alloc(u8, total_symbol_count) catch unreachable;
         _ = try reader.readAll(table.symbols);
 
-        table.tree_root = .{};
-        table.initTree();
+        table.generateCodes();
 
         return table;
     }
 
-    pub fn deinit(self: *HuffmanTable) void {
-        self.allocator.free(self.symbols);
-
-        self.tree_root.deinit(self.allocator);
-    }
-
-    fn initTree(self: *HuffmanTable) void {
-        var symbols_ind: usize = 0;
-        for (self.symbols_count) |sc, l| {
-            var left: usize = sc;
-            while (left > 0) : (left -= 1) {
-                _ = self.tree_root.bitsFromLength(self.symbols[symbols_ind], l, self.allocator);
-                symbols_ind += 1;
+    fn generateCodes(self: *HuffmanTable) void {
+        var code_counter: usize = 0;
+        for (self.length_counts) |count, ind| {
+            var i: usize = 0;
+            while (i < count) : (i += 1) {
+                self.code_lengths[code_counter] = @intCast(u8, ind) + 1;
+                code_counter += 1;
             }
         }
+        self.code_lengths[code_counter] = 0;
+
+        code_counter = 0;
+        var length_counter: usize = 1;
+        var index: usize = 0;
+        while (length_counter <= 16) : (length_counter += 1) {
+            self.min_codes[length_counter] = @intCast(u16, code_counter);
+            self.first_codes[length_counter] = index;
+            while (self.code_lengths[index] == length_counter) {
+                self.codes[index] = @intCast(u16, code_counter);
+                code_counter += 1;
+                index += 1;
+            }
+            self.max_codes[length_counter] = @intCast(u16, code_counter);
+            code_counter <<= 1;
+        }
     }
 
-    pub fn getNextSymbol(self: *HuffmanTable, bit_reader: anytype) !u8 {
-        var node: *HuffmanTreeNode = &self.tree_root;
+    pub fn decode(self: *HuffmanTable, bit_reader: anytype) !u8 {
+        var code: usize = 0;
+        var code_length: u8 = 0;
         var out_bits: usize = undefined;
-
-        while (true) {
-            var bit: usize = try bit_reader.readBits(usize, 1, &out_bits);
-            node = node.nodes[bit].?;
-            if (node.symbol) |s|
-                return s;
+        while (code_length <= 16) {
+            code <<= 1;
+            code |= try bit_reader.readBits(usize, 1, &out_bits);
+            code_length += 1;
+            if (code <= self.max_codes[code_length]) {
+                var index: usize = self.first_codes[code_length] + code - self.min_codes[code_length];
+                return self.symbols[index];
+            }
         }
+        unreachable;
+    }
+
+    pub fn deinit(self: *HuffmanTable) void {
+        self.allocator.free(self.symbols);
+    }
+
+    pub fn debugPrint(self: *const HuffmanTable) void {
+        std.debug.print("Huffman Table {d}:\n", .{self.ht_number});
+        std.debug.print("\t{d}\n", .{self.length_counts[0..8].*});
+        std.debug.print("\t{d}\n", .{self.length_counts[8..16].*});
     }
 };
 
@@ -222,6 +211,17 @@ const Frame = struct {
     pub fn deinit(self: *Frame) void {
         self.allocator.free(self.components);
     }
+
+    pub fn debugPrint(self: *Frame) void {
+        std.debug.print("Frame: Width={d} Height={d} Components={d}\n", .{ self.height, self.width, self.components_count });
+        for (self.components) |c, ind|
+            std.debug.print("\t[{d}]: {d}h x {d}v, q={d}\n", .{
+                ind,
+                c.sampling_factor_horizontal,
+                c.sampling_factor_vertical,
+                c.quantization_table,
+            });
+    }
 };
 
 const ScanData = struct {
@@ -235,7 +235,7 @@ const ScanData = struct {
     components: u8,
     component_descriptors: []ComponentDescriptor,
     spectral_select: [2]u8,
-    successive_approx: u8,
+    successive_approx: [2]u4,
 
     data: []u8,
 
@@ -255,7 +255,9 @@ const ScanData = struct {
         }
 
         _ = try reader.readAll(scan.spectral_select[0..]);
-        scan.successive_approx = try reader.readIntBig(u8);
+        var temp: u8 = try reader.readIntBig(u8);
+        scan.successive_approx[0] = @truncate(u4, temp);
+        scan.successive_approx[1] = @truncate(u4, temp >> 4);
 
         var data_array_list = std.ArrayList(u8).init(allocator);
         defer data_array_list.deinit();
@@ -279,6 +281,18 @@ const ScanData = struct {
     pub fn deinit(self: *ScanData) void {
         self.allocator.free(self.component_descriptors);
         self.allocator.free(self.data);
+    }
+
+    pub fn debugPrint(self: *ScanData) void {
+        std.debug.print("Scan:\n", .{});
+        for (self.component_descriptors) |c, ind|
+            std.debug.print("\tComponent {d}: dc={d} ac={d}\n", .{ ind, c.dc, c.ac });
+        std.debug.print("\tSs={d} Se={d} Ah={d} Al={d}\n", .{
+            self.spectral_select[0],
+            self.spectral_select[1],
+            self.successive_approx[0],
+            self.successive_approx[1],
+        });
     }
 };
 
@@ -326,43 +340,44 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
         }
     }
 
+    if (print_header) {
+        for (quantization_tables) |qt|
+            qt.debugPrint();
+
+        frame.debugPrint();
+
+        for (huffman_tables) |ht|
+            ht.debugPrint();
+
+        scan_data.debugPrint();
+    }
+
+    var comp_max_h: u4 = 1;
+    var comp_max_v: u4 = 1;
+    for (frame.components) |c| {
+        comp_max_h = @maximum(comp_max_h, c.sampling_factor_horizontal);
+        comp_max_v = @maximum(comp_max_v, c.sampling_factor_vertical);
+    }
+
+    const mcu_w: usize = @intCast(usize, comp_max_h) * 8;
+    const mcu_h: usize = @intCast(usize, comp_max_v) * 8;
+
+    const mcu_x: usize = (frame.width + mcu_w - 1) / mcu_w;
+    const mcu_y: usize = (frame.height + mcu_h - 1) / mcu_h;
+
     var data_stream = std.io.fixedBufferStream(scan_data.data);
     var bit_reader = std.io.bitReader(.Big, data_stream.reader());
 
-    var lumd_coeff: u32 = 0;
-    var cbd_coeff: u32 = 0;
-    var crd_coeff: u32 = 0;
-
-    var y: usize = 0;
-    while (y < @divExact(frame.height, 8)) : (y += 1) {
-        var x: usize = 0;
-        while (x < @divExact(frame.width, 8)) : (x += 1) {
-            var mat_l: [64]f32 = try buildMatrix(
-                &bit_reader,
-                0,
-                &huffman_tables,
-                &quantization_tables[frame.components[0].quantization_table],
-                &lumd_coeff,
-            );
-            _ = mat_l;
-
-            var mat_cr: [64]f32 = try buildMatrix(
-                &bit_reader,
-                1,
-                &huffman_tables,
-                &quantization_tables[frame.components[1].quantization_table],
-                &crd_coeff,
-            );
-            _ = mat_cr;
-
-            var mat_cb: [64]f32 = try buildMatrix(
-                &bit_reader,
-                1,
-                &huffman_tables,
-                &quantization_tables[frame.components[2].quantization_table],
-                &cbd_coeff,
-            );
-            _ = mat_cb;
+    var mcu_index: usize = 0;
+    while (mcu_index < mcu_x * mcu_y) : (mcu_index += 1) {
+        for (frame.components) |c| {
+            var i: usize = 0;
+            while (i < c.sampling_factor_vertical) : (i += 1) {
+                var j: usize = 0;
+                while (j < c.sampling_factor_vertical) : (j += 1) {
+                    _ = bit_reader;
+                }
+            }
         }
     }
 
@@ -386,7 +401,7 @@ fn buildMatrix(
     quant: *QuantizationTable,
     coef: *u32,
 ) ![64]f32 {
-    var code: u8 = try huffman_tables[idx].getNextSymbol(bit_reader);
+    var code: u8 = try huffman_tables[idx].decode(bit_reader);
     var unused: usize = undefined;
     var bits: u32 = try bit_reader.readBits(u32, code, &unused);
     coef.* += decodeNumber(code, bits);
@@ -396,7 +411,7 @@ fn buildMatrix(
 
     var l: usize = 1;
     while (l < 64) {
-        code = try huffman_tables[2 + idx].getNextSymbol(bit_reader);
+        code = try huffman_tables[2 + idx].decode(bit_reader);
         if (code == 0)
             break;
 
@@ -440,7 +455,7 @@ const IDCT = struct {
     }
 
     fn normCoeff(y: usize) f32 {
-        return if (y == 0) 1.0 / @sqrt(2.0) else 1.0;
+        return if (y == 0) 1.0 / @sqrt(8.0) else 1.0;
     }
 
     pub fn init(self: *IDCT, mat: [64]u8) void {
