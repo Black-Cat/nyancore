@@ -28,11 +28,11 @@ const HuffmanTable = struct {
     ht_type: u1, // 0 = DC, 1 = AC
 
     length_counts: [16]u8,
-    code_lengths: [256]u8,
-    codes: [255]u16,
+    code_lengths: [257]u8,
+    codes: [256]u16,
 
     min_codes: [17]u16,
-    max_codes: [17]u16,
+    max_codes: [18]u16,
     first_codes: [17]usize,
 
     symbols: []u8,
@@ -62,6 +62,12 @@ const HuffmanTable = struct {
     }
 
     fn generateCodes(self: *HuffmanTable) void {
+        self.code_lengths = [_]u8{0} ** self.code_lengths.len;
+        self.codes = [_]u16{0} ** self.codes.len;
+        self.max_codes = [_]u16{0} ** self.max_codes.len;
+        self.min_codes = [_]u16{0} ** self.min_codes.len;
+        self.first_codes = [_]usize{0} ** self.first_codes.len;
+
         var code_counter: usize = 0;
         for (self.length_counts) |count, ind| {
             var i: usize = 0;
@@ -86,6 +92,7 @@ const HuffmanTable = struct {
             self.max_codes[length_counter] = @intCast(u16, code_counter);
             code_counter <<= 1;
         }
+        self.max_codes[length_counter] = std.math.maxInt(u16);
     }
 
     pub fn decode(self: *HuffmanTable, bit_reader: anytype) !u8 {
@@ -96,7 +103,7 @@ const HuffmanTable = struct {
             code <<= 1;
             code |= try bit_reader.readBits(usize, 1, &out_bits);
             code_length += 1;
-            if (code <= self.max_codes[code_length]) {
+            if (code < self.max_codes[code_length]) {
                 var index: usize = self.first_codes[code_length] + code - self.min_codes[code_length];
                 return self.symbols[index];
             }
@@ -368,14 +375,21 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     var data_stream = std.io.fixedBufferStream(scan_data.data);
     var bit_reader = std.io.bitReader(.Big, data_stream.reader());
 
+    var cur_dc: i32 = 0;
+
     var mcu_index: usize = 0;
     while (mcu_index < mcu_x * mcu_y) : (mcu_index += 1) {
-        for (frame.components) |c| {
+        for (frame.components) |c, c_ind| {
+            const descriptor: ScanData.ComponentDescriptor = scan_data.component_descriptors[c_ind];
+            const dc_huffman: *HuffmanTable = &huffman_tables[descriptor.dc];
+            const ac_huffman: *HuffmanTable = &huffman_tables[2 + descriptor.ac];
+            const quant: *QuantizationTable = &quantization_tables[c.quantization_table];
+
             var i: usize = 0;
             while (i < c.sampling_factor_vertical) : (i += 1) {
                 var j: usize = 0;
                 while (j < c.sampling_factor_vertical) : (j += 1) {
-                    _ = bit_reader;
+                    _ = try decodeBlock(&bit_reader, dc_huffman, ac_huffman, quant, &cur_dc);
                 }
             }
         }
@@ -389,48 +403,61 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     return image;
 }
 
-fn decodeNumber(code: u8, bits: u32) u32 {
-    const l = std.math.pow(u32, 2, code - 1);
-    return if (bits >= l) bits else bits - (2 * l - 1);
+fn decodeBlock(
+    bit_reader: anytype,
+    dc_huffman: *HuffmanTable,
+    ac_huffman: *HuffmanTable,
+    quant: *QuantizationTable,
+    dc: *i32,
+) ![64]f32 {
+    dc.* = try decodeDC(bit_reader, dc.*, dc_huffman);
+    var ac: [64]f32 = try decodeAC(bit_reader, dc.*, ac_huffman, quant);
+    return ac;
 }
 
-fn buildMatrix(
-    bit_reader: anytype,
-    idx: u32,
-    huffman_tables: []HuffmanTable,
-    quant: *QuantizationTable,
-    coef: *u32,
-) ![64]f32 {
-    var code: u8 = try huffman_tables[idx].decode(bit_reader);
+fn extend(additional: u32, magnitude: u8) i32 {
+    const l = @as(i32, 1) << (@intCast(u5, magnitude) - 1);
+    return if (additional >= l) @intCast(i32, additional) else @intCast(i32, additional) + (@as(i32, -1) << @intCast(u5, magnitude)) + 1;
+}
+
+fn decodeDC(bit_reader: anytype, last_dc: i32, dc_huffman: *HuffmanTable) !i32 {
+    var code: u8 = try dc_huffman.decode(bit_reader);
+
     var unused: usize = undefined;
     var bits: u32 = try bit_reader.readBits(u32, code, &unused);
-    coef.* += decodeNumber(code, bits);
 
-    var mat: [64]u8 = .{0} ** 64;
-    mat[0] = @intCast(u8, coef.*) * quant.values[0];
+    var difference: i32 = extend(bits, code);
+    return difference + last_dc;
+}
 
-    var l: usize = 1;
-    while (l < 64) {
-        code = try huffman_tables[2 + idx].decode(bit_reader);
-        if (code == 0)
-            break;
+fn decodeAC(bit_reader: anytype, dc: i32, ac_huffman: *HuffmanTable, quant: *QuantizationTable) ![64]f32 {
+    var unused: usize = undefined;
 
-        if (code > 15) {
-            l += code >> 4;
-            code &= 0x0F;
-        }
+    var coeficents: [64]i32 = [_]i32{0} ** 64;
+    coeficents[0] = dc * quant.values[0];
 
-        bits = try bit_reader.readBits(u32, code, &unused);
+    var ii: usize = 1;
+    while (ii <= 63) : (ii += 1) {
+        const val: u8 = try ac_huffman.decode(bit_reader);
+        const low_bits: u4 = @truncate(u4, val);
+        const high_bits: u4 = @truncate(u4, val >> 4);
 
-        if (l < 64) {
-            var dc_coef = decodeNumber(code, bits);
-            mat[l] = @intCast(u8, dc_coef) * quant.values[l];
-            l += 1;
+        if (low_bits != 0) {
+            const extra_bits: u32 = try bit_reader.readBits(u32, val, &unused);
+            ii += high_bits;
+            coeficents[ii] = extend(extra_bits, low_bits) * quant.values[ii];
+            ii += 1;
+        } else {
+            if (high_bits == 0xF) {
+                ii += 16;
+            } else if (high_bits == 0) {
+                ii = 64; // All done
+            }
         }
     }
 
     var idct: IDCT = undefined;
-    idct.init(mat);
+    idct.init(coeficents);
     var res: [64]f32 = undefined;
     idct.perform(&res);
 
@@ -442,7 +469,7 @@ const IDCT = struct {
     const precision = 8;
     const coeffs: [64]f32 = generateCoeffs();
 
-    table: [64]u8,
+    table: [64]i32,
 
     fn generateCoeffs() [64]f32 {
         var temp: [64]f32 = undefined;
@@ -458,7 +485,7 @@ const IDCT = struct {
         return if (y == 0) 1.0 / @sqrt(8.0) else 1.0;
     }
 
-    pub fn init(self: *IDCT, mat: [64]u8) void {
+    pub fn init(self: *IDCT, mat: [64]i32) void {
         for (self.table) |*c, ind|
             c.* = mat[zig_zag[ind]];
     }
