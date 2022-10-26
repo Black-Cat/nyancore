@@ -20,6 +20,16 @@ const zig_zag: [64]u8 = .{
     21, 34, 37, 47, 50, 56, 59, 61,
     35, 36, 48, 49, 57, 58, 62, 63,
 };
+const dezig_zag: [64]u8 = .{
+    0,  1,  8,  16, 9,  2,  3,  10,
+    17, 24, 32, 25, 18, 11, 4,  5,
+    12, 19, 26, 33, 40, 48, 41, 34,
+    27, 20, 13, 6,  7,  14, 21, 28,
+    35, 42, 49, 56, 57, 50, 43, 36,
+    29, 22, 15, 23, 30, 37, 44, 51,
+    58, 59, 52, 45, 38, 31, 39, 46,
+    53, 60, 61, 54, 47, 55, 62, 63,
+};
 
 const HuffmanTable = struct {
     allocator: std.mem.Allocator,
@@ -437,15 +447,16 @@ fn decodeAC(bit_reader: anytype, dc: i32, ac_huffman: *HuffmanTable, quant: *Qua
     coeficents[0] = dc * quant.values[0];
 
     var ii: usize = 1;
-    while (ii <= 63) : (ii += 1) {
+    while (ii <= 63) {
         const val: u8 = try ac_huffman.decode(bit_reader);
         const low_bits: u4 = @truncate(u4, val);
         const high_bits: u4 = @truncate(u4, val >> 4);
 
         if (low_bits != 0) {
-            const extra_bits: u32 = try bit_reader.readBits(u32, val, &unused);
+            const extra_bits: u32 = try bit_reader.readBits(u32, low_bits, &unused);
             ii += high_bits;
-            coeficents[ii] = extend(extra_bits, low_bits) * quant.values[ii];
+            var zig: usize = dezig_zag[ii];
+            coeficents[zig] = extend(extra_bits, low_bits) * quant.values[zig];
             ii += 1;
         } else {
             if (high_bits == 0xF) {
