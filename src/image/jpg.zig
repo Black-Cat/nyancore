@@ -385,30 +385,43 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     var data_stream = std.io.fixedBufferStream(scan_data.data);
     var bit_reader = std.io.bitReader(.Big, data_stream.reader());
 
-    var cur_dc: i32 = 0;
+    var dcs: []i32 = allocator.alloc(i32, frame.components.len) catch unreachable;
+    defer allocator.free(dcs);
+    std.mem.set(i32, dcs, 0);
+
+    var image: Image = undefined;
+    image.width = frame.width;
+    image.height = frame.height;
+    image.data = allocator.alloc(u8, image.width * image.height * 4) catch unreachable;
 
     var mcu_index: usize = 0;
     while (mcu_index < mcu_x * mcu_y) : (mcu_index += 1) {
         for (frame.components) |c, c_ind| {
+            const image_pos: usize = (mcu_index / mcu_x) * image.width * 4 * 8 + mcu_index % mcu_x * 4 * 8 + c_ind;
+
             const descriptor: ScanData.ComponentDescriptor = scan_data.component_descriptors[c_ind];
             const dc_huffman: *HuffmanTable = &huffman_tables[descriptor.dc];
             const ac_huffman: *HuffmanTable = &huffman_tables[2 + descriptor.ac];
             const quant: *QuantizationTable = &quantization_tables[c.quantization_table];
+            var cur_dc: *i32 = &dcs[c_ind];
 
             var i: usize = 0;
             while (i < c.sampling_factor_vertical) : (i += 1) {
                 var j: usize = 0;
-                while (j < c.sampling_factor_vertical) : (j += 1) {
-                    _ = try decodeBlock(&bit_reader, dc_huffman, ac_huffman, quant, &cur_dc);
+                while (j < c.sampling_factor_horizontal) : (j += 1) {
+                    var block: [64]i32 = try decodeBlock(&bit_reader, dc_huffman, ac_huffman, quant, cur_dc);
+                    IDCT.perform(
+                        image.data[image_pos..],
+                        .{ 4, image.width * 4 },
+                        .{ comp_max_h / c.sampling_factor_horizontal, comp_max_v / c.sampling_factor_vertical },
+                        block,
+                    );
                 }
             }
         }
     }
 
-    var image: Image = undefined;
-    image.width = 0;
-    image.height = 0;
-    image.data = allocator.alloc(u8, 100) catch unreachable;
+    image.ycbcr2rgb();
 
     return image;
 }
@@ -419,10 +432,9 @@ fn decodeBlock(
     ac_huffman: *HuffmanTable,
     quant: *QuantizationTable,
     dc: *i32,
-) ![64]f32 {
+) ![64]i32 {
     dc.* = try decodeDC(bit_reader, dc.*, dc_huffman);
-    var ac: [64]f32 = try decodeAC(bit_reader, dc.*, ac_huffman, quant);
-    return ac;
+    return try decodeAC(bit_reader, dc.*, ac_huffman, quant);
 }
 
 fn extend(additional: u32, magnitude: u8) i32 {
@@ -436,11 +448,11 @@ fn decodeDC(bit_reader: anytype, last_dc: i32, dc_huffman: *HuffmanTable) !i32 {
     var unused: usize = undefined;
     var bits: u32 = try bit_reader.readBits(u32, code, &unused);
 
-    var difference: i32 = extend(bits, code);
+    var difference: i32 = if (code != 0) extend(bits, code) else 0;
     return difference + last_dc;
 }
 
-fn decodeAC(bit_reader: anytype, dc: i32, ac_huffman: *HuffmanTable, quant: *QuantizationTable) ![64]f32 {
+fn decodeAC(bit_reader: anytype, dc: i32, ac_huffman: *HuffmanTable, quant: *QuantizationTable) ![64]i32 {
     var unused: usize = undefined;
 
     var coeficents: [64]i32 = [_]i32{0} ** 64;
@@ -467,53 +479,52 @@ fn decodeAC(bit_reader: anytype, dc: i32, ac_huffman: *HuffmanTable, quant: *Qua
         }
     }
 
-    var idct: IDCT = undefined;
-    idct.init(coeficents);
-    var res: [64]f32 = undefined;
-    idct.perform(&res);
-
-    return res;
+    return coeficents;
 }
 
 // Inverse Discrete Cosine Transformation
 const IDCT = struct {
     const precision = 8;
-    const coeffs: [64]f32 = generateCoeffs();
+    const coeffs: [64]f64 = generateCoeffs();
 
-    table: [64]i32,
-
-    fn generateCoeffs() [64]f32 {
-        var temp: [64]f32 = undefined;
+    fn generateCoeffs() [64]f64 {
+        var temp: [64]f64 = undefined;
         for (temp) |*c, ind| {
             const x: usize = ind % 8;
             const y: usize = ind / 8;
-            c.* = normCoeff(y) * @cos((2.0 * @intToFloat(f32, x) + 1.0) * @intToFloat(f32, y) * std.math.pi / 16.0);
+            c.* = normScaleFactor(x) * normScaleFactor(y);
         }
         return temp;
     }
 
-    fn normCoeff(y: usize) f32 {
-        return if (y == 0) 1.0 / @sqrt(8.0) else 1.0;
+    fn normScaleFactor(u: usize) f32 {
+        return if (u == 0) 1.0 / @sqrt(2.0) else 1.0;
     }
 
-    pub fn init(self: *IDCT, mat: [64]i32) void {
-        for (self.table) |*c, ind|
-            c.* = mat[zig_zag[ind]];
-    }
-
-    pub fn perform(self: *IDCT, out: *[64]f32) void {
+    pub fn perform(out: []u8, stride: [2]usize, sampling: [2]usize, data: [64]i32) void {
         var x: usize = 0;
         while (x < 8) : (x += 1) {
             var y: usize = 0;
             while (y < 8) : (y += 1) {
-                var local_sum: f32 = 0;
+                var local_sum: f64 = 0;
                 var u: usize = 0;
                 while (u < 8) : (u += 1) {
                     var v: usize = 0;
-                    while (v < 8) : (v += 1)
-                        local_sum += @intToFloat(f32, self.table[u + v * 8]) * coeffs[x + u * 8] * coeffs[y + v * 8];
+                    while (v < 8) : (v += 1) {
+                        var val: f64 = coeffs[u + v * 8] * @intToFloat(f64, data[u + v * 8]);
+                        val *= @cos(@intToFloat(f64, (2 * x + 1) * u) * std.math.pi / 16);
+                        val *= @cos(@intToFloat(f64, (2 * y + 1) * v) * std.math.pi / 16);
+                        local_sum += val;
+                    }
                 }
-                out.*[x + y * 8] = local_sum / 4;
+
+                const val: u8 = @floatToInt(u8, std.math.clamp((local_sum / 4.0) + 128.0, 0.0, 255.0));
+                var s_h: usize = 0;
+                while (s_h < sampling[0]) : (s_h += 1) {
+                    var s_v: usize = 0;
+                    while (s_v < sampling[1]) : (s_v += 1)
+                        out[((x * sampling[0]) + s_h) * stride[0] + ((y * sampling[1]) + s_v) * stride[1]] = val;
+                }
             }
         }
     }
