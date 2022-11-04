@@ -41,9 +41,9 @@ pub const Image = struct {
                 const b: f64 = (@intToFloat(f64, val[1]) - 128.0) * 1.772 + @intToFloat(f64, val[0]);
                 const g: f64 = @intToFloat(f64, val[0]) - 0.344136 * (@intToFloat(f64, val[1]) - 128.0) - 0.714136 * (@intToFloat(f64, val[2]) - 128.0);
 
-                val[0] = @floatToInt(u8, std.math.clamp(r + 128.0, 0.0, 255.0));
-                val[1] = @floatToInt(u8, std.math.clamp(g + 128.0, 0.0, 255.0));
-                val[2] = @floatToInt(u8, std.math.clamp(b + 128.0, 0.0, 255.0));
+                val[0] = @floatToInt(u8, std.math.clamp(r, 0.0, 255.0));
+                val[1] = @floatToInt(u8, std.math.clamp(g, 0.0, 255.0));
+                val[2] = @floatToInt(u8, std.math.clamp(b, 0.0, 255.0));
             }
         }
     }

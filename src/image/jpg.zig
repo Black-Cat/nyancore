@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const nm = @import("../math/math.zig");
+
 const Image = @import("image.zig").Image;
 const printError = @import("../application/print_error.zig").printError;
 
@@ -393,11 +395,12 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     image.width = frame.width;
     image.height = frame.height;
     image.data = allocator.alloc(u8, image.width * image.height * 4) catch unreachable;
+    std.mem.set(u8, image.data, 255);
 
     var mcu_index: usize = 0;
     while (mcu_index < mcu_x * mcu_y) : (mcu_index += 1) {
         for (frame.components) |c, c_ind| {
-            const image_pos: usize = (mcu_index / mcu_x) * image.width * 4 * 8 + mcu_index % mcu_x * 4 * 8 + c_ind;
+            const image_pos: usize = (mcu_index / mcu_x) * image.width * 4 * mcu_h + (mcu_index % mcu_x) * 4 * mcu_w + c.id - 1;
 
             const descriptor: ScanData.ComponentDescriptor = scan_data.component_descriptors[c_ind];
             const dc_huffman: *HuffmanTable = &huffman_tables[descriptor.dc];
@@ -405,17 +408,86 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
             const quant: *QuantizationTable = &quantization_tables[c.quantization_table];
             var cur_dc: *i32 = &dcs[c_ind];
 
+            const hor_stride: usize = @intCast(usize, comp_max_h / c.sampling_factor_horizontal) * 8;
+            const ver_stride: usize = image.width * @intCast(usize, comp_max_v / c.sampling_factor_vertical) * 8;
+
             var i: usize = 0;
             while (i < c.sampling_factor_vertical) : (i += 1) {
                 var j: usize = 0;
                 while (j < c.sampling_factor_horizontal) : (j += 1) {
                     var block: [64]i32 = try decodeBlock(&bit_reader, dc_huffman, ac_huffman, quant, cur_dc);
-                    IDCT.perform(
-                        image.data[image_pos..],
-                        .{ 4, image.width * 4 },
-                        .{ comp_max_h / c.sampling_factor_horizontal, comp_max_v / c.sampling_factor_vertical },
+                    const sampled_pos: usize = image_pos + (j * hor_stride + i * ver_stride) * 4;
+                    performIDCT(
+                        image.data[sampled_pos..],
+                        .{
+                            4 * (1 + comp_max_h - c.sampling_factor_horizontal),
+                            image.width * 4 * (1 + comp_max_v - c.sampling_factor_vertical),
+                        },
                         block,
                     );
+                }
+            }
+        }
+    }
+
+    // Linear upsampling (TODO)
+    for (frame.components) |c| {
+        if (comp_max_h == c.sampling_factor_horizontal and comp_max_v == c.sampling_factor_vertical)
+            continue;
+
+        const hor_stride: usize = comp_max_h - c.sampling_factor_horizontal + 1;
+        const ver_stride: usize = comp_max_v - c.sampling_factor_vertical + 1;
+
+        const h: f32 = @intToFloat(f32, hor_stride);
+        const v: f32 = @intToFloat(f32, ver_stride);
+
+        const sample_pos: [9]nm.vec2 = .{
+            .{ -h, -v },
+            .{ 0.0, -v },
+            .{ h, -v },
+            .{ -h, 0.0 },
+            .{ 0.0, 0.0 },
+            .{ h, 0.0 },
+            .{ -h, v },
+            .{ 0.0, v },
+            .{ h, v },
+        };
+        const kernel_offset: nm.vec2 = .{ -h / 2.0, -v / 2.0 };
+
+        var kernel: [][9]f32 = allocator.alloc([9]f32, hor_stride * ver_stride) catch unreachable;
+        defer allocator.free(kernel);
+
+        var yk: usize = 0;
+        while (yk < ver_stride) : (yk += 1) {
+            var xk: usize = 0;
+            while (xk < hor_stride) : (xk += 1) {
+                const pos: nm.vec2 = nm.vec2{ @intToFloat(f32, xk) + 0.5, @intToFloat(f32, yk) + 0.5 } + kernel_offset;
+
+                var sum: f32 = 0.0;
+                for (sample_pos) |sp, sp_ind| {
+                    const dist: f32 = nm.Vec2.norm(pos - sp);
+                    kernel[yk * ver_stride + xk][sp_ind] = dist;
+                    sum += dist;
+                }
+
+                for (kernel[yk * ver_stride + xk]) |*k|
+                    k.* /= sum;
+            }
+        }
+
+        var y: usize = 0;
+        while (y < image.height) : (y += ver_stride) {
+            var x: usize = 0;
+            while (x < image.width) : (x += hor_stride) {
+                const start_ind: usize = (y * image.width + x) * 4 + c.id - 1;
+                const val: u8 = image.data[start_ind];
+
+                var vs: usize = 0;
+                while (vs < ver_stride) : (vs += 1) {
+                    var hs: usize = 0;
+                    while (hs < hor_stride) : (hs += 1) {
+                        image.data[start_ind + (vs * image.width + hs) * 4] = val;
+                    }
                 }
             }
         }
@@ -483,49 +555,128 @@ fn decodeAC(bit_reader: anytype, dc: i32, ac_huffman: *HuffmanTable, quant: *Qua
 }
 
 // Inverse Discrete Cosine Transformation
-const IDCT = struct {
-    const precision = 8;
-    const coeffs: [64]f64 = generateCoeffs();
+// Adapted from float Pennebaker & Mitchell JPEG textbook and libjpeg-turbo library (float variant)
+pub fn performIDCT(out: []u8, out_stride: [2]usize, data: [64]i32) void {
+    var tmp: [14]f32 = .{undefined} ** 14;
 
-    fn generateCoeffs() [64]f64 {
-        var temp: [64]f64 = undefined;
-        for (temp) |*c, ind| {
-            const x: usize = ind % 8;
-            const y: usize = ind / 8;
-            c.* = normScaleFactor(x) * normScaleFactor(y);
-        }
-        return temp;
+    var z5: f32 = undefined;
+    var z10: f32 = undefined;
+    var z11: f32 = undefined;
+    var z12: f32 = undefined;
+    var z13: f32 = undefined;
+
+    var workspace: [64]f32 = .{0.0} ** 64;
+
+    var out_slice: []u8 = undefined;
+    var ws_slice: []f32 = undefined;
+    var data_slice: []const i32 = undefined;
+
+    const stride: usize = 8;
+
+    // Process collumns
+    var col: usize = 0;
+    while (col < 8) : (col += 1) {
+        ws_slice = workspace[col..];
+        data_slice = data[col..];
+
+        // Even
+        tmp[0] = @intToFloat(f32, data_slice[0 * stride]) * 0.125;
+        tmp[1] = @intToFloat(f32, data_slice[2 * stride]) * 0.125;
+        tmp[2] = @intToFloat(f32, data_slice[4 * stride]) * 0.125;
+        tmp[3] = @intToFloat(f32, data_slice[6 * stride]) * 0.125;
+
+        // Phase 3
+        tmp[10] = tmp[0] + tmp[2];
+        tmp[11] = tmp[0] - tmp[2];
+
+        // Phase 5-3
+        tmp[13] = tmp[1] + tmp[3];
+        tmp[12] = (tmp[1] - tmp[3]) * 1.414213562 - tmp[13];
+
+        // Phase 2
+        tmp[0] = tmp[10] + tmp[13];
+        tmp[3] = tmp[10] - tmp[13];
+        tmp[1] = tmp[11] + tmp[12];
+        tmp[2] = tmp[11] - tmp[12];
+
+        // Odd
+        tmp[4] = @intToFloat(f32, data_slice[1 * stride]) * 0.125;
+        tmp[5] = @intToFloat(f32, data_slice[3 * stride]) * 0.125;
+        tmp[6] = @intToFloat(f32, data_slice[5 * stride]) * 0.125;
+        tmp[7] = @intToFloat(f32, data_slice[7 * stride]) * 0.125;
+
+        // Phase 6
+        z13 = tmp[6] + tmp[5];
+        z10 = tmp[6] - tmp[5];
+        z11 = tmp[4] + tmp[7];
+        z12 = tmp[4] - tmp[7];
+
+        // Phase 5
+        tmp[7] = z11 + z13;
+        tmp[11] = (z11 - z13) * 1.414213562;
+
+        z5 = (z10 + z12) * 1.847759065;
+        tmp[10] = z5 - z12 * 1.082392200;
+        tmp[12] = z5 - z10 * 2.613125930;
+
+        // Phase 2
+        tmp[6] = tmp[12] - tmp[7];
+        tmp[5] = tmp[11] - tmp[6];
+        tmp[4] = tmp[10] - tmp[5];
+
+        ws_slice[0 * stride] = tmp[0] + tmp[7];
+        ws_slice[7 * stride] = tmp[0] - tmp[7];
+        ws_slice[1 * stride] = tmp[1] + tmp[6];
+        ws_slice[6 * stride] = tmp[1] - tmp[6];
+        ws_slice[2 * stride] = tmp[2] + tmp[5];
+        ws_slice[5 * stride] = tmp[2] - tmp[5];
+        ws_slice[3 * stride] = tmp[3] + tmp[4];
+        ws_slice[4 * stride] = tmp[3] - tmp[4];
     }
 
-    fn normScaleFactor(u: usize) f32 {
-        return if (u == 0) 1.0 / @sqrt(2.0) else 1.0;
-    }
+    // Process rows
+    var row: usize = 0;
+    while (row < 8) : (row += 1) {
+        ws_slice = workspace[row * stride ..];
+        out_slice = out[row * out_stride[1] ..];
 
-    pub fn perform(out: []u8, stride: [2]usize, sampling: [2]usize, data: [64]i32) void {
-        var x: usize = 0;
-        while (x < 8) : (x += 1) {
-            var y: usize = 0;
-            while (y < 8) : (y += 1) {
-                var local_sum: f64 = 0;
-                var u: usize = 0;
-                while (u < 8) : (u += 1) {
-                    var v: usize = 0;
-                    while (v < 8) : (v += 1) {
-                        var val: f64 = coeffs[u + v * 8] * @intToFloat(f64, data[u + v * 8]);
-                        val *= @cos(@intToFloat(f64, (2 * x + 1) * u) * std.math.pi / 16);
-                        val *= @cos(@intToFloat(f64, (2 * y + 1) * v) * std.math.pi / 16);
-                        local_sum += val;
-                    }
-                }
+        // Even
+        z5 = ws_slice[0] + 128.5;
+        tmp[10] = z5 + ws_slice[4];
+        tmp[11] = z5 - ws_slice[4];
 
-                const val: u8 = @floatToInt(u8, std.math.clamp((local_sum / 4.0) + 128.0, 0.0, 255.0));
-                var s_h: usize = 0;
-                while (s_h < sampling[0]) : (s_h += 1) {
-                    var s_v: usize = 0;
-                    while (s_v < sampling[1]) : (s_v += 1)
-                        out[((x * sampling[0]) + s_h) * stride[0] + ((y * sampling[1]) + s_v) * stride[1]] = val;
-                }
-            }
-        }
+        tmp[13] = ws_slice[2] + ws_slice[6];
+        tmp[12] = (ws_slice[2] - ws_slice[6]) * 1.414213562 - tmp[13];
+
+        tmp[0] = tmp[10] + tmp[13];
+        tmp[3] = tmp[10] - tmp[13];
+        tmp[1] = tmp[11] + tmp[12];
+        tmp[2] = tmp[11] - tmp[12];
+
+        // Odd
+        z13 = ws_slice[5] + ws_slice[3];
+        z10 = ws_slice[5] - ws_slice[3];
+        z11 = ws_slice[1] + ws_slice[7];
+        z12 = ws_slice[1] - ws_slice[7];
+
+        tmp[7] = z11 + z13;
+        tmp[11] = (z11 - z13) * 1.414213562;
+
+        z5 = (z10 + z12) * 1.847759065;
+        tmp[10] = z5 - z12 * 1.082392200;
+        tmp[12] = z5 - z10 * 2.613125930;
+
+        tmp[6] = tmp[12] - tmp[7];
+        tmp[5] = tmp[11] - tmp[6];
+        tmp[4] = tmp[10] - tmp[5];
+
+        out_slice[0 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[0] + tmp[7], 0.0, 255.0));
+        out_slice[7 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[0] - tmp[7], 0.0, 255.0));
+        out_slice[1 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[1] + tmp[6], 0.0, 255.0));
+        out_slice[6 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[1] - tmp[6], 0.0, 255.0));
+        out_slice[2 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[2] + tmp[5], 0.0, 255.0));
+        out_slice[5 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[2] - tmp[5], 0.0, 255.0));
+        out_slice[3 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[3] + tmp[4], 0.0, 255.0));
+        out_slice[4 * out_stride[0]] = @floatToInt(u8, std.math.clamp(tmp[3] - tmp[4], 0.0, 255.0));
     }
-};
+}

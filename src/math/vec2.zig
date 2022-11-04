@@ -7,3 +7,7 @@ pub fn dot(a: math.vec2, b: math.vec2) f32 {
 pub fn norm2(a: math.vec2) f32 {
     return dot(a, a);
 }
+
+pub fn norm(a: math.vec2) f32 {
+    return @sqrt(norm2(a));
+}

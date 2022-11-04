@@ -110,9 +110,9 @@ pub fn write(writer: anytype, image: Image) !void {
     try image_header.write(writer);
 
     // Color Table (68 Bytes)
-    try writer.writeAll("\x00\x00\xFF\x00"); // Red
+    try writer.writeAll("\xFF\x00\x00\x00"); // Red
     try writer.writeAll("\x00\xFF\x00\x00"); // Green
-    try writer.writeAll("\xFF\x00\x00\x00"); // Blue
+    try writer.writeAll("\x00\x00\xFF\x00"); // Blue
     try writer.writeAll("\x00\x00\x00\xFF"); // Alpha
     try writer.writeAll("\x20\x6E\x69\x57"); // "Win "
     try writer.writeAll("\x00" ** 48);
