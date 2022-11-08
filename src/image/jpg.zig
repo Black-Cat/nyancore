@@ -397,10 +397,26 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     image.data = allocator.alloc(u8, image.width * image.height * 4) catch unreachable;
     std.mem.set(u8, image.data, 255);
 
+    var component_buffers: [][]u8 = allocator.alloc([]u8, frame.components.len) catch unreachable;
+    for (frame.components) |c, c_ind| {
+        const to_upsample: bool = !(c.sampling_factor_vertical == comp_max_v and c.sampling_factor_horizontal == comp_max_h);
+        const buffer_size: usize = if (to_upsample) mcu_x * mcu_y * 8 * 8 * c.sampling_factor_horizontal * c.sampling_factor_vertical else 0;
+        component_buffers[c_ind] = allocator.alloc(u8, buffer_size) catch unreachable;
+    }
+    defer allocator.free(component_buffers);
+    defer for (component_buffers) |cb| allocator.free(cb);
+
     var mcu_index: usize = 0;
     while (mcu_index < mcu_x * mcu_y) : (mcu_index += 1) {
+        const mcu_index_x = mcu_index % mcu_x;
+        const mcu_index_y = mcu_index / mcu_y;
+
         for (frame.components) |c, c_ind| {
-            const image_pos: usize = (mcu_index / mcu_x) * image.width * 4 * mcu_h + (mcu_index % mcu_x) * 4 * mcu_w + c.id - 1;
+            const to_upsample: bool = !(c.sampling_factor_vertical == comp_max_v and c.sampling_factor_horizontal == comp_max_h);
+
+            // If image doesn't need to be upsampled, write directly to image data
+            const stride: [2]usize = if (to_upsample) .{ 1, mcu_x * 8 * c.sampling_factor_horizontal } else .{ 4, image.width * 4 };
+            const target_slice: []u8 = if (to_upsample) component_buffers[c_ind] else image.data[c.id - 1 ..];
 
             const descriptor: ScanData.ComponentDescriptor = scan_data.component_descriptors[c_ind];
             const dc_huffman: *HuffmanTable = &huffman_tables[descriptor.dc];
@@ -408,30 +424,23 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
             const quant: *QuantizationTable = &quantization_tables[c.quantization_table];
             var cur_dc: *i32 = &dcs[c_ind];
 
-            const hor_stride: usize = @intCast(usize, comp_max_h / c.sampling_factor_horizontal) * 8;
-            const ver_stride: usize = image.width * @intCast(usize, comp_max_v / c.sampling_factor_vertical) * 8;
-
             var i: usize = 0;
             while (i < c.sampling_factor_vertical) : (i += 1) {
                 var j: usize = 0;
                 while (j < c.sampling_factor_horizontal) : (j += 1) {
                     var block: [64]i32 = try decodeBlock(&bit_reader, dc_huffman, ac_huffman, quant, cur_dc);
-                    const sampled_pos: usize = image_pos + (j * hor_stride + i * ver_stride) * 4;
-                    performIDCT(
-                        image.data[sampled_pos..],
-                        .{
-                            4 * (1 + comp_max_h - c.sampling_factor_horizontal),
-                            image.width * 4 * (1 + comp_max_v - c.sampling_factor_vertical),
-                        },
-                        block,
-                    );
+
+                    const coor_x: usize = (mcu_index_x * c.sampling_factor_horizontal + j) * 8;
+                    const coor_y: usize = (mcu_index_y * c.sampling_factor_vertical + i) * 8;
+                    const sampled_pos: usize = coor_y * stride[1] + coor_x * stride[0];
+                    performIDCT(target_slice[sampled_pos..], stride, block);
                 }
             }
         }
     }
 
-    // Linear upsampling (TODO)
-    for (frame.components) |c| {
+    // Linear upsampling
+    for (frame.components) |c, c_ind| {
         if (comp_max_h == c.sampling_factor_horizontal and comp_max_v == c.sampling_factor_vertical)
             continue;
 
@@ -475,18 +484,46 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
             }
         }
 
-        var y: usize = 0;
-        while (y < image.height) : (y += ver_stride) {
-            var x: usize = 0;
-            while (x < image.width) : (x += hor_stride) {
-                const start_ind: usize = (y * image.width + x) * 4 + c.id - 1;
-                const val: u8 = image.data[start_ind];
+        var cur_block: [9]u8 = .{undefined} ** 9;
 
+        var y: usize = 0;
+        while (y < mcu_y * 8 * c.sampling_factor_vertical) : (y += 1) {
+            const y_values: [3]usize = .{
+                if (y == 0) y else y - 1,
+                y,
+                if (y == mcu_y * 8 * c.sampling_factor_vertical - 1) y else y + 1,
+            };
+
+            const x_values: [2]usize = .{ 0, 1 };
+            for (x_values) |ox, ox_ind| {
+                for (y_values) |oy, oy_ind|
+                    cur_block[oy_ind * 3 + ox_ind + 1] = component_buffers[c_ind][oy * mcu_x * 8 * c.sampling_factor_horizontal + ox + 1];
+            }
+
+            var x: usize = 0;
+            while (x < mcu_x * 8 * c.sampling_factor_horizontal) : (x += 1) {
+                cur_block[0] = cur_block[1];
+                cur_block[1] = cur_block[2];
+                cur_block[3] = cur_block[4];
+                cur_block[4] = cur_block[5];
+                cur_block[6] = cur_block[7];
+                cur_block[7] = cur_block[8];
+
+                const ox: usize = if (x == mcu_x * 8 * c.sampling_factor_horizontal - 1) x else x + 1;
+                const offseted_indexes: [3]usize = .{ 2, 5, 8 };
+
+                for (offseted_indexes) |oi, oi_ind|
+                    cur_block[oi] = component_buffers[c_ind][y_values[oi_ind] * mcu_x * 8 * c.sampling_factor_horizontal + ox];
+
+                const start_ind: usize = (y * image.width * ver_stride + x * hor_stride) * 4 + c.id - 1;
                 var vs: usize = 0;
                 while (vs < ver_stride) : (vs += 1) {
                     var hs: usize = 0;
                     while (hs < hor_stride) : (hs += 1) {
-                        image.data[start_ind + (vs * image.width + hs) * 4] = val;
+                        var val: f32 = 0.0;
+                        for (kernel[vs * hor_stride + hs]) |k, k_ind|
+                            val += k * @intToFloat(f32, cur_block[k_ind]);
+                        image.data[start_ind + (vs * image.width + hs) * 4] = @floatToInt(u8, @minimum(255.0, val));
                     }
                 }
             }
