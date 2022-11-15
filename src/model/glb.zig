@@ -5,6 +5,7 @@ const nm = @import("../math/math.zig");
 const vk = @import("../vk.zig");
 
 const jpg = @import("../image/jpg.zig");
+const Image = @import("../image/image.zig").Image;
 
 const Model = @import("model.zig").Model;
 const Sampler = @import("../vulkan_wrapper/sampler.zig").Sampler;
@@ -132,12 +133,69 @@ const GltfSampler = struct {
 const GltfImage = struct {
     buffer_view: usize,
     mime_type: []const u8,
+    image: Image,
 
     pub fn fromJson(json_node: std.json.Value) GltfImage {
         var image: GltfImage = undefined;
         image.buffer_view = getInt(usize, json_node, "bufferView");
         image.mime_type = json_node.Object.get("mimeType").?.String;
         return image;
+    }
+};
+
+const GltfTexture = struct {
+    source_ind: usize,
+    sampler_ind: usize,
+
+    source: *GltfImage,
+    sampler: *GltfSampler,
+
+    pub fn fromJson(json_node: std.json.Value) GltfTexture {
+        var tex: GltfTexture = undefined;
+        tex.source_ind = getInt(usize, json_node, "source");
+        tex.sampler_ind = getInt(usize, json_node, "sampler");
+        return tex;
+    }
+
+    pub fn link(self: *GltfTexture, images: []GltfImage, samplers: []GltfSampler) void {
+        self.source = &images[self.source_ind];
+        self.sampler = &samplers[self.sampler_ind];
+    }
+};
+
+const GltfMaterial = struct {
+    name: []const u8,
+    double_sided: bool,
+    pbr_metallic_factor: f64,
+
+    normal_texture_index: usize,
+    pbr_base_color_index: usize,
+    pbr_metallic_roughness_index: usize,
+
+    normal_texure: *GltfTexture,
+    pbr_base_color: *GltfTexture,
+    pbr_metallic_roughness: *GltfTexture,
+
+    pub fn fromJson(json_node: std.json.Value) GltfMaterial {
+        var mat: GltfMaterial = undefined;
+
+        mat.name = json_node.Object.get("name").?.String;
+        mat.double_sided = json_node.Object.get("doubleSided").?.Bool;
+        mat.normal_texture_index = @intCast(usize, json_node.Object.get("normalTexture").?.Object.get("index").?.Integer);
+
+        var pbr_node = json_node.Object.get("pbrMetallicRoughness").?.Object;
+        mat.pbr_base_color_index = @intCast(usize, pbr_node.get("baseColorTexture").?.Object.get("index").?.Integer);
+        mat.pbr_metallic_roughness_index = @intCast(usize, pbr_node.get("metallicRoughnessTexture").?.Object.get("index").?.Integer);
+
+        mat.pbr_metallic_factor = getFloat(pbr_node.get("metallicFactor").?);
+
+        return mat;
+    }
+
+    pub fn link(self: *GltfMaterial, textures: []GltfTexture) void {
+        self.normal_texure = &textures[self.normal_texture_index];
+        self.pbr_base_color = &textures[self.pbr_base_color_index];
+        self.pbr_metallic_roughness = &textures[self.pbr_metallic_roughness_index];
     }
 };
 
@@ -291,6 +349,15 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
     var images: []GltfImage = parseArray(GltfImage, "images", json_tree.root, allocator);
     defer allocator.free(images);
 
+    var textures: []GltfTexture = parseArray(GltfTexture, "textures", json_tree.root, allocator);
+    defer allocator.free(textures);
+
+    for (textures) |*tex|
+        tex.link(images, samplers);
+
+    var materials: []GltfMaterial = parseArray(GltfMaterial, "materials", json_tree.root, allocator);
+    defer allocator.free(materials);
+
     const bin_chunk_size: u32 = try reader.readIntLittle(u32);
     const valid_bin_signature: bool = (try reader.readIntLittle(u32)) == bin_chunk_type;
     if (!valid_bin_signature)
@@ -298,7 +365,7 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
 
     var bin_buffer: []u8 = try readData(reader, allocator, bin_chunk_size);
 
-    for (images) |im| {
+    for (images) |*im| {
         const buffer_view: *BufferView = &buffer_views[im.buffer_view];
         var image_data: []u8 = extractImageBuffer(bin_buffer, buffer_view);
 
@@ -306,7 +373,7 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
         const stream_reader = stream.reader();
 
         _ = jpg.checkHeader(stream_reader) catch unreachable;
-        _ = jpg.parse(stream_reader, allocator) catch unreachable;
+        im.image = jpg.parse(stream_reader, allocator) catch unreachable;
     }
 
     var meshes = json_tree.root.Object.get("meshes").?.Array;
