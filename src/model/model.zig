@@ -5,6 +5,11 @@ const vk = @import("../vk.zig");
 
 const AssetMap = @import("../application/asset.zig").AssetMap;
 
+const MaterialInfo = @import("material_info.zig").MaterialInfo;
+
+const Image = @import("../image/image.zig").Image;
+const Sampler = @import("../vulkan_wrapper/sampler.zig").Sampler;
+
 pub const Model = struct {
     allocator: std.mem.Allocator,
 
@@ -16,6 +21,8 @@ pub const Model = struct {
     positions: ?[]nm.vec3 = null,
     normals: ?[]nm.vec3 = null,
     colors: ?[]nm.vec3 = null,
+
+    mat: MaterialInfo = undefined,
 
     pub fn generateInputBindings(self: *Model) vk.VertexInputBindingDescription {
         var vertex_size: usize = 0;
@@ -76,11 +83,46 @@ pub const Model = struct {
         if (self.colors) |buf|
             map.put("colors", std.mem.sliceAsBytes(buf)) catch unreachable;
 
+        map.put("mat_name", allocator.dupe(u8, self.mat.name) catch unreachable) catch unreachable;
+        var double_sided: u8 = @intCast(u8, @boolToInt(self.mat.double_sided));
+        map.put("mat_double_sided", std.mem.asBytes(&double_sided)) catch unreachable;
+        map.put("mat_tex_count", std.mem.asBytes(&self.mat.images.len)) catch unreachable;
+
+        var sampler_infos = allocator.alloc(vk.SamplerCreateInfo, self.mat.samplers.len) catch unreachable;
+        for (self.mat.samplers) |sampler, ind|
+            sampler_infos[ind] = sampler.sampler_info;
+        map.put("mat_samplers", std.mem.sliceAsBytes(sampler_infos)) catch unreachable;
+
+        var image_data_size: usize = 0;
+        var image_sizes: []usize = allocator.alloc(usize, self.mat.images.len * 2) catch unreachable;
+
+        for (self.mat.images) |image, ind| {
+            image_data_size += image.data.len;
+
+            image_sizes[2 * ind] = image.width;
+            image_sizes[2 * ind + 1] = image.height;
+        }
+
+        map.put("mat_image_sizes", std.mem.sliceAsBytes(image_sizes)) catch unreachable;
+
+        var image_data: []u8 = allocator.alloc(u8, image_data_size) catch unreachable;
+
+        var image_data_offset: usize = 0;
+        for (self.mat.images) |image| {
+            std.mem.copy(u8, image_data[image_data_offset..], image.data);
+            image_data_offset += image.data.len;
+        }
+        map.put("mat_image_data", image_data) catch unreachable;
+
         return map;
     }
 
     pub fn deinitAssetMap(map: *AssetMap) void {
         map.allocator.free(map.get("name") orelse unreachable);
+        map.allocator.free(map.get("mat_name") orelse unreachable);
+        map.allocator.free(map.get("mat_image_sizes") orelse unreachable);
+        map.allocator.free(map.get("mat_image_data") orelse unreachable);
+        map.allocator.free(map.get("mat_samplers") orelse unreachable);
         map.deinit();
     }
 
@@ -100,6 +142,34 @@ pub const Model = struct {
             model.normals = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("normals") orelse unreachable));
         if (map.contains("colors"))
             model.colors = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("colors") orelse unreachable));
+
+        model.mat.allocator = allocator;
+        model.mat.name = allocator.dupe(u8, map.get("mat_name") orelse unreachable) catch unreachable;
+        model.mat.double_sided = (map.get("mat_double_sided") orelse unreachable)[0] == 1;
+
+        var map_tex_count: []u8 = map.get("mat_tex_count") orelse unreachable;
+        var tex_count: usize = @alignCast(@alignOf(usize), std.mem.bytesAsValue(usize, map_tex_count[0..8])).*;
+        model.mat.samplers = allocator.alloc(Sampler, tex_count) catch unreachable;
+        model.mat.images = allocator.alloc(Image, tex_count) catch unreachable;
+
+        var sampler_infos = std.mem.bytesAsSlice(vk.SamplerCreateInfo, map.get("mat_samplers") orelse unreachable);
+        for (sampler_infos) |si, ind|
+            model.mat.samplers[ind].sampler_info = si;
+
+        var image_sizes = std.mem.bytesAsSlice(usize, map.get("mat_image_sizes") orelse unreachable);
+        for (image_sizes) |is, ind| {
+            var image: *Image = &model.mat.images[ind / 2];
+            var size: *usize = if (ind % 2 == 0) &image.width else &image.height;
+            size.* = is;
+        }
+
+        for (model.mat.images) |*im|
+            im.data = allocator.alloc(u8, 4 * im.width * im.height) catch unreachable;
+
+        var image_data: []u8 = map.get("mat_image_data") orelse unreachable;
+        var image_data_offset: usize = 0;
+        for (model.mat.images) |im|
+            std.mem.copy(u8, im.data, image_data[image_data_offset .. image_data_offset + im.data.len]);
 
         return model;
     }

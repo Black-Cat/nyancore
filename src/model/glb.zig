@@ -7,6 +7,7 @@ const vk = @import("../vk.zig");
 const jpg = @import("../image/jpg.zig");
 const Image = @import("../image/image.zig").Image;
 
+const MaterialInfo = @import("material_info.zig").MaterialInfo;
 const Model = @import("model.zig").Model;
 const Sampler = @import("../vulkan_wrapper/sampler.zig").Sampler;
 
@@ -172,7 +173,7 @@ const GltfMaterial = struct {
     pbr_base_color_index: usize,
     pbr_metallic_roughness_index: usize,
 
-    normal_texure: *GltfTexture,
+    normal_texture: *GltfTexture,
     pbr_base_color: *GltfTexture,
     pbr_metallic_roughness: *GltfTexture,
 
@@ -193,9 +194,29 @@ const GltfMaterial = struct {
     }
 
     pub fn link(self: *GltfMaterial, textures: []GltfTexture) void {
-        self.normal_texure = &textures[self.normal_texture_index];
+        self.normal_texture = &textures[self.normal_texture_index];
         self.pbr_base_color = &textures[self.pbr_base_color_index];
         self.pbr_metallic_roughness = &textures[self.pbr_metallic_roughness_index];
+    }
+
+    pub fn toMaterialInfo(self: *GltfMaterial, allocator: std.mem.Allocator) MaterialInfo {
+        const textures = [_]*GltfTexture{ self.pbr_base_color, self.pbr_metallic_roughness, self.normal_texture };
+        const images: []Image = allocator.alloc(Image, textures.len) catch unreachable;
+        const samplers: []Sampler = allocator.alloc(Sampler, textures.len) catch unreachable;
+
+        for (textures) |tex, ind| {
+            images[ind] = tex.source.image.clone(allocator);
+            samplers[ind] = undefined;
+            samplers[ind].sampler_info = tex.sampler.sampler.sampler_info;
+        }
+
+        return .{
+            .allocator = allocator,
+            .name = allocator.dupe(u8, self.name) catch unreachable,
+            .double_sided = self.double_sided,
+            .images = images,
+            .samplers = samplers,
+        };
     }
 };
 
@@ -358,6 +379,9 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
     var materials: []GltfMaterial = parseArray(GltfMaterial, "materials", json_tree.root, allocator);
     defer allocator.free(materials);
 
+    for (materials) |*mat|
+        mat.link(textures);
+
     const bin_chunk_size: u32 = try reader.readIntLittle(u32);
     const valid_bin_signature: bool = (try reader.readIntLittle(u32)) == bin_chunk_type;
     if (!valid_bin_signature)
@@ -397,6 +421,10 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Model {
 
         const indices: usize = @intCast(usize, primitives.get("indices").?.Integer);
         model.indices = extractBuffer(u32, bin_buffer, &accessors[indices], allocator);
+
+        const mat_index: usize = @intCast(usize, primitives.get("material").?.Integer);
+        const mat: *GltfMaterial = &materials[mat_index];
+        model.mat = mat.toMaterialInfo(model.allocator);
 
         primitives = primitives.get("attributes").?.Object;
         if (primitives.get("POSITION")) |val|

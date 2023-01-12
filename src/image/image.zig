@@ -8,6 +8,14 @@ pub const Image = struct {
 
     data: []u8, // RGBA 32bit
 
+    pub fn clone(self: *Image, allocator: std.mem.Allocator) Image {
+        return .{
+            .width = self.width,
+            .height = self.height,
+            .data = allocator.dupe(u8, self.data) catch unreachable,
+        };
+    }
+
     pub fn asGLFWimage(self: *Image) c.GLFWimage {
         return .{
             .width = @intCast(c_int, self.width),
