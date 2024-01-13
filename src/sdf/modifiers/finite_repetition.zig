@@ -18,7 +18,7 @@ pub const Data = struct {
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     _ = mat_offset;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     const next_point: []const u8 = util.std.fmt.allocPrint(ctxt.allocator, "p{d}", .{iter}) catch unreachable;
 
@@ -51,7 +51,7 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
 }
 
 fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     bound.* = children[0];
     bound.*.r += util.math.Vec3.norm(.{ data.size[0], data.size[1], data.size[2] }) * data.period;

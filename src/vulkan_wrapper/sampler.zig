@@ -29,7 +29,7 @@ pub const Sampler = struct {
     sampler_info: vk.SamplerCreateInfo,
 
     pub fn init(self: *Sampler) void {
-        self.vk_ref = vkfn.d.createSampler(vkctxt.device, self.sampler_info, null) catch |err| {
+        self.vk_ref = vkfn.d.createSampler(vkctxt.device, &self.sampler_info, null) catch |err| {
             printVulkanError("Can't create sampler", err);
             return;
         };

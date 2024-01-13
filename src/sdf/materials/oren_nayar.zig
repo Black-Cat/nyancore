@@ -32,7 +32,7 @@ fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, bu
     _ = iter;
     _ = mat_offset;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     const format: []const u8 = "res = matOrenNayar(l,n,v,vec3({d:.5},{d:.5},{d:.5}),{d:.5});";
 

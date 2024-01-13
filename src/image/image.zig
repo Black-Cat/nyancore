@@ -18,9 +18,9 @@ pub const Image = struct {
 
     pub fn asGLFWimage(self: *Image) c.GLFWimage {
         return .{
-            .width = @intCast(c_int, self.width),
-            .height = @intCast(c_int, self.height),
-            .pixels = @intToPtr([*]u8, @ptrToInt(self.data.ptr)),
+            .width = @intCast(self.width),
+            .height = @intCast(self.height),
+            .pixels = @ptrCast(self.data.ptr),
         };
     }
 
@@ -45,13 +45,13 @@ pub const Image = struct {
                 const ind: usize = (y * self.width + x) * 4;
                 var val: []u8 = self.data[ind .. ind + 4];
 
-                const r: f64 = (@intToFloat(f64, val[2]) - 128.0) * 1.402 + @intToFloat(f64, val[0]);
-                const b: f64 = (@intToFloat(f64, val[1]) - 128.0) * 1.772 + @intToFloat(f64, val[0]);
-                const g: f64 = @intToFloat(f64, val[0]) - 0.344136 * (@intToFloat(f64, val[1]) - 128.0) - 0.714136 * (@intToFloat(f64, val[2]) - 128.0);
+                const r: f64 = (@as(f64, @floatFromInt(val[2])) - 128.0) * 1.402 + @as(f64, @floatFromInt(val[0]));
+                const b: f64 = (@as(f64, @floatFromInt(val[1])) - 128.0) * 1.772 + @as(f64, @floatFromInt(val[0]));
+                const g: f64 = @as(f64, @floatFromInt(val[0])) - 0.344136 * (@as(f64, @floatFromInt(val[1])) - 128.0) - 0.714136 * (@as(f64, @floatFromInt(val[2])) - 128.0);
 
-                val[0] = @floatToInt(u8, std.math.clamp(r, 0.0, 255.0));
-                val[1] = @floatToInt(u8, std.math.clamp(g, 0.0, 255.0));
-                val[2] = @floatToInt(u8, std.math.clamp(b, 0.0, 255.0));
+                val[0] = @intFromFloat(std.math.clamp(r, 0.0, 255.0));
+                val[1] = @intFromFloat(std.math.clamp(g, 0.0, 255.0));
+                val[2] = @intFromFloat(std.math.clamp(b, 0.0, 255.0));
             }
         }
     }

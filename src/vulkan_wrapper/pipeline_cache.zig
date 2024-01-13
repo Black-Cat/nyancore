@@ -15,7 +15,7 @@ pub const PipelineCache = struct {
             .p_initial_data = undefined,
         };
 
-        const pipeline_cache: vk.PipelineCache = vkfn.d.createPipelineCache(vkctxt.device, pipeline_cache_create_info, null) catch |err| {
+        const pipeline_cache: vk.PipelineCache = vkfn.d.createPipelineCache(vkctxt.device, &pipeline_cache_create_info, null) catch |err| {
             printVulkanError("Can't create pipeline cache", err);
             unreachable;
         };

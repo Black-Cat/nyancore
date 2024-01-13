@@ -28,7 +28,7 @@ pub const PipelineBuilder = struct {
     pub fn build(self: *PipelineBuilder, render_pass: *RenderPass) Pipeline {
         const dynamic_enabled_states = [_]vk.DynamicState{ .viewport, .scissor };
         const dynamic_state: vk.PipelineDynamicStateCreateInfo = .{
-            .p_dynamic_states = @ptrCast([*]const vk.DynamicState, &dynamic_enabled_states),
+            .p_dynamic_states = @ptrCast(&dynamic_enabled_states),
             .dynamic_state_count = 2,
             .flags = .{},
         };
@@ -49,8 +49,8 @@ pub const PipelineBuilder = struct {
             .p_dynamic_state = &dynamic_state,
             .p_vertex_input_state = &self.vertex_input_state,
 
-            .stage_count = @intCast(u32, self.shader_stages.len),
-            .p_stages = @ptrCast([*]const vk.PipelineShaderStageCreateInfo, self.shader_stages.ptr),
+            .stage_count = @intCast(self.shader_stages.len),
+            .p_stages = @ptrCast(self.shader_stages.ptr),
 
             .p_tessellation_state = null,
             .subpass = 0,
@@ -61,9 +61,9 @@ pub const PipelineBuilder = struct {
             vkctxt.device,
             self.pipeline_cache.vk_ref,
             1,
-            @ptrCast([*]const vk.GraphicsPipelineCreateInfo, &pipeline_create_info),
+            @ptrCast(&pipeline_create_info),
             null,
-            @ptrCast([*]vk.Pipeline, &pipeline.vk_ref),
+            @ptrCast(&pipeline.vk_ref),
         ) catch |err| {
             printVulkanError("Can't create graphics pipeline", err);
         };
@@ -86,10 +86,10 @@ pub const PipelineBuilder = struct {
         attributes: []const vk.VertexInputAttributeDescription,
     ) vk.PipelineVertexInputStateCreateInfo {
         return .{
-            .vertex_binding_description_count = @intCast(u32, bindings.len),
-            .p_vertex_binding_descriptions = @ptrCast([*]const vk.VertexInputBindingDescription, bindings.ptr),
-            .vertex_attribute_description_count = @intCast(u32, attributes.len),
-            .p_vertex_attribute_descriptions = @ptrCast([*]const vk.VertexInputAttributeDescription, attributes.ptr),
+            .vertex_binding_description_count = @intCast(bindings.len),
+            .p_vertex_binding_descriptions = @ptrCast(bindings.ptr),
+            .vertex_attribute_description_count = @intCast(attributes.len),
+            .p_vertex_attribute_descriptions = @ptrCast(attributes.ptr),
             .flags = .{},
         };
     }
@@ -157,8 +157,8 @@ pub const PipelineBuilder = struct {
 
     pub fn buildColorBlendState(blend_attachment_states: []const vk.PipelineColorBlendAttachmentState) vk.PipelineColorBlendStateCreateInfo {
         return .{
-            .attachment_count = @intCast(u32, blend_attachment_states.len),
-            .p_attachments = @ptrCast([*]const vk.PipelineColorBlendAttachmentState, blend_attachment_states.ptr),
+            .attachment_count = @intCast(blend_attachment_states.len),
+            .p_attachments = @ptrCast(blend_attachment_states.ptr),
 
             .flags = .{},
             .logic_op_enable = vk.FALSE,
@@ -206,9 +206,9 @@ pub const PipelineBuilder = struct {
             vkctxt.device,
             pipeline_cache.vk_ref,
             1,
-            @ptrCast([*]const vk.ComputePipelineCreateInfo, &info),
+            @ptrCast(&info),
             null,
-            @ptrCast([*]vk.Pipeline, &pipeline.vk_ref),
+            @ptrCast(&pipeline.vk_ref),
         ) catch |err| {
             printVulkanError("Can't create compute pipeline", err);
         };

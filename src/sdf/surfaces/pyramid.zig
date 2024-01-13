@@ -46,7 +46,7 @@ fn exitCommand(data: *Data, enter_index: usize, cur_point_name: []const u8, allo
 fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
     _ = children;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     bound.* = util.math.SphereBound.from3Points(
         .{ 0.0, data.height, 0.0 },

@@ -33,23 +33,23 @@ pub const VmaAllocation = struct {
         const mapping_flags: c.VmaAllocationCreateFlagBits = if (self.mapping_usage == .no_mapping) 0 else c.VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
         var vmaalloc_info: c.VmaAllocationCreateInfo = std.mem.zeroes(c.VmaAllocationCreateInfo);
-        vmaalloc_info.usage = @enumToInt(MemoryUsage.auto);
-        vmaalloc_info.flags = @enumToInt(self.mapping_usage) | mapping_flags;
+        vmaalloc_info.usage = @intFromEnum(MemoryUsage.auto);
+        vmaalloc_info.flags = @intFromEnum(self.mapping_usage) | mapping_flags;
 
         const vk_res = switch (@TypeOf(creation_info)) {
             vk.BufferCreateInfo => c.vmaCreateBuffer(
                 vkctxt.vma_allocator,
-                @ptrCast([*]const c.VkBufferCreateInfo, &creation_info),
+                @ptrCast(&creation_info),
                 &vmaalloc_info,
-                @ptrCast([*c]?*c.VkBuffer_T, @alignCast(@alignOf(*vk.Buffer), vk_ref)),
+                @ptrCast(@alignCast(vk_ref)),
                 &self.allocation,
                 &self.allocation_info,
             ),
             vk.ImageCreateInfo => c.vmaCreateImage(
                 vkctxt.vma_allocator,
-                @ptrCast([*]const c.VkImageCreateInfo, &creation_info),
+                @ptrCast(&creation_info),
                 &vmaalloc_info,
-                @ptrCast([*c]?*c.VkImage_T, @alignCast(@alignOf(*vk.Image), vk_ref)),
+                @ptrCast(@alignCast(vk_ref)),
                 &self.allocation,
                 &self.allocation_info,
             ),

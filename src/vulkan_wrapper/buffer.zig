@@ -43,7 +43,7 @@ pub const Buffer = struct {
     }
 
     pub fn destroy(self: *Buffer) void {
-        vkfn.d.vkDestroyBuffer(vkctxt.device, self.vk_ref, null);
+        vkfn.d.destroyBuffer(vkctxt.device, self.vk_ref, null);
         self.allocation.free();
     }
 

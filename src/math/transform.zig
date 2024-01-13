@@ -1,7 +1,7 @@
 const math = @import("math.zig");
 const Mat4x4 = @import("mat4x4.zig");
 
-inline fn rotateTransform(comptime ids: [4][2]usize, rot: f32) math.mat4x4 {
+inline fn rotateTransform(ids: [4][2]usize, rot: f32) math.mat4x4 {
     var m: math.mat4x4 = Mat4x4.identity();
     const s: f32 = @sin(rot);
     const c: f32 = @cos(rot);
@@ -33,7 +33,7 @@ pub inline fn rotateZ(m: *math.mat4x4, rot: f32) void {
 }
 
 pub inline fn translate(m: *math.mat4x4, tr: math.vec3) void {
-    m[3] = @mulAdd(math.vec4, m[0], @splat(4, tr[0]), m[3]);
-    m[3] = @mulAdd(math.vec4, m[1], @splat(4, tr[1]), m[3]);
-    m[3] = @mulAdd(math.vec4, m[2], @splat(4, tr[2]), m[3]);
+    m[3] = @mulAdd(math.vec4, m[0], @splat(tr[0]), m[3]);
+    m[3] = @mulAdd(math.vec4, m[1], @splat(tr[1]), m[3]);
+    m[3] = @mulAdd(math.vec4, m[2], @splat(tr[2]), m[3]);
 }

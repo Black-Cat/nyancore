@@ -34,7 +34,7 @@ pub fn create(app_name: [:0]const u8, comptime enable_validation: bool, allocato
     var glfw_extension_count: u32 = undefined;
     const glfw_extensions: [*c][*c]const u8 = c.glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
-    const extensions_count: u32 = glfw_extension_count + 1 * @boolToInt(enable_validation);
+    const extensions_count: u32 = glfw_extension_count + 1 * @intFromBool(enable_validation);
     var extensions: [][*c]const u8 = allocator.alloc([*c]const u8, extensions_count) catch {
         printError("Vulkan", "Can't allocate memory for extensions");
         return error.HostAllocationError;
@@ -51,13 +51,13 @@ pub fn create(app_name: [:0]const u8, comptime enable_validation: bool, allocato
     const create_info: vk.InstanceCreateInfo = .{
         .p_application_info = &app_info,
         .enabled_extension_count = extensions_count,
-        .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, extensions),
-        .enabled_layer_count = if (enable_validation) @intCast(u32, std.mem.len(vkctxt.validation_layers)) else 0,
-        .pp_enabled_layer_names = if (enable_validation) @ptrCast([*]const [*:0]const u8, &vkctxt.validation_layers) else undefined,
+        .pp_enabled_extension_names = @ptrCast(extensions),
+        .enabled_layer_count = if (enable_validation) @intCast(vkctxt.validation_layers.len) else 0,
+        .pp_enabled_layer_names = if (enable_validation) @ptrCast(&vkctxt.validation_layers) else undefined,
         .flags = .{},
     };
 
-    return vkfn.b.createInstance(create_info, null) catch |err| {
+    return vkfn.b.createInstance(&create_info, null) catch |err| {
         printVulkanError("Couldn't create vulkan instance", err);
         return err;
     };
@@ -81,7 +81,7 @@ fn checkValidationLayerSupport() !bool {
     };
     defer vkctxt.allocator.free(available_layers);
 
-    _ = vkfn.b.enumerateInstanceLayerProperties(&layerCount, @ptrCast([*]vk.LayerProperties, available_layers)) catch |err| {
+    _ = vkfn.b.enumerateInstanceLayerProperties(&layerCount, @ptrCast(available_layers)) catch |err| {
         printVulkanError("Can't enumerate instance layer properties for layer support", err);
         return err;
     };

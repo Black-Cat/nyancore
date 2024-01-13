@@ -17,6 +17,7 @@ const Pipeline = @import("../../../vulkan_wrapper/pipeline.zig").Pipeline;
 const PipelineBuilder = @import("../../../vulkan_wrapper/pipeline_builder.zig").PipelineBuilder;
 const PipelineCache = @import("../../../vulkan_wrapper/pipeline_cache.zig").PipelineCache;
 const PipelineLayout = @import("../../../vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
+const ImageView = @import("../../../vulkan_wrapper/image_view.zig").ImageView;
 
 const printVulkanError = @import("../../../vulkan_wrapper/print_vulkan_error.zig").printVulkanError;
 
@@ -93,7 +94,8 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 .flags = .{},
             }};
 
-            self.render_pass.init(self.target, color_attachment[0..]);
+            self.render_pass.init(self.target, &[_]ImageView{}, color_attachment[0..]);
+            self.render_pass.target_recreated_callback = onTargetRecreated;
 
             self.pipeline_cache = PipelineCache.createEmpty();
             self.createPipelineLayout();
@@ -125,24 +127,24 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                     .extent = self.target.extent,
                 },
                 .clear_value_count = 1,
-                .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
+                .p_clear_values = @ptrCast(&clear_color),
             };
 
-            vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
+            vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, &render_pass_info, .@"inline");
             defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
             vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, self.pipeline.vk_ref);
 
             const viewport_info: vk.Viewport = .{
-                .width = @intToFloat(f32, self.target.extent.width),
-                .height = @intToFloat(f32, self.target.extent.height),
+                .width = @floatFromInt(self.target.extent.width),
+                .height = @floatFromInt(self.target.extent.height),
                 .min_depth = 0.0,
                 .max_depth = 1.0,
                 .x = 0,
                 .y = 0,
             };
 
-            vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
+            vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast(&viewport_info));
 
             var scissor_rect: vk.Rect2D = .{
                 .offset = .{ .x = 0, .y = 0 },
@@ -153,7 +155,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
             };
 
             const scissor_rect_ptr: *vk.Rect2D = if (self.custom_scissors) |custom_scissors| custom_scissors else &scissor_rect;
-            vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
+            vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast(scissor_rect_ptr));
 
             var push_const_block: VertPushConstBlock = .{
                 .aspect_ratio = [4]f32{ 1.0, 1.0, 0.0, 0.0 },
@@ -171,7 +173,7 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 .{ .vertex_bit = true },
                 0,
                 @sizeOf(VertPushConstBlock),
-                @ptrCast([*]const VertPushConstBlock, &push_const_block),
+                @ptrCast(&push_const_block),
             );
 
             vkfn.d.cmdPushConstants(
@@ -179,11 +181,16 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 self.pipeline_layout.vk_ref,
                 .{ .fragment_bit = true },
                 @sizeOf(VertPushConstBlock),
-                @intCast(u32, self.frag_push_const_size),
+                @intCast(self.frag_push_const_size),
                 self.frag_push_const_block,
             );
 
             vkfn.d.cmdDraw(command_buffer.vk_ref, 3, 1, 0, 0);
+        }
+
+        fn onTargetRecreated(rp: *RenderPass) void {
+            const self: *SelfType = @fieldParentPtr(SelfType, "render_pass", rp);
+            self.recreateFramebuffers();
         }
 
         fn createPipelineLayout(self: *SelfType) void {
@@ -196,21 +203,16 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 .{
                     .stage_flags = .{ .fragment_bit = true },
                     .offset = @sizeOf(VertPushConstBlock),
-                    .size = @intCast(u32, self.frag_push_const_size),
+                    .size = @intCast(self.frag_push_const_size),
                 },
             };
 
             self.pipeline_layout = PipelineLayout.create(&.{}, push_constant_range[0..]);
         }
 
-        fn recreatePipeline(self: *SelfType) void {
+        pub fn recreatePipeline(self: *SelfType) void {
             self.pipeline.destroy();
             self.createPipeline();
-        }
-
-        pub fn recreatePipelineOnShaderChange(pass: *RGPass) void {
-            const self: *SelfType = @fieldParentPtr(SelfType, "rg_pass", pass);
-            self.recreatePipeline();
         }
 
         fn createPipeline(self: *SelfType) void {
@@ -238,6 +240,10 @@ pub fn ScreenRenderPass(comptime TargetType: type) type {
                 .pipeline_layout = &self.pipeline_layout,
             };
             self.pipeline = pipeline_builder.build(&self.render_pass);
+        }
+
+        pub fn recreateFramebuffers(self: *SelfType) void {
+            self.render_pass.recreateFramebuffers(self.target, &[_]ImageView{});
         }
     };
 }

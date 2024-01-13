@@ -15,9 +15,9 @@ pub fn DynamicBuffer(comptime BufferType: type) type {
         data_offset: usize,
 
         pub fn init(self: *SelfType) void {
-            const min_alignment: usize = @intCast(usize, vkctxt.physical_device.device_properties.limits.min_uniform_buffer_offset_alignment);
+            const min_alignment: usize = @intCast(vkctxt.physical_device.device_properties.limits.min_uniform_buffer_offset_alignment);
 
-            const in_flight: usize = @intCast(usize, rg.global_render_graph.in_flight);
+            const in_flight: usize = @intCast(rg.global_render_graph.in_flight);
             self.data_offset = (@sizeOf(BufferType) + min_alignment - 1) & ~(min_alignment - 1);
             const buffer_size: usize = self.data_offset * in_flight;
 
@@ -25,8 +25,8 @@ pub fn DynamicBuffer(comptime BufferType: type) type {
 
             // Since buffer will not reallocate (const size), we can map memory once
             self.data = vkctxt.allocator.alloc(*BufferType, in_flight) catch unreachable;
-            for (self.data) |*d, ind|
-                d.* = @ptrCast(*BufferType, @alignCast(@alignOf(BufferType), &@ptrCast([*]u8, self.buffer.allocation.mapped_memory)[self.data_offset * ind]));
+            for (self.data, 0..) |*d, ind|
+                d.* = @ptrCast(@alignCast(&@as([*]u8, @ptrCast(self.buffer.allocation.mapped_memory))[self.data_offset * ind]));
         }
 
         pub fn deinit(self: *SelfType) void {

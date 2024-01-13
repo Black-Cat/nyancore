@@ -13,7 +13,7 @@ pub const TransferContext = struct {
         staging_buffer.init(data.len, .{ .transfer_src_bit = true }, .sequential);
         defer staging_buffer.destroy();
 
-        @memcpy(@ptrCast([*]u8, staging_buffer.allocation.mapped_memory), data.ptr, data.len);
+        @memcpy(@as([*]u8, @ptrCast(staging_buffer.allocation.mapped_memory))[0..data.len], data.ptr[0..data.len]);
 
         var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(&rg.global_render_graph.command_pool) catch unreachable;
         scb.command_buffer.beginSingleTimeCommands();
@@ -40,7 +40,7 @@ pub const TransferContext = struct {
             target.vk_ref,
             .transfer_dst_optimal,
             1,
-            @ptrCast([*]const vk.BufferImageCopy, &region),
+            @ptrCast(&region),
         );
 
         target.transitionImageLayout(scb.command_buffer.vk_ref, final_layout);
@@ -54,7 +54,7 @@ pub const TransferContext = struct {
         staging_buffer.init(data.len, .{ .transfer_src_bit = true }, .sequential);
         defer staging_buffer.destroy();
 
-        @memcpy(@ptrCast([*]u8, staging_buffer.allocation.mapped_memory), data.ptr, data.len);
+        @memcpy(@as([*]u8, @ptrCast(staging_buffer.allocation.mapped_memory))[0..data.len], data.ptr[0..data.len]);
 
         var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(&rg.global_render_graph.command_pool) catch unreachable;
         scb.command_buffer.beginSingleTimeCommands();
@@ -70,7 +70,7 @@ pub const TransferContext = struct {
             staging_buffer.vk_ref,
             target.vk_ref,
             1,
-            @ptrCast([*]const vk.BufferCopy, &copy),
+            @ptrCast(&copy),
         );
 
         scb.command_buffer.endSingleTimeCommands();

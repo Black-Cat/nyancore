@@ -11,8 +11,8 @@ const ResourceList = std.ArrayList(*RGResource);
 const PassList = std.ArrayList(*RGPass);
 
 pub const RGPass = struct {
-    const PassFunction = fn (render_pass: *RGPass) void;
-    const RenderFunction = fn (render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void;
+    const PassFunction = *const fn (render_pass: *RGPass) void;
+    const RenderFunction = *const fn (render_pass: *RGPass, command_buffer: *CommandBuffer, frame_index: u32) void;
 
     name: []const u8,
 
@@ -49,7 +49,7 @@ pub const RGPass = struct {
         self.reads_from = ResourceList.init(allocator);
 
         self.load_op = .clear;
-        self.initial_layout = .@"undefined";
+        self.initial_layout = .undefined;
         self.final_layout = .present_src_khr;
 
         self.sync_point.rg_resource.init(name ++ "'s Sync Point", allocator);
@@ -77,14 +77,14 @@ pub const RGPass = struct {
     }
 
     fn removeResource(self: *RGPass, list: *ResourceList, res_list: *PassList, res: *RGResource) void {
-        for (list.items) |r, ind| {
+        for (list.items, 0..) |r, ind| {
             if (r == res) {
                 _ = list.swapRemove(ind);
                 break;
             }
         }
 
-        for (res_list.items) |p, ind| {
+        for (res_list.items, 0..) |p, ind| {
             if (p == self) {
                 _ = res_list.swapRemove(ind);
                 break;

@@ -59,8 +59,8 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     const image_header: IHDRImageHeader = try IHDRImageHeader.read(fbs.reader());
 
     var image: Image = undefined;
-    image.width = @intCast(usize, image_header.width);
-    image.height = @intCast(usize, image_header.height);
+    image.width = @intCast(image_header.width);
+    image.height = @intCast(image_header.height);
     image.data = allocator.alloc(u8, image.width * image.height * 4) catch unreachable;
 
     while (true) {
@@ -72,7 +72,7 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
 
         if (std.mem.eql(u8, chunk.chunk_type[0..], "IDAT")) {
             var data_stream = std.io.fixedBufferStream(chunk.chunk_data);
-            var zlib_stream = try std.compress.zlib.zlibStream(allocator, data_stream.reader());
+            var zlib_stream = try std.compress.zlib.decompressStream(allocator, data_stream.reader());
             defer zlib_stream.deinit();
 
             var deflated_data = try zlib_stream.reader().readAllAlloc(allocator, std.math.maxInt(usize));
@@ -92,26 +92,26 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
                         std.mem.copy(u8, image.data[y * image.width * 4 ..], scanline);
                     },
                     1 => { // Sub
-                        for (scanline) |_, x| {
+                        for (0..scanline.len) |x| {
                             const prev: u8 = if (x - bpp < 0) 0 else image.data[y * image.width * 4 + x - bpp];
                             image.data[y * image.width * 4 + x] = scanline[x] +% prev;
                         }
                     },
                     2 => { // Up
-                        for (scanline) |_, x| {
+                        for (0..scanline.len) |x| {
                             const prev: u8 = if (y == 0) 0 else image.data[(y - 1) * image.width * 4 + x];
                             image.data[y * image.width * 4 + x] = scanline[x] +% prev;
                         }
                     },
                     3 => { // Average
-                        for (scanline) |_, x| {
-                            const prev: i32 = if (y == 0) 0 else @intCast(i32, image.data[(y - 1) * image.width * 4 + x]);
-                            const prev_x: i32 = if (x - bpp < 0) 0 else @intCast(i32, image.data[y * image.width * 4 + x - bpp]);
-                            image.data[y * image.width * 4 + x] = @intCast(u8, @mod(@intCast(i32, scanline[x]) + @divFloor(prev_x + prev, 2), 256));
+                        for (0..scanline.len) |x| {
+                            const prev: i32 = if (y == 0) 0 else @intCast(image.data[(y - 1) * image.width * 4 + x]);
+                            const prev_x: i32 = if (x - bpp < 0) 0 else @intCast(image.data[y * image.width * 4 + x - bpp]);
+                            image.data[y * image.width * 4 + x] = @intCast(@mod(@as(u8, @intCast(scanline[x])) + @divFloor(prev_x + prev, 2), 256));
                         }
                     },
                     4 => { // Paeth
-                        for (scanline) |_, x| {
+                        for (0..scanline.len) |x| {
                             const prev_y: u8 = if (y == 0) 0 else image.data[(y - 1) * image.width * 4 + x];
                             const prev_x: u8 = if (x - bpp < 0) 0 else image.data[y * image.width * 4 + x - bpp];
                             const prev_x_y: u8 = if (x - bpp < 0 or y == 0) 0 else image.data[(y - 1) * image.width * 4 + x - bpp];
@@ -130,7 +130,7 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
 }
 
 fn paethPredictor(left: u8, above: u8, upper_left: u8) u8 {
-    const initial_estimate: i32 = @intCast(i32, left) + @intCast(i32, above) - @intCast(i32, upper_left);
+    const initial_estimate: i32 = @as(i32, @intCast(left)) + @as(i32, @intCast(above)) - @as(i32, @intCast(upper_left));
 
     const distance_left: i32 = std.math.absInt(initial_estimate - left) catch unreachable;
     const distance_above: i32 = std.math.absInt(initial_estimate - above) catch unreachable;

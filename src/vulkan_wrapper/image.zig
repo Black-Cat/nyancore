@@ -48,7 +48,7 @@ pub const Image = struct {
     }
 
     pub fn destroy(self: *Image) void {
-        vkfn.d.vkDestroyImage(vkctxt.device, self.vk_ref, null);
+        vkfn.d.destroyImage(vkctxt.device, self.vk_ref, null);
         self.allocation.free();
     }
 
@@ -94,13 +94,13 @@ pub const Image = struct {
             0,
             undefined,
             1,
-            @ptrCast([*]const vk.ImageMemoryBarrier, &barrier),
+            @ptrCast(&barrier),
         );
     }
 
     fn imageLayoutToStage(layout: vk.ImageLayout) vk.PipelineStageFlags {
         return switch (layout) {
-            .@"undefined" => .{ .top_of_pipe_bit = true },
+            .undefined => .{ .top_of_pipe_bit = true },
             .shader_read_only_optimal => .{ .fragment_shader_bit = true },
             .transfer_dst_optimal => .{ .transfer_bit = true },
             else => @panic("Unsuported image layout stage"),
@@ -109,7 +109,7 @@ pub const Image = struct {
 
     fn imageLayoutToAccessMask(layout: vk.ImageLayout) vk.AccessFlags {
         return switch (layout) {
-            .@"undefined" => .{},
+            .undefined => .{},
             .shader_read_only_optimal => .{ .shader_read_bit = true },
             .transfer_dst_optimal => .{ .transfer_write_bit = true },
             else => @panic("Unsuported image layout access mask"),

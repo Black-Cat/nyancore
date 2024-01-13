@@ -18,7 +18,7 @@ pub const Fence = struct {
 
         var res: Fence = undefined;
 
-        res.vk_ref = vkfn.d.createFence(vkctxt.device, fence_info, null) catch |err| {
+        res.vk_ref = vkfn.d.createFence(vkctxt.device, &fence_info, null) catch |err| {
             printVulkanError("Can't create fence", err);
             unreachable;
         };
@@ -31,14 +31,14 @@ pub const Fence = struct {
     }
 
     pub fn waitFor(self: *const Fence) void {
-        _ = vkfn.d.waitForFences(vkctxt.device, 1, @ptrCast([*]const vk.Fence, &self.vk_ref), vk.TRUE, std.math.maxInt(u64)) catch |err| {
+        _ = vkfn.d.waitForFences(vkctxt.device, 1, @ptrCast(&self.vk_ref), vk.TRUE, std.math.maxInt(u64)) catch |err| {
             printVulkanError("Error waiting for fence", err);
             unreachable;
         };
     }
 
     pub fn reset(self: *Fence) void {
-        vkfn.d.resetFences(vkctxt.device, 1, @ptrCast([*]vk.Fence, &self.vk_ref)) catch |err| {
+        vkfn.d.resetFences(vkctxt.device, 1, @ptrCast(&self.vk_ref)) catch |err| {
             printVulkanError("Can't reset fence", err);
         };
     }

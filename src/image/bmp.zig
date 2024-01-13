@@ -74,8 +74,8 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
     image_header.height = @divExact(image_header.size_image, image_header.width * 4);
 
     var image: Image = undefined;
-    image.width = @intCast(usize, image_header.width);
-    image.height = @intCast(usize, image_header.height);
+    image.width = @intCast(image_header.width);
+    image.height = @intCast(image_header.height);
     image.data = allocator.alloc(u8, image.width * image.height * 4) catch unreachable;
 
     _ = try reader.readAll(image.data);
@@ -89,19 +89,19 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) !Image {
 pub fn write(writer: anytype, image: Image) !void {
     // File Header (14 Bytes)
     try writer.writeAll("BM"); // type
-    try writer.writeIntLittle(u32, 122 + @intCast(u32, image.data.len)); // size
+    try writer.writeIntLittle(u32, 122 + @as(u32, @intCast(image.data.len))); // size
     try writer.writeAll("\x00" ** 4); // reserved
     try writer.writeIntLittle(u32, 122); // offset
 
     // Image Header (40 Bytes)
     var image_header: ImageHeader = .{
         .size = 108,
-        .width = @intCast(i32, image.width),
-        .height = -@intCast(i32, image.height),
+        .width = @intCast(image.width),
+        .height = -@as(i32, @intCast(image.height)),
         .planes = 1,
         .bit_count = 32,
         .compression = 3,
-        .size_image = @intCast(i32, image.data.len),
+        .size_image = @intCast(image.data.len),
         .xpels_per_meter = 0,
         .ypels_per_meter = 0,
         .clr_used = 0,

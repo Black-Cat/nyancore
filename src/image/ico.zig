@@ -59,7 +59,7 @@ pub fn parse(reader: anytype, allocator: std.mem.Allocator) ![]Image {
     var seekable_stream = reader.context.seekableStream();
 
     var images: []Image = allocator.alloc(Image, header.image_count) catch unreachable;
-    for (icons) |ico, i| {
+    for (icons, 0..) |ico, i| {
         try seekable_stream.seekTo(ico.offset);
         if (png.check_header(reader) catch false) {
             images[i] = try png.parse(reader, allocator);

@@ -3,17 +3,17 @@ const std = @import("std");
 pub const AssetMap = std.StringHashMap([]u8);
 
 pub fn serializeAsset(writer: anytype, comptime asset_type: []const u8, data: AssetMap) !void {
-    try writer.writeIntLittle(u32, @intCast(u32, asset_type.len));
+    try writer.writeIntLittle(u32, @as(u32, @intCast(asset_type.len)));
     try writer.writeAll(asset_type);
 
-    try writer.writeIntLittle(u32, @intCast(u32, data.count()));
+    try writer.writeIntLittle(u32, @as(u32, @intCast(data.count())));
 
     var it = data.iterator();
     while (it.next()) |kv| {
-        try writer.writeIntLittle(u32, @intCast(u32, kv.key_ptr.*.len));
+        try writer.writeIntLittle(u32, @as(u32, @intCast(kv.key_ptr.*.len)));
         try writer.writeAll(kv.key_ptr.*);
 
-        try writer.writeIntLittle(u32, @intCast(u32, kv.value_ptr.*.len));
+        try writer.writeIntLittle(u32, @as(u32, @intCast(kv.value_ptr.*.len)));
         try writer.writeAll(kv.value_ptr.*);
     }
 }

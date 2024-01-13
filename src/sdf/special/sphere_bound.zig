@@ -23,7 +23,7 @@ const function_definition: []const u8 =
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     _ = mat_offset;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     ctxt.pushEnterInfo(iter);
     ctxt.pushStackInfo(iter, 0);

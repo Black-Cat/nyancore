@@ -82,8 +82,8 @@ pub const UI = struct {
     dockspace: ?*DockSpace,
     rg_pass: RGPass,
 
-    paletteFn: ?fn (col: c.ImGuiCol_) c.ImVec4 = null,
-    drawFn: fn (ui: *UI) void,
+    paletteFn: ?*const fn (col: c.ImGuiCol_) c.ImVec4 = null,
+    drawFn: *const fn (ui: *UI) void,
 
     context: *c.ImGuiContext,
 
@@ -106,7 +106,7 @@ pub const UI = struct {
 
         var style: *c.ImGuiStyle = c.igGetStyle();
         for (paletteValues) |p|
-            style.Colors[@intCast(usize, p)] = self.paletteFn.?(p);
+            style.Colors[@intCast(p)] = self.paletteFn.?(p);
     }
 
     fn initScaling(app: *Application) void {
@@ -115,7 +115,7 @@ pub const UI = struct {
         c.glfwGetWindowSize(app.window, &width, &height);
 
         var io: *c.ImGuiIO = c.igGetIO() orelse unreachable;
-        io.DisplaySize = .{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
+        io.DisplaySize = .{ .x = @floatFromInt(width), .y = @floatFromInt(height) };
         io.DisplayFramebufferScale = .{ .x = 1.0, .y = 1.0 };
 
         var scale: [2]f32 = undefined;
@@ -200,7 +200,7 @@ pub const UI = struct {
         c.glfwGetWindowSize(self.app.window, &width, &height);
 
         var io: *c.ImGuiIO = c.igGetIO() orelse unreachable;
-        io.DisplaySize = .{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
+        io.DisplaySize = .{ .x = @floatFromInt(width), .y = @floatFromInt(height) };
         io.DisplayFramebufferScale = .{ .x = 1.0, .y = 1.0 };
     }
 };

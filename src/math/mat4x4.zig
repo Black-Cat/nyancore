@@ -4,7 +4,7 @@ const math = @import("math.zig");
 
 pub fn identity() math.mat4x4 {
     const zero: f32 = 0.0;
-    var m: math.mat4x4 = .{@splat(4, zero)} ** 4;
+    var m: math.mat4x4 = .{@as(math.vec4, @splat(zero))} ** 4;
     m[0][0] = 1.0;
     m[1][1] = 1.0;
     m[2][2] = 1.0;
@@ -14,38 +14,38 @@ pub fn identity() math.mat4x4 {
 
 pub fn mul(a: math.mat4x4, b: math.mat4x4) math.mat4x4 {
     var vs: math.mat4x4 = undefined;
-    for (vs) |*v, i|
-        v.* = @splat(4, b[i][0]) * a[0];
+    for (&vs, b) |*v, bi|
+        v.* = @as(math.vec4, @splat(bi[0])) * a[0];
 
-    for (vs) |*v, i|
-        v.* = @mulAdd(math.vec4, @splat(4, b[i][1]), a[1], v.*);
+    for (&vs, b) |*v, bi|
+        v.* = @mulAdd(math.vec4, @splat(bi[1]), a[1], v.*);
 
-    for (vs) |*v, i|
-        v.* = @mulAdd(math.vec4, @splat(4, b[i][2]), a[2], v.*);
+    for (&vs, b) |*v, bi|
+        v.* = @mulAdd(math.vec4, @splat(bi[2]), a[2], v.*);
 
-    vs[3] = @mulAdd(math.vec4, @splat(4, b[3][3]), a[3], vs[3]);
+    vs[3] = @mulAdd(math.vec4, @splat(b[3][3]), a[3], vs[3]);
 
     return vs;
 }
 
 pub fn mulv(a: math.mat4x4, b: math.vec4) math.vec4 {
-    return a[0] * @splat(4, b[0]) + a[1] * @splat(4, b[1]) + a[2] * @splat(4, b[2]) + a[3] * @splat(4, b[3]);
+    return a[0] * @as(math.vec4, @splat(b[0])) + a[1] * @as(math.vec4, @splat(b[1])) + a[2] * @as(math.vec4, @splat(b[2])) + a[3] * @as(math.vec4, @splat(b[3]));
 }
 
 // Doesn't change a's translation row
 pub inline fn mulRotOnly(a: math.mat4x4, b: math.mat4x4, dest: *math.mat4x4) void {
     var vs: [3]math.vec4 = undefined;
-    for (vs) |*v, i|
-        v.* = @splat(4, b[i][0]) * a[0];
+    for (&vs, b[0..3]) |*v, bi|
+        v.* = @as(math.vec4, @splat(bi[0])) * a[0];
 
-    for (vs) |*v, i|
-        v.* = @mulAdd(math.vec4, @splat(4, b[i][1]), a[1], v.*);
+    for (&vs, b[0..3]) |*v, bi|
+        v.* = @mulAdd(math.vec4, @splat(bi[1]), a[1], v.*);
 
-    for (vs) |*v, i|
-        v.* = @mulAdd(math.vec4, @splat(4, b[i][2]), a[2], v.*);
+    for (&vs, b[0..3]) |*v, bi|
+        v.* = @mulAdd(math.vec4, @splat(bi[2]), a[2], v.*);
 
-    for (vs) |v, i|
-        dest[i] = v;
+    for (vs, dest[0..3]) |v, *d|
+        d.* = v;
 
     dest[3] = a[3];
 }
@@ -157,7 +157,7 @@ pub fn inverse(a: math.mat4x4) math.mat4x4 {
     x0 = @shuffle(f32, x0, x1, [4]i32{ 0, 2, n0, n2 });
 
     x0 *= r0;
-    x0 = @splat(4, 1.0 / @reduce(.Add, x0));
+    x0 = @splat(1.0 / @reduce(.Add, x0));
 
     const res: math.mat4x4 = .{
         v0 * x0,
@@ -179,7 +179,7 @@ pub fn unprojecti(p: math.vec3, m: math.mat4x4, vp: math.vec4) math.vec3 {
     v[1] *= -1.0;
 
     v = mulv(m, v);
-    v *= @splat(4, 1.0 / v[3]);
+    v *= @splat(1.0 / v[3]);
     return .{ v[0], v[1], v[2] };
 }
 

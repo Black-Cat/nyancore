@@ -34,7 +34,7 @@ const SingleCommandBuffer = @import("../vulkan_wrapper/single_command_buffer.zig
 const Texture = @import("../vulkan_wrapper/texture.zig").Texture;
 const TransferContext = @import("../vulkan_wrapper/transfer_context.zig").TransferContext;
 
-const PushConstBlock = packed struct {
+const PushConstBlock = extern struct {
     scale_translate: [4]f32,
 };
 
@@ -100,10 +100,10 @@ pub const UIVulkanContext = struct {
                 .extent = rg.global_render_graph.final_swapchain.image_extent,
             },
             .clear_value_count = 1,
-            .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color),
+            .p_clear_values = @ptrCast(&clear_color),
         };
 
-        vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
+        vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, &render_pass_info, .@"inline");
         defer vkfn.d.cmdEndRenderPass(command_buffer.vk_ref);
 
         self.descriptor_sets.bind(.graphics, command_buffer, &self.pipeline_layout);
@@ -120,12 +120,19 @@ pub const UIVulkanContext = struct {
             .x = 0,
             .y = 0,
         };
-        vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport));
+        vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast(&viewport));
 
         const push_const_block: PushConstBlock = .{
             .scale_translate = [4]f32{ 2.0 / viewport.width, 2.0 / viewport.height, -1.0, -1.0 },
         };
-        vkfn.d.cmdPushConstants(command_buffer.vk_ref, self.pipeline_layout.vk_ref, .{ .vertex_bit = true }, 0, @sizeOf(PushConstBlock), @ptrCast([*]const PushConstBlock, &push_const_block));
+        vkfn.d.cmdPushConstants(
+            command_buffer.vk_ref,
+            self.pipeline_layout.vk_ref,
+            .{ .vertex_bit = true },
+            0,
+            @sizeOf(PushConstBlock),
+            @ptrCast(&push_const_block),
+        );
 
         // Render commands
         const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return;
@@ -149,27 +156,27 @@ pub const UIVulkanContext = struct {
                 const pcmd: c.ImDrawCmd = cmd_list.CmdBuffer.Data[j];
 
                 const clip_rect: c.ImVec4 = .{
-                    .x = std.math.max(0.0, (pcmd.ClipRect.x - clip_off.x) * clip_scale.x),
-                    .y = std.math.max(0.0, (pcmd.ClipRect.y - clip_off.y) * clip_scale.y),
+                    .x = @max(0.0, (pcmd.ClipRect.x - clip_off.x) * clip_scale.x),
+                    .y = @max(0.0, (pcmd.ClipRect.y - clip_off.y) * clip_scale.y),
                     .z = (pcmd.ClipRect.z - clip_off.x) * clip_scale.x,
                     .w = (pcmd.ClipRect.w - clip_off.y) * clip_scale.y,
                 };
 
                 const scissor_rect: vk.Rect2D = .{
                     .offset = .{
-                        .x = @floatToInt(i32, clip_rect.x),
-                        .y = @floatToInt(i32, clip_rect.y),
+                        .x = @intFromFloat(clip_rect.x),
+                        .y = @intFromFloat(clip_rect.y),
                     },
                     .extent = .{
-                        .width = @floatToInt(u32, pcmd.ClipRect.z - pcmd.ClipRect.x),
-                        .height = @floatToInt(u32, pcmd.ClipRect.w - pcmd.ClipRect.y),
+                        .width = @intFromFloat(pcmd.ClipRect.z - pcmd.ClipRect.x),
+                        .height = @intFromFloat(pcmd.ClipRect.w - pcmd.ClipRect.y),
                     },
                 };
-                vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, &scissor_rect));
+                vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast(&scissor_rect));
 
                 // Bind descriptor that user specified with igImage or default font descriptor
                 const descriptors_ptr: *DescriptorSets = if (pcmd.TextureId) |ti|
-                    @ptrCast(*DescriptorSets, @alignCast(@alignOf(DescriptorSets), ti))
+                    @ptrCast(@alignCast(ti))
                 else
                     &self.descriptor_sets;
 
@@ -188,8 +195,8 @@ pub const UIVulkanContext = struct {
     fn updateBuffers(self: *UIVulkanContext, frame_index: u32) void {
         const draw_data: *c.ImDrawData = c.igGetDrawData() orelse return;
 
-        const vertex_buffer_size: vk.DeviceSize = @intCast(u64, draw_data.TotalVtxCount) * @sizeOf(c.ImDrawVert);
-        const index_buffer_size: vk.DeviceSize = @intCast(u64, draw_data.TotalIdxCount) * @sizeOf(c.ImDrawIdx);
+        const vertex_buffer_size: vk.DeviceSize = @as(u64, @intCast(draw_data.TotalVtxCount)) * @sizeOf(c.ImDrawVert);
+        const index_buffer_size: vk.DeviceSize = @as(u64, @intCast(draw_data.TotalIdxCount)) * @sizeOf(c.ImDrawIdx);
 
         if (vertex_buffer_size == 0 or index_buffer_size == 0)
             return;
@@ -202,24 +209,22 @@ pub const UIVulkanContext = struct {
         if (mesh.index_buffer.allocation.allocation_info.size < index_buffer_size)
             mesh.index_buffer.resize(index_buffer_size);
 
-        var vtx_dst: [*]c.ImDrawVert = @ptrCast([*]c.ImDrawVert, @alignCast(@alignOf(c.ImDrawVert), mesh.vertex_buffer.allocation.mapped_memory));
-        var idx_dst: [*]c.ImDrawIdx = @ptrCast([*]c.ImDrawIdx, @alignCast(@alignOf(c.ImDrawIdx), mesh.index_buffer.allocation.mapped_memory));
+        var vtx_dst: [*]c.ImDrawVert align(4) = @ptrCast(@alignCast(mesh.vertex_buffer.allocation.mapped_memory));
+        var idx_dst: [*]c.ImDrawIdx align(2) = @ptrCast(@alignCast(mesh.index_buffer.allocation.mapped_memory));
 
         var n: usize = 0;
         while (n < draw_data.CmdListsCount) : (n += 1) {
             const cmd_list: *c.ImDrawList = draw_data.CmdLists[n];
             @memcpy(
-                @ptrCast([*]align(4) u8, @alignCast(4, vtx_dst)),
-                @ptrCast([*]align(4) const u8, @alignCast(4, cmd_list.VtxBuffer.Data)),
-                @intCast(usize, cmd_list.VtxBuffer.Size) * @sizeOf(c.ImDrawVert),
+                vtx_dst[0..@intCast(cmd_list.VtxBuffer.Size)],
+                cmd_list.VtxBuffer.Data[0..@intCast(cmd_list.VtxBuffer.Size)],
             );
             @memcpy(
-                @ptrCast([*]align(2) u8, @alignCast(2, idx_dst)),
-                @ptrCast([*]align(2) const u8, @alignCast(2, cmd_list.IdxBuffer.Data)),
-                @intCast(usize, cmd_list.IdxBuffer.Size) * @sizeOf(c.ImDrawIdx),
+                idx_dst[0..@intCast(cmd_list.IdxBuffer.Size)],
+                cmd_list.IdxBuffer.Data[0..@intCast(cmd_list.IdxBuffer.Size)],
             );
-            vtx_dst += @intCast(usize, cmd_list.VtxBuffer.Size);
-            idx_dst += @intCast(usize, cmd_list.IdxBuffer.Size);
+            vtx_dst += @as(usize, @intCast(cmd_list.VtxBuffer.Size));
+            idx_dst += @as(usize, @intCast(cmd_list.IdxBuffer.Size));
         }
 
         mesh.vertex_buffer.flushWhole();
@@ -321,21 +326,21 @@ pub const UIVulkanContext = struct {
         var scale: [2]f32 = undefined;
         c.glfwGetWindowContentScale(self.parent.app.window, &scale[0], &scale[1]);
 
-        _ = c.ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(io.Fonts, @ptrCast([*c]const u8, &c.FiraSans_compressed_data_base85), 13.0 * scale[1], null, null);
+        _ = c.ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(io.Fonts, @ptrCast(&c.FiraSans_compressed_data_base85), 13.0 * scale[1], null, null);
 
         var font_data: [*c]u8 = undefined;
         var tex_dim: [2]c_int = undefined;
-        c.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, @ptrCast([*c][*c]u8, &font_data), &tex_dim[0], &tex_dim[1], null);
+        c.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, @ptrCast(&font_data), &tex_dim[0], &tex_dim[1], null);
 
-        const tex_size: usize = @intCast(usize, 4 * tex_dim[0] * tex_dim[1]);
+        const tex_size: usize = @intCast(4 * tex_dim[0] * tex_dim[1]);
 
         var font_data_slice: []u8 = undefined;
         font_data_slice.ptr = font_data;
         font_data_slice.len = tex_size;
 
         const extent: vk.Extent3D = .{
-            .width = @intCast(u32, tex_dim[0]),
-            .height = @intCast(u32, tex_dim[1]),
+            .width = @intCast(tex_dim[0]),
+            .height = @intCast(tex_dim[1]),
             .depth = 1.0,
         };
         self.font_texture.init(extent, .r8g8b8a8_unorm, .{ .transfer_dst_bit = true, .sampled_bit = true });
@@ -358,7 +363,7 @@ pub const UIVulkanContext = struct {
         };
 
         self.descriptor_set_layout.init(&.{set_layout_bindings});
-        self.descriptor_sets.init(&self.descriptor_pool, &.{self.descriptor_set_layout.vk_ref}, 1);
+        self.descriptor_sets.init(&self.descriptor_pool, &[_]vk.DescriptorSetLayout{self.descriptor_set_layout.vk_ref}, 1);
 
         self.font_sampler.sampler_info = Sampler.default_sampler_info;
         self.font_sampler.init();
@@ -369,7 +374,7 @@ pub const UIVulkanContext = struct {
             .image_layout = .shader_read_only_optimal,
         };
 
-        self.descriptor_sets.write(0, &.{font_descriptor_image_info});
+        self.descriptor_sets.write(0, &[_]vk.DescriptorImageInfo{font_descriptor_image_info});
     }
 
     fn initResources(self: *UIVulkanContext) void {

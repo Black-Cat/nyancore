@@ -17,7 +17,7 @@ pub const Data = struct {
 };
 
 pub fn initZero(buffer: *[]u8) void {
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     data.rotation = util.math.Vec3.zeros();
     data.translation = util.math.Vec3.zeros();
@@ -25,13 +25,13 @@ pub fn initZero(buffer: *[]u8) void {
 }
 
 pub fn translate(buffer: *[]u8, v: util.math.vec3) void {
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     data.translation += v;
 }
 
 pub fn updateMatrix(buffer: *[]u8) void {
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     data.transform_matrix = util.math.Mat4x4.identity();
     util.math.Transform.rotateX(&data.transform_matrix, -data.rotation[0]);
@@ -43,7 +43,7 @@ pub fn updateMatrix(buffer: *[]u8) void {
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     _ = mat_offset;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     const next_point: []const u8 = util.std.fmt.allocPrint(ctxt.allocator, "p{d}", .{iter}) catch unreachable;
 
@@ -89,7 +89,7 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
 }
 
 fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     bound.* = children[0];
     bound.*.pos += data.translation;

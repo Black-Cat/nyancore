@@ -18,7 +18,7 @@ pub const RenderPass = struct {
     framebuffer_index: *u32,
 
     target_render_passes: *std.ArrayList(*RenderPass),
-    target_recreated_callback: fn (self: *RenderPass) void,
+    target_recreated_callback: *const fn (self: *RenderPass) void,
 
     // Attachments should go in order: color, depth
     pub fn init(self: *RenderPass, target: anytype, image_views: []ImageView, attachments: []vk.AttachmentDescription) void {
@@ -32,7 +32,7 @@ pub const RenderPass = struct {
     }
 
     pub fn destroy(self: *RenderPass) void {
-        for (self.target_render_passes.items) |rp, ind| {
+        for (self.target_render_passes.items, 0..) |rp, ind| {
             if (rp == self) {
                 _ = self.target_render_passes.swapRemove(ind);
                 break;
@@ -51,7 +51,7 @@ pub const RenderPass = struct {
     }
 
     pub fn getCurrentFramebuffer(self: *RenderPass) *Framebuffer {
-        return &self.framebuffers[@intCast(usize, self.framebuffer_index.*)];
+        return &self.framebuffers[@intCast(self.framebuffer_index.*)];
     }
 
     fn targetRecreatedCallback(self: *RenderPass) void {
@@ -62,9 +62,9 @@ pub const RenderPass = struct {
         var attachment_references: []vk.AttachmentReference = vkctxt.allocator.alloc(vk.AttachmentReference, attachments.len) catch unreachable;
         defer vkctxt.allocator.free(attachment_references);
 
-        for (attachment_references) |*ar, ind|
+        for (attachment_references, 0..) |*ar, ind|
             ar.* = .{
-                .attachment = @intCast(u32, ind),
+                .attachment = @intCast(ind),
                 .layout = .color_attachment_optimal,
             };
 
@@ -72,19 +72,18 @@ pub const RenderPass = struct {
         if (has_depth_attachment)
             attachment_references[attachment_references.len - 1].layout = .depth_stencil_attachment_optimal;
 
-        var color_attachment_count: u32 = @intCast(u32, attachment_references.len);
+        var color_attachment_count: u32 = @intCast(attachment_references.len);
         if (has_depth_attachment)
             color_attachment_count -= 1;
 
         const depth_attachment_ptr: ?*const vk.AttachmentReference = if (has_depth_attachment) @ptrCast(
-            *const vk.AttachmentReference,
             &attachment_references[attachment_references.len - 1],
         ) else null;
 
         const subpass: vk.SubpassDescription = .{
             .pipeline_bind_point = .graphics,
             .color_attachment_count = color_attachment_count,
-            .p_color_attachments = @ptrCast([*]const vk.AttachmentReference, attachment_references.ptr),
+            .p_color_attachments = @ptrCast(attachment_references.ptr),
             .p_depth_stencil_attachment = depth_attachment_ptr,
 
             .flags = .{},
@@ -118,16 +117,16 @@ pub const RenderPass = struct {
         const dependencies: [2]vk.SubpassDependency = .{ color_dependency, depth_dependency };
 
         const render_pass_create_info: vk.RenderPassCreateInfo = .{
-            .attachment_count = @intCast(u32, attachments.len),
-            .p_attachments = @ptrCast([*]const vk.AttachmentDescription, attachments.ptr),
+            .attachment_count = @intCast(attachments.len),
+            .p_attachments = @ptrCast(attachments.ptr),
             .subpass_count = 1,
-            .p_subpasses = @ptrCast([*]const vk.SubpassDescription, &subpass),
+            .p_subpasses = @ptrCast(&subpass),
             .dependency_count = if (has_depth_attachment) 2 else 1,
-            .p_dependencies = @ptrCast([*]const vk.SubpassDependency, &dependencies),
+            .p_dependencies = @ptrCast(&dependencies),
             .flags = .{},
         };
 
-        return vkfn.d.createRenderPass(vkctxt.device, render_pass_create_info, null) catch |err| {
+        return vkfn.d.createRenderPass(vkctxt.device, &render_pass_create_info, null) catch |err| {
             printVulkanError("Can't create render pass", err);
             unreachable;
         };

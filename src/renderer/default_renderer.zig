@@ -60,8 +60,8 @@ pub const DefaultRenderer = struct {
 
         const vsync: bool = app.config.getBool("swapchain_vsync");
         rg.global_render_graph.final_swapchain.init(
-            @intCast(u32, width),
-            @intCast(u32, height),
+            @intCast(width),
+            @intCast(height),
             frames_in_flight,
             vsync,
         ) catch @panic("Error during swapchain creation");
@@ -118,14 +118,13 @@ pub const DefaultRenderer = struct {
             c.glfwWaitEvents();
         }
 
-        vkfn.d.deviceWaitIdle(vkctxt.device) catch unreachable;
-        try rg.global_render_graph.final_swapchain.recreate(@intCast(u32, width), @intCast(u32, height));
+        try rg.global_render_graph.final_swapchain.recreate(@intCast(width), @intCast(height));
     }
 
     fn acquireImage(window: *c.GLFWwindow, acquire_semaphore: *Semaphore) !u32 {
         var image_index: u32 = undefined;
 
-        const vkres_acquire: vk.Result = vkfn.d.vkAcquireNextImageKHR(
+        const vkres_acquire: vk.Result = vkfn.d.dispatch.vkAcquireNextImageKHR(
             vkctxt.device,
             rg.global_render_graph.final_swapchain.swapchain,
             std.math.maxInt(u64),
@@ -147,23 +146,27 @@ pub const DefaultRenderer = struct {
     fn presentSwapchain(window: *c.GLFWwindow, wait_semaphore: *Semaphore) !void {
         const present_info: vk.PresentInfoKHR = .{
             .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &wait_semaphore.vk_ref),
+            .p_wait_semaphores = @ptrCast(&wait_semaphore.vk_ref),
 
             .swapchain_count = 1,
-            .p_swapchains = @ptrCast([*]vk.SwapchainKHR, &rg.global_render_graph.final_swapchain.swapchain),
-            .p_image_indices = @ptrCast([*]const u32, &rg.global_render_graph.image_index),
+            .p_swapchains = @ptrCast(&rg.global_render_graph.final_swapchain.swapchain),
+            .p_image_indices = @ptrCast(&rg.global_render_graph.image_index),
 
             .p_results = null,
         };
 
-        const vkres_present = vkfn.d.vkQueuePresentKHR(vkctxt.present_queue, &present_info);
+        const present_result = vkfn.d.queuePresentKHR(vkctxt.present_queue, &present_info);
 
-        if (vkres_present == .error_out_of_date_khr or vkres_present == .suboptimal_khr) {
-            try recreateSwapchain(window);
-        } else if (vkres_present != .success) {
-            printError("Vulkan Wrapper", "Can't queue present");
-            return error.Unknown;
+        if (present_result) |_| {} else |err| {
+            if (err != error.OutOfDateKHR) {
+                printVulkanError("Can't queue present", err);
+                return err;
+            }
         }
+
+        const recreate = if (present_result) |res| res == .suboptimal_khr else |err| err == error.OutOfDateKHR;
+        if (recreate)
+            try recreateSwapchain(window);
     }
 
     fn render(self: *DefaultRenderer) !void {
@@ -186,19 +189,19 @@ pub const DefaultRenderer = struct {
         const wait_stage: vk.PipelineStageFlags = .{ .color_attachment_output_bit = true };
         const submit_info: vk.SubmitInfo = .{
             .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast([*]vk.Semaphore, &current_image_available_semaphore.vk_ref),
-            .p_wait_dst_stage_mask = @ptrCast([*]const vk.PipelineStageFlags, &wait_stage),
+            .p_wait_semaphores = @ptrCast(&current_image_available_semaphore.vk_ref),
+            .p_wait_dst_stage_mask = @ptrCast(&wait_stage),
 
             .command_buffer_count = 1,
-            .p_command_buffers = @ptrCast([*]vk.CommandBuffer, &command_buffer.vk_ref),
+            .p_command_buffers = @ptrCast(&command_buffer.vk_ref),
 
             .signal_semaphore_count = 1,
-            .p_signal_semaphores = @ptrCast([*]vk.Semaphore, &current_render_finished_semaphore.vk_ref),
+            .p_signal_semaphores = @ptrCast(&current_render_finished_semaphore.vk_ref),
         };
 
         current_fence.reset();
 
-        vkfn.d.queueSubmit(vkctxt.graphics_queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), current_fence.vk_ref) catch |err| {
+        vkfn.d.queueSubmit(vkctxt.graphics_queue, 1, @ptrCast(&submit_info), current_fence.vk_ref) catch |err| {
             printVulkanError("Can't submit render queue", err);
         };
 

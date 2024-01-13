@@ -43,6 +43,6 @@ pub const MaterialSignature = packed struct {
     }
 
     pub fn toInt(self: *const MaterialSignature) u32 {
-        return @bitCast(u32, self.*);
+        return @bitCast(self.*);
     }
 };

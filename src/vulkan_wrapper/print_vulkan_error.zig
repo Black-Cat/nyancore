@@ -8,6 +8,7 @@ const Allocator = std.mem.allocator;
 const printError = @import("../application/print_error.zig").printError;
 
 const VulkanError = error{
+    CompressionExhaustedEXT,
     DeviceLost,
     ExtensionNotPresent,
     FeatureNotPresent,
@@ -19,9 +20,12 @@ const VulkanError = error{
     InvalidExternalHandle,
     InvalidOpaqueCaptureAddressKHR,
     InvalidShaderNV,
+    InvalidVideoStdParametersKHR,
+    FullScreenExclusiveModeLostEXT,
     LayerNotPresent,
     MemoryMapFailed,
     NativeWindowInUseKHR,
+    OutOfDateKHR,
     OutOfDeviceMemory,
     OutOfHostMemory,
     OutOfPoolMemory,
@@ -35,6 +39,7 @@ pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError) void
     @setCold(true);
 
     const vulkan_error_message: []const u8 = switch (err) {
+        error.CompressionExhaustedEXT => "Compression exhaused",
         error.DeviceLost => "Device lost",
         error.ExtensionNotPresent => "Extension not present",
         error.FeatureNotPresent => "Feature not present",
@@ -44,11 +49,14 @@ pub fn printVulkanError(comptime err_context: []const u8, err: VulkanError) void
         error.IncompatibleDriver => "Incompatible driver",
         error.InitializationFailed => "Initialization failed",
         error.InvalidExternalHandle => "Invalid external handle",
-        error.InvalidOpaqueCaptureAddressKHR => "Invalid opaque capture address KHR",
+        error.InvalidOpaqueCaptureAddressKHR => "Invalid opaque capture address",
         error.InvalidShaderNV => "Invalid Shader",
+        error.InvalidVideoStdParametersKHR => "Invalid video std parameters",
+        error.FullScreenExclusiveModeLostEXT => "Full screen exclusive mode lost",
         error.MemoryMapFailed => "Memory map failed",
         error.NativeWindowInUseKHR => "Native window in use",
         error.LayerNotPresent => "Layer not present",
+        error.OutOfDateKHR => "Out of date",
         error.OutOfDeviceMemory => "Out of device memory",
         error.OutOfHostMemory => "Out of host memory",
         error.OutOfPoolMemory => "Out of pool memory",
