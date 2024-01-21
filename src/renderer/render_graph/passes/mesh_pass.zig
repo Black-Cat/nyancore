@@ -207,12 +207,12 @@ pub fn MeshPass(comptime TargetType: type) type {
             self.descriptor_sets.init(
                 &self.descriptor_pool,
                 &.{self.descriptor_set_layout.vk_ref},
-                @intCast(usize, rg.global_render_graph.in_flight),
+                @intCast(rg.global_render_graph.in_flight),
             );
             self.objects_descriptor_sets.init(
                 &self.descriptor_pool,
                 &.{self.objects_descriptor_set_layout.vk_ref},
-                @intCast(usize, rg.global_render_graph.in_flight),
+                @intCast(rg.global_render_graph.in_flight),
             );
 
             self.descriptor_sets.writeBufferAll(0, .uniform_buffer_dynamic, &[_]vk.DescriptorBufferInfo{
@@ -230,8 +230,8 @@ pub fn MeshPass(comptime TargetType: type) type {
                 },
             });
 
-            for (self.object_buffer.buffers) |b, ind|
-                DescriptorSets.writeBuffer(self.objects_descriptor_sets.vk_ref[ind], 0, .storage_buffer, &[_]vk.DescriptorBufferInfo{
+            for (self.object_buffer.buffers, self.objects_descriptor_sets.vk_ref) |b, ods|
+                DescriptorSets.writeBuffer(ods, 0, .storage_buffer, &[_]vk.DescriptorBufferInfo{
                     .{
                         .buffer = b.vk_ref,
                         .offset = 0,
@@ -280,8 +280,8 @@ pub fn MeshPass(comptime TargetType: type) type {
                     .offset = .{ .x = 0, .y = 0 },
                     .extent = self.target.image_extent,
                 },
-                .clear_value_count = @intCast(u32, clear_color.len),
-                .p_clear_values = @ptrCast([*]const vk.ClearValue, &clear_color[0]),
+                .clear_value_count = @intCast(clear_color.len),
+                .p_clear_values = @ptrCast(&clear_color[0]),
             };
 
             vkfn.d.cmdBeginRenderPass(command_buffer.vk_ref, render_pass_info, .@"inline");
@@ -290,8 +290,8 @@ pub fn MeshPass(comptime TargetType: type) type {
             if (self.material_render_objects_map.count() == 0) return;
 
             const viewport_info: vk.Viewport = .{
-                .width = @intToFloat(f32, self.target.image_extent.width),
-                .height = @intToFloat(f32, self.target.image_extent.height),
+                .width = @floatFromInt(self.target.image_extent.width),
+                .height = @floatFromInt(self.target.image_extent.height),
                 .min_depth = 0.0,
                 .max_depth = 1.0,
                 .x = 0,
@@ -328,8 +328,8 @@ pub fn MeshPass(comptime TargetType: type) type {
                 vkfn.d.cmdBindPipeline(command_buffer.vk_ref, .graphics, mat.pipeline.vk_ref);
 
                 const offsets = [_]u32{
-                    @intCast(u32, frame_index * self.camera_buffer.data_offset),
-                    @intCast(u32, frame_index * self.scene_buffer.data_offset),
+                    @intCast(frame_index * self.camera_buffer.data_offset),
+                    @intCast(frame_index * self.scene_buffer.data_offset),
                 };
                 const descriptors = [_]vk.DescriptorSet{
                     self.descriptor_sets.vk_ref[frame_index],
@@ -341,18 +341,18 @@ pub fn MeshPass(comptime TargetType: type) type {
                     .graphics,
                     mat.pipeline_layout.vk_ref,
                     0,
-                    @intCast(u32, descriptors.len),
-                    @ptrCast([*]const vk.DescriptorSet, &descriptors),
-                    @intCast(u32, offsets.len),
-                    @ptrCast([*]const u32, &offsets),
+                    @intCast(descriptors.len),
+                    @ptrCast(&descriptors),
+                    @intCast(offsets.len),
+                    @ptrCast(&offsets),
                 );
 
-                vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Viewport, &viewport_info));
-                vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Rect2D, scissor_rect_ptr));
+                vkfn.d.cmdSetViewport(command_buffer.vk_ref, 0, 1, @ptrCast(&viewport_info));
+                vkfn.d.cmdSetScissor(command_buffer.vk_ref, 0, 1, @ptrCast(scissor_rect_ptr));
 
                 for (render_objects.items) |ro| {
                     ro.mesh.bind(command_buffer);
-                    vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, @intCast(u32, ro.mesh.index_count), 1, 0, 0, object_instance);
+                    vkfn.d.cmdDrawIndexed(command_buffer.vk_ref, @intCast(ro.mesh.index_count), 1, 0, 0, object_instance);
                     object_instance += 1;
                 }
             }
@@ -392,7 +392,7 @@ pub fn MeshPass(comptime TargetType: type) type {
                     .store_op = .store,
                     .stencil_load_op = .clear,
                     .stencil_store_op = .dont_care,
-                    .initial_layout = .@"undefined",
+                    .initial_layout = .undefined,
                     .final_layout = .depth_stencil_attachment_optimal,
                     .flags = .{},
                 },

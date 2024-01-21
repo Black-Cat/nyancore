@@ -49,13 +49,13 @@ pub const PhysicalDevice = struct {
         };
         defer vkctxt.allocator.free(physical_devices);
 
-        _ = vkfn.i.enumeratePhysicalDevices(vkctxt.instance, &gpu_count, @ptrCast([*]vk.PhysicalDevice, physical_devices)) catch |err| {
+        _ = vkfn.i.enumeratePhysicalDevices(vkctxt.instance, &gpu_count, @ptrCast(physical_devices)) catch |err| {
             printVulkanError("Can't get physical devices information", err);
             return err;
         };
 
         for (physical_devices) |device| {
-            if (isDeviceSuitable(device)) {
+            if (isDeviceSuitable(device)) |_| {
                 const picked_device: PhysicalDevice = .{
                     .vk_ref = device,
                     .memory_properties = vkfn.i.getPhysicalDeviceMemoryProperties(device),
@@ -118,25 +118,25 @@ pub const PhysicalDevice = struct {
             return error.HostAllocationError;
         };
         defer vkctxt.allocator.free(queue_families);
-        vkfn.i.getPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, @ptrCast([*]vk.QueueFamilyProperties, queue_families));
+        vkfn.i.getPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, @ptrCast(queue_families));
 
-        for (queue_families) |family, i| {
+        for (queue_families, 0..) |family, i| {
             if (family.queue_flags.graphics_bit) {
-                indices.graphics_family = @intCast(u32, i);
+                indices.graphics_family = @intCast(i);
                 indices.graphics_family_set = true;
             }
 
             if (family.queue_flags.compute_bit) {
-                indices.compute_family = @intCast(u32, i);
+                indices.compute_family = @intCast(i);
                 indices.compute_family_set = true;
             }
 
-            var present_support: vk.Bool32 = vkfn.i.getPhysicalDeviceSurfaceSupportKHR(device, @intCast(u32, i), vkctxt.surface) catch |err| {
+            var present_support: vk.Bool32 = vkfn.i.getPhysicalDeviceSurfaceSupportKHR(device, @intCast(i), vkctxt.surface) catch |err| {
                 printVulkanError("Can't get physical device surface support information", err);
                 return err;
             };
             if (present_support != 0) {
-                indices.present_family = @intCast(u32, i);
+                indices.present_family = @intCast(i);
                 indices.present_family_set = true;
             }
 
@@ -156,7 +156,7 @@ pub const PhysicalDevice = struct {
             .features = features,
         };
 
-        vkfn.i.vkGetPhysicalDeviceFeatures2(device, &features2);
+        vkfn.i.getPhysicalDeviceFeatures2(device, &features2);
 
         return shader_draw_feature.shader_draw_parameters == vk.TRUE;
     }
@@ -173,7 +173,7 @@ pub const PhysicalDevice = struct {
             return error.HostAllocationError;
         };
         defer vkctxt.allocator.free(available_extensions);
-        _ = vkfn.i.enumerateDeviceExtensionProperties(device, null, &extension_count, @ptrCast([*]vk.ExtensionProperties, available_extensions)) catch |err| {
+        _ = vkfn.i.enumerateDeviceExtensionProperties(device, null, &extension_count, @ptrCast(available_extensions)) catch |err| {
             printVulkanError("Can't get information about available extensions", err);
             return err;
         };
@@ -211,7 +211,7 @@ pub const PhysicalDevice = struct {
                 printError("Vulkan", "Can't allocate memory for device formats");
                 return error.HostAllocationError;
             };
-            _ = vkfn.i.getPhysicalDeviceSurfaceFormatsKHR(device, vkctxt.surface, &details.format_count, @ptrCast([*]vk.SurfaceFormatKHR, details.formats)) catch |err| {
+            _ = vkfn.i.getPhysicalDeviceSurfaceFormatsKHR(device, vkctxt.surface, &details.format_count, @ptrCast(details.formats)) catch |err| {
                 printVulkanError("Can't get information about physical device's supported formats", err);
                 return err;
             };
@@ -226,7 +226,7 @@ pub const PhysicalDevice = struct {
                 printError("Vulkan", "Can't allocate memory for device present modes");
                 return error.HostAllocationError;
             };
-            _ = vkfn.i.getPhysicalDeviceSurfacePresentModesKHR(device, vkctxt.surface, &details.present_mode_count, @ptrCast([*]vk.PresentModeKHR, details.present_modes)) catch |err| {
+            _ = vkfn.i.getPhysicalDeviceSurfacePresentModesKHR(device, vkctxt.surface, &details.present_mode_count, @ptrCast(details.present_modes)) catch |err| {
                 printVulkanError("Can't get information about physical device present modes", err);
                 return err;
             };

@@ -23,7 +23,7 @@ pub const SingleCommandBuffer = struct {
     pub fn submit(self: *SingleCommandBuffer, queue: vk.Queue) void {
         const submit_info: vk.SubmitInfo = .{
             .command_buffer_count = 1,
-            .p_command_buffers = @ptrCast([*]const vk.CommandBuffer, &self.command_buffer.vk_ref),
+            .p_command_buffers = @ptrCast(&self.command_buffer.vk_ref),
             .wait_semaphore_count = 0,
             .p_wait_semaphores = undefined,
             .p_wait_dst_stage_mask = undefined,
@@ -31,7 +31,7 @@ pub const SingleCommandBuffer = struct {
             .p_signal_semaphores = undefined,
         };
 
-        vkfn.d.queueSubmit(queue, 1, @ptrCast([*]const vk.SubmitInfo, &submit_info), .null_handle) catch |err| {
+        vkfn.d.queueSubmit(queue, 1, @ptrCast(&submit_info), .null_handle) catch |err| {
             printVulkanError("Can't submit queue", err);
         };
         vkfn.d.queueWaitIdle(queue) catch |err| {

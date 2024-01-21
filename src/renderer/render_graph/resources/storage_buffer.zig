@@ -15,9 +15,9 @@ pub fn StorageBuffer(comptime BufferType: type) type {
         buffer_size: usize,
 
         pub fn init(self: *SelfType, object_count: usize) void {
-            const min_alignment: usize = @intCast(usize, vkctxt.physical_device.device_properties.limits.min_storage_buffer_offset_alignment);
+            const min_alignment: usize = @intCast(vkctxt.physical_device.device_properties.limits.min_storage_buffer_offset_alignment);
 
-            const in_flight: usize = @intCast(usize, rg.global_render_graph.in_flight);
+            const in_flight: usize = @intCast(rg.global_render_graph.in_flight);
             self.buffer_size = (@sizeOf(BufferType) * object_count + min_alignment - 1) & ~(min_alignment - 1);
 
             self.buffers = vkctxt.allocator.alloc(Buffer, in_flight) catch unreachable;
@@ -26,8 +26,8 @@ pub fn StorageBuffer(comptime BufferType: type) type {
 
             // Since buffer will not reallocate (const size), we can map memory once
             self.data = vkctxt.allocator.alloc([]BufferType, in_flight) catch unreachable;
-            for (self.data) |*d, ind| {
-                d.ptr = @ptrCast([*]BufferType, @alignCast(@alignOf(BufferType), self.buffers[ind].allocation.mapped_memory));
+            for (&self.data, &self.buffers) |*d, *b| {
+                d.ptr = @ptrCast(@alignCast(b.allocation.mapped_memory));
                 d.len = object_count;
             }
         }

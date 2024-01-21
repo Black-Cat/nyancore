@@ -1,7 +1,7 @@
 const math = @import("math.zig");
 
 pub fn zeros() math.vec4 {
-    return @splat(4, @as(f32, 0.0));
+    return @splat(0.0);
 }
 
 pub fn fromVec3(v: math.vec3, w: f32) math.vec4 {

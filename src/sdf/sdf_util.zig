@@ -74,10 +74,10 @@ pub fn smoothCombinatorExitCommand(comptime command: []const u8, enter_stack: us
 pub fn surfaceEnterCommand(comptime DataT: type) sdf.EnterCommandFn {
     const s = struct {
         fn f(ctxt: *IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
-            const data: *DataT = @ptrCast(*DataT, @alignCast(@alignOf(DataT), buffer.ptr));
+            const data: *DataT = @ptrCast(@alignCast(buffer.ptr));
 
             ctxt.pushEnterInfo(iter);
-            ctxt.pushStackInfo(iter, @intCast(i32, data.mat + mat_offset));
+            ctxt.pushStackInfo(iter, @intCast(data.mat + mat_offset));
 
             return std.fmt.allocPrint(ctxt.allocator, "", .{}) catch unreachable;
         }
@@ -92,7 +92,7 @@ pub fn surfaceExitCommand(
     const s = struct {
         fn f(ctxt: *IterationContext, iter: usize, buffer: *[]u8) []const u8 {
             _ = iter;
-            const data: *DataT = @ptrCast(*DataT, @alignCast(@alignOf(DataT), buffer.ptr));
+            const data: *DataT = @ptrCast(@alignCast(buffer.ptr));
 
             const ei: EnterInfo = ctxt.lastEnterInfo();
             const res: []const u8 = exitCommandFn(data, ei.enter_index, ctxt.cur_point_name, ctxt.allocator);
@@ -108,7 +108,7 @@ pub fn surfaceExitCommand(
 pub fn surfaceMatCheckCommand(comptime DataT: type) sdf.AppendMatCheckFn {
     const s = struct {
         fn f(ctxt: *IterationContext, exit_command: []const u8, buffer: *[]u8, mat_offset: usize, allocator: std.mem.Allocator) []const u8 {
-            const data: *DataT = @ptrCast(*DataT, @alignCast(@alignOf(DataT), buffer.ptr));
+            const data: *DataT = @ptrCast(@alignCast(buffer.ptr));
 
             const ei: EnterInfo = ctxt.popEnterInfo();
             const formatMat: []const u8 = "{s}if(d{d}<MAP_EPS)return matToColor({d}.,l,n,v);";

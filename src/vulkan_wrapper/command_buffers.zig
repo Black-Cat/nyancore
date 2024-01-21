@@ -25,7 +25,7 @@ pub const CommandBuffers = struct {
             .command_buffer_count = count,
         };
 
-        vkfn.d.allocateCommandBuffers(vkctxt.device, command_buffer_info, buffers.vk_ref.ptr) catch |err| {
+        vkfn.d.allocateCommandBuffers(vkctxt.device, &command_buffer_info, buffers.vk_ref.ptr) catch |err| {
             printVulkanError("Can't allocate command buffers", err);
             return err;
         };
@@ -34,7 +34,7 @@ pub const CommandBuffers = struct {
     }
 
     pub fn freeVulkan(self: *CommandBuffers) void {
-        vkfn.d.vkFreeCommandBuffers(vkctxt.device, self.command_pool.vk_ref, @intCast(u32, self.vk_ref.len), self.vk_ref.ptr);
+        vkfn.d.freeCommandBuffers(vkctxt.device, self.command_pool.vk_ref, @intCast(self.vk_ref.len), self.vk_ref.ptr);
     }
 
     pub fn free(self: *CommandBuffers) void {

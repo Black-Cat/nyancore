@@ -12,12 +12,18 @@ const Instance = @import("instance.zig");
 const PhysicalDevice = @import("physical_device.zig").PhysicalDevice;
 const Device = @import("device.zig");
 
+pub const Buffer = @import("buffer.zig").Buffer;
+
 const printError = @import("../application/print_error.zig").printError;
 const printErrorNoPanic = @import("../application/print_error.zig").printErrorNoPanic;
 const printVulkanError = @import("print_vulkan_error.zig").printVulkanError;
 
 pub extern fn glfwGetInstanceProcAddress(instance: vk.Instance, procname: [*:0]const u8) vk.PfnVoidFunction;
 pub extern fn glfwCreateWindowSurface(instance: vk.Instance, window: *c.GLFWwindow, alocation_callback: ?*const vk.AllocationCallbacks, surface: *vk.SurfaceKHR) vk.Result;
+
+pub fn getDeviceProcAddr(d: c.VkDevice, procname: [*c]const u8) vk.PfnVoidFunction {
+    return vkfn.i.getDeviceProcAddr(@enumFromInt(@intFromPtr(d)), procname);
+}
 
 pub const required_device_extensions: [1][:0]const u8 = [_][:0]const u8{
     "VK_KHR_swapchain",
@@ -51,7 +57,7 @@ pub fn init(a: Allocator, app: *Application) !void {
 
     allocator = a;
 
-    vkfn.b = try vkfn.FncBase.load(glfwGetInstanceProcAddress);
+    vkfn.b = try vkfn.BaseDispatch.load(glfwGetInstanceProcAddress);
 
     instance = Instance.create(app.name, nyancore_options.use_vulkan_sdk, allocator) catch |err| {
         printVulkanError("Error during instance creation", err);
@@ -84,7 +90,7 @@ pub fn init(a: Allocator, app: *Application) !void {
         return err;
     };
 
-    vkfn.d = try vkfn.DeviceDispatch.load(device, vkfn.i.vkGetDeviceProcAddr);
+    vkfn.d = try vkfn.DeviceDispatch.load(device, vkfn.i.dispatch.vkGetDeviceProcAddr);
     errdefer vkfn.d.destroyDevice(device, null);
 
     graphics_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.graphics_family, 0);
@@ -92,14 +98,20 @@ pub fn init(a: Allocator, app: *Application) !void {
     compute_queue = vkfn.d.getDeviceQueue(device, physical_device.family_indices.compute_family, 0);
 
     var vma_functions: c.VmaVulkanFunctions = std.mem.zeroes(c.VmaVulkanFunctions);
-    vma_functions.vkGetInstanceProcAddr = @ptrCast(*const fn (?*c.VkInstance_T, [*c]const u8) callconv(.C) ?fn () callconv(.C) void, &glfwGetInstanceProcAddress).*;
-    vma_functions.vkGetDeviceProcAddr = @ptrCast(*fn (?*c.VkDevice_T, [*c]const u8) callconv(.C) ?fn () callconv(.C) void, &vkfn.i.vkGetDeviceProcAddr).*;
+    vma_functions.vkGetInstanceProcAddr = @as(
+        *const fn (?*c.VkInstance_T, [*c]const u8) callconv(.C) ?*const fn () callconv(.C) void,
+        @ptrCast(&glfwGetInstanceProcAddress),
+    );
+    vma_functions.vkGetDeviceProcAddr = @as(
+        *const fn (c.VkDevice, [*c]const u8) callconv(.C) ?*const fn () callconv(.C) void,
+        @ptrCast(&getDeviceProcAddr),
+    );
 
     const vma_allocator_info: c.VmaAllocatorCreateInfo = .{
         // Bug in generated zig binding, all types are pointers =-=
-        .physicalDevice = @intToPtr(*c.VkPhysicalDevice_T, @bitCast(usize, physical_device.vk_ref)),
-        .device = @intToPtr(*c.VkDevice_T, @bitCast(usize, device)),
-        .instance = @intToPtr(*c.VkInstance_T, @bitCast(usize, instance)),
+        .physicalDevice = @ptrFromInt(@as(usize, @intFromEnum(physical_device.vk_ref))),
+        .device = @ptrFromInt(@as(usize, @intFromEnum(device))),
+        .instance = @ptrFromInt(@as(usize, @intFromEnum(instance))),
         .pVulkanFunctions = &vma_functions,
 
         .flags = 0,
@@ -128,10 +140,10 @@ pub fn deinit() void {
 
 pub fn getMemoryType(type_bits: u32, properties: vk.MemoryPropertyFlags) u32 {
     var temp: u32 = type_bits;
-    for (physical_device.memory_properties.memory_types) |mem_type, ind| {
+    for (physical_device.memory_properties.memory_types, 0..) |mem_type, ind| {
         if ((temp & 1) == 1)
             if ((mem_type.property_flags.toInt() & properties.toInt()) == properties.toInt())
-                return @intCast(u32, ind);
+                return @intCast(ind);
         temp >>= 1;
     }
     @panic("Can't get memory type");
@@ -146,15 +158,15 @@ fn createSurface(window: *c.GLFWwindow) !void {
 }
 
 fn vulkanDebugCallback(
-    message_severity: vk.DebugUtilsMessageSeverityFlagsEXT.IntType,
-    message_types: vk.DebugUtilsMessageTypeFlagsEXT.IntType,
-    p_callback_data: *const vk.DebugUtilsMessengerCallbackDataEXT,
-    p_user_data: *anyopaque,
+    message_severity: vk.DebugUtilsMessageSeverityFlagsEXT,
+    message_types: vk.DebugUtilsMessageTypeFlagsEXT,
+    p_callback_data: ?*const vk.DebugUtilsMessengerCallbackDataEXT,
+    p_user_data: ?*anyopaque,
 ) callconv(vk.vulkan_call_conv) vk.Bool32 {
     _ = message_severity;
     _ = message_types;
     _ = p_user_data;
-    printErrorNoPanic("Vulkan Validation Layer", std.mem.span(p_callback_data.p_message));
+    printErrorNoPanic("Vulkan Validation Layer", std.mem.span(p_callback_data.?.p_message));
     return 1;
 }
 
@@ -174,7 +186,7 @@ fn setupDebugMessenger() !void {
         .p_user_data = null,
     };
 
-    debug_messenger = vkfn.i.createDebugUtilsMessengerEXT(instance, create_info, null) catch |err| {
+    debug_messenger = vkfn.i.createDebugUtilsMessengerEXT(instance, &create_info, null) catch |err| {
         printVulkanError("Can't create debug messenger", err);
         return err;
     };

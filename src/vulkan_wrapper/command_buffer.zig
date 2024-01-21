@@ -16,7 +16,7 @@ pub const CommandBuffer = struct {
             .p_inheritance_info = undefined,
         };
 
-        vkfn.d.beginCommandBuffer(self.vk_ref, begin_info) catch |err| {
+        vkfn.d.beginCommandBuffer(self.vk_ref, &begin_info) catch |err| {
             printVulkanError("Can't begin command buffer", err);
         };
     }

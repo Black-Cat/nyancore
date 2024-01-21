@@ -17,7 +17,7 @@ fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, bu
     _ = iter;
     _ = mat_offset;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
-    return util.std.fmt.allocPrint(ctxt.allocator, "{s}", .{@ptrCast([*c]const u8, &data.material_function)}) catch unreachable;
+    return util.std.fmt.allocPrint(ctxt.allocator, "{s}", .{data.material_function}) catch unreachable;
 }

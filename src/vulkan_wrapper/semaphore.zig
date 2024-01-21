@@ -14,7 +14,7 @@ pub const Semaphore = struct {
             .flags = .{},
         };
 
-        const vk_ref: vk.Semaphore = vkfn.d.createSemaphore(vkctxt.device, semaphore_info, null) catch |err| {
+        const vk_ref: vk.Semaphore = vkfn.d.createSemaphore(vkctxt.device, &semaphore_info, null) catch |err| {
             printVulkanError("Can't create semaphore", err);
             unreachable;
         };
@@ -25,6 +25,6 @@ pub const Semaphore = struct {
     }
 
     pub fn destroy(self: *Semaphore) void {
-        vkfn.d.vkDestroySemaphore(vkctxt.device, self.vk_ref, null);
+        vkfn.d.destroySemaphore(vkctxt.device, self.vk_ref, null);
     }
 };

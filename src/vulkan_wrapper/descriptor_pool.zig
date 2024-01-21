@@ -10,13 +10,13 @@ pub const DescriptorPool = struct {
 
     pub fn init(self: *DescriptorPool, pool_sizes: []const vk.DescriptorPoolSize, max_sets: u32) void {
         const descriptor_pool_info: vk.DescriptorPoolCreateInfo = .{
-            .pool_size_count = @intCast(u32, pool_sizes.len),
-            .p_pool_sizes = @ptrCast([*]const vk.DescriptorPoolSize, pool_sizes.ptr),
+            .pool_size_count = @intCast(pool_sizes.len),
+            .p_pool_sizes = @ptrCast(pool_sizes.ptr),
             .max_sets = max_sets,
             .flags = .{},
         };
 
-        self.vk_ref = vkfn.d.createDescriptorPool(vkctxt.device, descriptor_pool_info, null) catch |err| {
+        self.vk_ref = vkfn.d.createDescriptorPool(vkctxt.device, &descriptor_pool_info, null) catch |err| {
             printVulkanError("Can't create descriptor pool", err);
             return;
         };

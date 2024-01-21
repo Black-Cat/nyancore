@@ -107,10 +107,10 @@ pub const Swapchain = struct {
 
             .image_sharing_mode = if (queue_concurrent) .concurrent else .exclusive,
             .queue_family_index_count = if (queue_concurrent) queue_family_indices.len else 0,
-            .p_queue_family_indices = @ptrCast([*]const u32, &queue_family_indices),
+            .p_queue_family_indices = @ptrCast(&queue_family_indices),
         };
 
-        self.swapchain = vkfn.d.createSwapchainKHR(vkctxt.device, create_info, null) catch |err| {
+        self.swapchain = vkfn.d.createSwapchainKHR(vkctxt.device, &create_info, null) catch |err| {
             printVulkanError("Can't create swapchain", err);
             return err;
         };
@@ -138,10 +138,10 @@ pub const Swapchain = struct {
             return error.HostAllocationError;
         };
 
-        for (self.image_views) |*image_view, i| {
+        for (self.image_views, self.images) |*image_view, image| {
             const create_info: vk.ImageViewCreateInfo = .{
                 .flags = .{},
-                .image = self.images[i],
+                .image = image,
                 .view_type = .@"2d",
                 .format = self.image_format,
 
@@ -163,7 +163,7 @@ pub const Swapchain = struct {
                 },
             };
 
-            image_view.* = vkfn.d.createImageView(vkctxt.device, create_info, null) catch |err| {
+            image_view.* = vkfn.d.createImageView(vkctxt.device, &create_info, null) catch |err| {
                 printVulkanError("Can't create image view", err);
                 return err;
             };

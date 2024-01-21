@@ -15,9 +15,12 @@ pub fn addStaticLibrary(
 ) *std.build.LibExeObjStep {
     const os_tag = if (app.target.os_tag != null) app.target.os_tag.? else builtin.os.tag;
 
-    const nyancoreLib = b.addStaticLibrary("nyancore", path ++ "src/main.zig");
-    nyancoreLib.setBuildMode(app.build_mode);
-    nyancoreLib.setTarget(app.target);
+    const nyancoreLib = b.addStaticLibrary(.{
+        .name = "nyancore",
+        .root_source_file = .{ .path = path ++ "src/main.zig" },
+        .target = app.target,
+        .optimize = app.optimize,
+    });
 
     const nyancore_options = b.addOptions();
     nyancore_options.addOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
@@ -26,22 +29,27 @@ pub fn addStaticLibrary(
     nyancore_options.addOption(bool, "compile_glfw", compile_glfw);
     nyancoreLib.addOptions("nyancore_options", nyancore_options);
     app.addOptions("nyancore_options", nyancore_options);
-    app.addPackage(.{
-        .name = "nyancore",
-        .path = .{ .path = path ++ "/src/main.zig" },
-        .dependencies = &[_]std.build.Pkg{
-            nyancore_options.getPackage("nyancore_options"),
+
+    var nyancore_module = b.addModule(
+        "nyancore",
+        .{
+            .source_file = .{ .path = path ++ "/src/main.zig" },
+            .dependencies = &.{.{
+                .name = "nyancore_options",
+                .module = nyancore_options.createModule(),
+            }},
         },
-    });
+    );
+    app.addModule("nyancore", nyancore_module);
 
     // Vulkan
-    const vulkanPackage: std.build.Pkg = .{
-        .name = "vulkan",
-        .path = .{ .path = path ++ "src/vk.zig" },
-    };
+    const vulkanModule = b.addModule(
+        "vulkan",
+        .{ .source_file = .{ .path = path ++ "src/vk.zig" } },
+    );
 
-    nyancoreLib.addPackage(vulkanPackage);
-    app.addPackage(vulkanPackage);
+    nyancoreLib.addModule("vulkan", vulkanModule);
+    app.addModule("vulkan", vulkanModule);
 
     if (use_vulkan_sdk) {
         const vulkan_sdk_path = std.process.getEnvVarOwned(b.allocator, "VULKAN_SDK") catch {
@@ -53,15 +61,20 @@ pub fn addStaticLibrary(
         const vulkan_sdk_include_path = std.fs.path.join(b.allocator, &[_][]const u8{ vulkan_sdk_path, "include" }) catch unreachable;
         defer b.allocator.free(vulkan_sdk_include_path);
 
-        nyancoreLib.addIncludeDir(vulkan_sdk_include_path);
-        app.addIncludeDir(vulkan_sdk_include_path);
+        nyancoreLib.addIncludePath(.{ .path = vulkan_sdk_include_path });
+        app.addIncludePath(.{ .path = vulkan_sdk_include_path });
     }
 
     // Vulkan Memory Allocator (VMA)
     const vma_path: []const u8 = path ++ "third_party/vma/";
-    const vma_lib = b.addStaticLibrary("vma", null);
+    const vma_lib = b.addStaticLibrary(.{
+        .name = "vma",
+        .root_source_file = null,
+        .target = app.target,
+        .optimize = app.optimize,
+    });
     const vma_flags = &[_][]const u8{
-        "-std=c++14",
+        "-std=c++17",
         "-DVMA_STATIC_VULKAN_FUNCTIONS=0",
         "-DVMA_DYNAMIC_VULKAN_FUNCTIONS=1",
         "-DVMA_IMPLEMENTATION",
@@ -72,29 +85,32 @@ pub fn addStaticLibrary(
         "-DVMA_CALL_POST=__cdecl",
     };
 
-    vma_lib.setTarget(app.target);
-    vma_lib.setBuildMode(app.build_mode);
-
     vma_lib.linkSystemLibrary("c");
     vma_lib.linkSystemLibrary("c++");
 
-    vma_lib.addIncludeDir(path ++ "third_party/vulkan-headers/include/");
+    vma_lib.addIncludePath(.{ .path = path ++ "third_party/vulkan-headers/include/" });
+    vma_lib.addIncludePath(.{ .path = path ++ "third_party/vma/include/" });
     // Can't compile vk_mem_alloc.h header directly, zig chooses c instead of c++
-    vma_lib.addCSourceFile(vma_path ++ "src/VmaUsage.cpp", vma_flags);
+    vma_lib.addCSourceFile(.{
+        .file = .{ .path = vma_path ++ "src/VmaUsage.cpp" },
+        .flags = vma_flags,
+    });
 
     nyancoreLib.step.dependOn(&vma_lib.step);
     nyancoreLib.linkLibrary(vma_lib);
-    app.addIncludeDir(vma_path ++ "include/");
+    app.addIncludePath(.{ .path = vma_path ++ "include/" });
     app.linkLibrary(vma_lib);
 
     // Tracy
     if (enable_tracing) {
         const tracy_path: []const u8 = path ++ "third_party/tracy/";
-        const tracy_lib = b.addStaticLibrary("tracy", null);
+        const tracy_lib = b.addStaticLibrary(.{
+            .name = "tracy",
+            .root_source_file = null,
+            .target = app.target,
+            .optimize = app.optimize,
+        });
         const tracy_flags = &[_][]const u8{ "-DTRACY_ENABLE", "-DTRACY_NO_CALLSTACK", "-DTRACY_NO_SYSTEM_TRACING" };
-
-        tracy_lib.setTarget(app.target);
-        tracy_lib.setBuildMode(app.build_mode);
 
         tracy_lib.linkSystemLibrary("c");
         tracy_lib.linkSystemLibrary("c++");
@@ -105,21 +121,27 @@ pub fn addStaticLibrary(
             tracy_lib.linkSystemLibrary("dbghelp");
         }
 
-        tracy_lib.addIncludeDir(tracy_path);
-        tracy_lib.addCSourceFile(tracy_path ++ "TracyClient.cpp", tracy_flags);
+        tracy_lib.addIncludePath(.{ .path = tracy_path });
+        tracy_lib.addCSourceFile(.{
+            .file = .{ .path = tracy_path ++ "TracyClient.cpp" },
+            .flags = tracy_flags,
+        });
 
         nyancoreLib.step.dependOn(&tracy_lib.step);
         nyancoreLib.linkLibrary(tracy_lib);
-        app.addIncludeDir(tracy_path);
+        app.addIncludePath(.{ .path = tracy_path });
         app.linkLibrary(tracy_lib);
     }
 
     // GLFW
     if (compile_glfw) {
         const glfw_path: []const u8 = path ++ "third_party/glfw/";
-        const glfw_lib = b.addStaticLibrary("glfw", null);
-        glfw_lib.setTarget(app.target);
-        glfw_lib.setBuildMode(app.build_mode);
+        const glfw_lib = b.addStaticLibrary(.{
+            .name = "glfw",
+            .root_source_file = null,
+            .target = app.target,
+            .optimize = app.optimize,
+        });
 
         const glfw_flags = &[_][]const u8{
             switch (os_tag) {
@@ -129,7 +151,7 @@ pub fn addStaticLibrary(
             },
         };
         glfw_lib.linkSystemLibrary("c");
-        glfw_lib.addIncludeDir(glfw_path ++ "include");
+        glfw_lib.addIncludePath(.{ .path = glfw_path ++ "include" });
         glfw_lib.addCSourceFiles(&[_][]const u8{
             glfw_path ++ "src/context.c",
             glfw_path ++ "src/egl_context.c",
@@ -199,91 +221,105 @@ pub fn addStaticLibrary(
 
         nyancoreLib.step.dependOn(&glfw_lib.step);
         nyancoreLib.linkLibrary(glfw_lib);
-        app.addIncludeDir(glfw_path ++ "include");
+        app.addIncludePath(.{ .path = glfw_path ++ "include" });
         app.linkLibrary(glfw_lib);
     }
 
     // Dear ImGui
     const cimgui_path: []const u8 = path ++ "third_party/cimgui/";
     const imgui_flags = &[_][]const u8{};
-    const imgui_lib = b.addStaticLibrary("imgui", null);
-    imgui_lib.setTarget(app.target);
-    imgui_lib.setBuildMode(app.build_mode);
+    const imgui_lib = b.addStaticLibrary(.{
+        .name = "imgui",
+        .root_source_file = null,
+        .target = app.target,
+        .optimize = app.optimize,
+    });
+
     imgui_lib.linkSystemLibrary("c");
     imgui_lib.linkSystemLibrary("c++");
-    imgui_lib.addIncludeDir(cimgui_path ++ "");
-    imgui_lib.addIncludeDir(cimgui_path ++ "imgui");
-    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui.cpp", imgui_flags);
-    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_demo.cpp", imgui_flags);
-    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_draw.cpp", imgui_flags);
-    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_tables.cpp", imgui_flags);
-    imgui_lib.addCSourceFile(cimgui_path ++ "imgui/imgui_widgets.cpp", imgui_flags);
-    imgui_lib.addCSourceFile(cimgui_path ++ "cimgui.cpp", imgui_flags);
+
+    imgui_lib.addIncludePath(.{ .path = cimgui_path ++ "" });
+    imgui_lib.addIncludePath(.{ .path = cimgui_path ++ "imgui" });
+
+    imgui_lib.addCSourceFiles(&[_][]const u8{
+        cimgui_path ++ "imgui/imgui.cpp",
+        cimgui_path ++ "imgui/imgui_demo.cpp",
+        cimgui_path ++ "imgui/imgui_draw.cpp",
+        cimgui_path ++ "imgui/imgui_tables.cpp",
+        cimgui_path ++ "imgui/imgui_widgets.cpp",
+        cimgui_path ++ "cimgui.cpp",
+    }, imgui_flags);
 
     nyancoreLib.step.dependOn(&imgui_lib.step);
     nyancoreLib.linkLibrary(imgui_lib);
-    app.addIncludeDir(cimgui_path);
+    app.addIncludePath(.{ .path = cimgui_path });
     app.linkLibrary(imgui_lib);
 
     // glslang
     const glslang_path: []const u8 = path ++ "third_party/glslang/";
     const glslang_machine_dependent_path = if (os_tag == .windows) glslang_path ++ "glslang/OSDependent/Windows/" else glslang_path ++ "glslang/OSDependent/Unix/";
-    const glslang_flags = &[_][]const u8{};
-    const glslang_lib = b.addStaticLibrary("glslang", null);
-    glslang_lib.setTarget(app.target);
-    glslang_lib.setBuildMode(app.build_mode);
+    const glslang_flags = &[_][]const u8{"-fno-sanitize=undefined"};
+    const glslang_lib = b.addStaticLibrary(.{
+        .name = "glslang",
+        .root_source_file = null,
+        .target = app.target,
+        .optimize = app.optimize,
+    });
+
     glslang_lib.linkSystemLibrary("c");
     glslang_lib.linkSystemLibrary("c++");
-    glslang_lib.addIncludeDir(glslang_path);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/CInterface/glslang_c_interface.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/GenericCodeGen/CodeGen.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/GenericCodeGen/Link.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/attribute.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Constant.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Initialize.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/InfoSink.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Intermediate.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/intermOut.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/IntermTraverse.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/iomapper.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/glslang_tab.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/linkValidate.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/limits.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/parseConst.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/ParseContextBase.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/Pp.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpAtom.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpContext.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpScanner.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/preprocessor/PpTokens.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/propagateNoContraction.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/reflection.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/RemoveTree.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Scan.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/ShaderLang.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/SpirvIntrinsics.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/SymbolTable.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/ParseHelper.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/PoolAlloc.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "glslang/MachineIndependent/Versions.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "OGLCompilersDLL/InitializeDll.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/CInterface/spirv_c_interface.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/GlslangToSpv.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/InReadableOrder.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/Logger.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/SpvBuilder.cpp", glslang_flags);
-    glslang_lib.addCSourceFile(glslang_path ++ "SPIRV/SpvPostProcess.cpp", glslang_flags);
+
+    glslang_lib.addIncludePath(.{ .path = glslang_path });
+    glslang_lib.addCSourceFiles(&[_][]const u8{
+        glslang_path ++ "glslang/CInterface/glslang_c_interface.cpp",
+        glslang_path ++ "glslang/GenericCodeGen/CodeGen.cpp",
+        glslang_path ++ "glslang/GenericCodeGen/Link.cpp",
+        glslang_path ++ "glslang/MachineIndependent/attribute.cpp",
+        glslang_path ++ "glslang/MachineIndependent/Constant.cpp",
+        glslang_path ++ "glslang/MachineIndependent/Initialize.cpp",
+        glslang_path ++ "glslang/MachineIndependent/InfoSink.cpp",
+        glslang_path ++ "glslang/MachineIndependent/Intermediate.cpp",
+        glslang_path ++ "glslang/MachineIndependent/intermOut.cpp",
+        glslang_path ++ "glslang/MachineIndependent/IntermTraverse.cpp",
+        glslang_path ++ "glslang/MachineIndependent/iomapper.cpp",
+        glslang_path ++ "glslang/MachineIndependent/glslang_tab.cpp",
+        glslang_path ++ "glslang/MachineIndependent/linkValidate.cpp",
+        glslang_path ++ "glslang/MachineIndependent/limits.cpp",
+        glslang_path ++ "glslang/MachineIndependent/parseConst.cpp",
+        glslang_path ++ "glslang/MachineIndependent/ParseContextBase.cpp",
+        glslang_path ++ "glslang/MachineIndependent/preprocessor/Pp.cpp",
+        glslang_path ++ "glslang/MachineIndependent/preprocessor/PpAtom.cpp",
+        glslang_path ++ "glslang/MachineIndependent/preprocessor/PpContext.cpp",
+        glslang_path ++ "glslang/MachineIndependent/preprocessor/PpScanner.cpp",
+        glslang_path ++ "glslang/MachineIndependent/preprocessor/PpTokens.cpp",
+        glslang_path ++ "glslang/MachineIndependent/propagateNoContraction.cpp",
+        glslang_path ++ "glslang/MachineIndependent/reflection.cpp",
+        glslang_path ++ "glslang/MachineIndependent/RemoveTree.cpp",
+        glslang_path ++ "glslang/MachineIndependent/Scan.cpp",
+        glslang_path ++ "glslang/MachineIndependent/ShaderLang.cpp",
+        glslang_path ++ "glslang/MachineIndependent/SpirvIntrinsics.cpp",
+        glslang_path ++ "glslang/MachineIndependent/SymbolTable.cpp",
+        glslang_path ++ "glslang/MachineIndependent/ParseHelper.cpp",
+        glslang_path ++ "glslang/MachineIndependent/PoolAlloc.cpp",
+        glslang_path ++ "glslang/MachineIndependent/Versions.cpp",
+        glslang_path ++ "SPIRV/CInterface/spirv_c_interface.cpp",
+        glslang_path ++ "SPIRV/GlslangToSpv.cpp",
+        glslang_path ++ "SPIRV/InReadableOrder.cpp",
+        glslang_path ++ "SPIRV/Logger.cpp",
+        glslang_path ++ "SPIRV/SpvBuilder.cpp",
+        glslang_path ++ "SPIRV/SpvPostProcess.cpp",
+    }, glslang_flags);
     const osssource_path = std.fs.path.join(b.allocator, &.{ glslang_machine_dependent_path, "ossource.cpp" }) catch unreachable;
-    glslang_lib.addCSourceFile(osssource_path, glslang_flags);
+    glslang_lib.addCSourceFile(.{ .file = .{ .path = osssource_path }, .flags = glslang_flags });
 
     nyancoreLib.step.dependOn(&glslang_lib.step);
     nyancoreLib.linkLibrary(glslang_lib);
-    app.addIncludeDir(glslang_path ++ "glslang/Include");
+    app.addIncludePath(.{ .path = glslang_path ++ "glslang/Include" });
     app.linkLibrary(glslang_lib);
 
     // Fonts
-    nyancoreLib.addIncludeDir(path ++ "third_party/fonts/");
-    app.addIncludeDir(path ++ "third_party/fonts/");
+    nyancoreLib.addIncludePath(.{ .path = path ++ "third_party/fonts/" });
+    app.addIncludePath(.{ .path = path ++ "third_party/fonts/" });
 
     // Enet
     const enet_path: []const u8 = path ++ "third_party/enet/";
@@ -309,27 +345,35 @@ pub fn addStaticLibrary(
             "-DHAS_SOCKLEN_T=1",
         },
     };
-    const enet_lib = b.addStaticLibrary("enet", null);
-    enet_lib.setTarget(app.target);
-    enet_lib.setBuildMode(app.build_mode);
+    const enet_lib = b.addStaticLibrary(.{
+        .name = "enet",
+        .root_source_file = null,
+        .target = app.target,
+        .optimize = app.optimize,
+    });
+
     enet_lib.linkSystemLibrary("c");
-    enet_lib.addIncludeDir(enet_path ++ "include");
-    enet_lib.addCSourceFile(enet_path ++ "callbacks.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "compress.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "host.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "list.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "packet.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "peer.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "protocol.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "unix.c", enet_flags);
-    enet_lib.addCSourceFile(enet_path ++ "win32.c", enet_flags);
+
+    enet_lib.addIncludePath(.{ .path = enet_path ++ "include" });
+
+    enet_lib.addCSourceFiles(&[_][]const u8{
+        enet_path ++ "callbacks.c",
+        enet_path ++ "compress.c",
+        enet_path ++ "host.c",
+        enet_path ++ "list.c",
+        enet_path ++ "packet.c",
+        enet_path ++ "peer.c",
+        enet_path ++ "protocol.c",
+        enet_path ++ "unix.c",
+        enet_path ++ "win32.c",
+    }, enet_flags);
 
     nyancoreLib.step.dependOn(&enet_lib.step);
     nyancoreLib.linkLibrary(enet_lib);
-    app.addIncludeDir(enet_path ++ "include");
+    app.addIncludePath(.{ .path = enet_path ++ "include" });
     app.linkLibrary(enet_lib);
 
-    nyancoreLib.install();
+    b.installArtifact(nyancoreLib);
 
     return nyancoreLib;
 }

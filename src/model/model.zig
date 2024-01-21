@@ -32,7 +32,7 @@ pub const Model = struct {
 
         return .{
             .binding = 0,
-            .stride = @intCast(u32, vertex_size),
+            .stride = @intCast(vertex_size),
             .input_rate = .vertex,
         };
     }
@@ -43,23 +43,23 @@ pub const Model = struct {
         if (self.positions != null)
             attributes.append(.{
                 .binding = 0,
-                .location = @intCast(u32, attributes.items.len),
+                .location = @intCast(attributes.items.len),
                 .format = .r32g32b32_sfloat,
-                .offset = @intCast(u32, attributes.items.len * @sizeOf(nm.vec3)),
+                .offset = @intCast(attributes.items.len * @sizeOf(nm.vec3)),
             }) catch unreachable;
         if (self.normals != null)
             attributes.append(.{
                 .binding = 0,
-                .location = @intCast(u32, attributes.items.len),
+                .location = @intCast(attributes.items.len),
                 .format = .r32g32b32_sfloat,
-                .offset = @intCast(u32, attributes.items.len * @sizeOf(nm.vec3)),
+                .offset = @intCast(attributes.items.len * @sizeOf(nm.vec3)),
             }) catch unreachable;
         if (self.colors != null)
             attributes.append(.{
                 .binding = 0,
-                .location = @intCast(u32, attributes.items.len),
+                .location = @intCast(attributes.items.len),
                 .format = .r32g32b32_sfloat,
-                .offset = @intCast(u32, attributes.items.len * @sizeOf(nm.vec3)),
+                .offset = @intCast(attributes.items.len * @sizeOf(nm.vec3)),
             }) catch unreachable;
 
         return attributes.toOwnedSlice();
@@ -69,7 +69,7 @@ pub const Model = struct {
         var map: AssetMap = AssetMap.init(allocator);
 
         map.put("name", allocator.dupe(u8, self.name) catch unreachable) catch unreachable;
-        map.put("transform", std.mem.sliceAsBytes(@ptrCast(*[16]f32, &self.transform)[0..])) catch unreachable;
+        map.put("transform", std.mem.sliceAsBytes(@as(*[16]f32, @ptrCast(&self.transform))[0..])) catch unreachable;
 
         if (self.indices) |buf|
             map.put("indices", std.mem.sliceAsBytes(buf)) catch unreachable;
@@ -84,19 +84,19 @@ pub const Model = struct {
             map.put("colors", std.mem.sliceAsBytes(buf)) catch unreachable;
 
         map.put("mat_name", allocator.dupe(u8, self.mat.name) catch unreachable) catch unreachable;
-        var double_sided: u8 = @intCast(u8, @boolToInt(self.mat.double_sided));
+        var double_sided: u8 = @intCast(@intFromBool(self.mat.double_sided));
         map.put("mat_double_sided", std.mem.asBytes(&double_sided)) catch unreachable;
         map.put("mat_tex_count", std.mem.asBytes(&self.mat.images.len)) catch unreachable;
 
         var sampler_infos = allocator.alloc(vk.SamplerCreateInfo, self.mat.samplers.len) catch unreachable;
-        for (self.mat.samplers) |sampler, ind|
-            sampler_infos[ind] = sampler.sampler_info;
+        for (self.mat.samplers, &sampler_infos) |sampler, *si|
+            si.* = sampler.sampler_info;
         map.put("mat_samplers", std.mem.sliceAsBytes(sampler_infos)) catch unreachable;
 
         var image_data_size: usize = 0;
         var image_sizes: []usize = allocator.alloc(usize, self.mat.images.len * 2) catch unreachable;
 
-        for (self.mat.images) |image, ind| {
+        for (self.mat.images, 0..) |image, ind| {
             image_data_size += image.data.len;
 
             image_sizes[2 * ind] = image.width;
@@ -131,33 +131,33 @@ pub const Model = struct {
 
         model.name = allocator.dupe(u8, map.get("name") orelse unreachable) catch unreachable;
         var transform = map.get("transform") orelse unreachable;
-        model.transform = @ptrCast(*nm.mat4x4, @alignCast(@alignOf(nm.mat4x4), transform)).*;
+        model.transform = @as(*nm.mat4x4, @ptrCast(@alignCast(transform))).*;
 
         if (map.contains("indices"))
-            model.indices = std.mem.bytesAsSlice(u32, @alignCast(@alignOf(u32), map.get("indices") orelse unreachable));
+            model.indices = std.mem.bytesAsSlice(u32, @alignCast(map.get("indices") orelse unreachable));
 
         if (map.contains("positions"))
-            model.positions = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("positions") orelse unreachable));
+            model.positions = std.mem.bytesAsSlice(nm.vec3, @alignCast(map.get("positions") orelse unreachable));
         if (map.contains("normals"))
-            model.normals = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("normals") orelse unreachable));
+            model.normals = std.mem.bytesAsSlice(nm.vec3, @alignCast(map.get("normals") orelse unreachable));
         if (map.contains("colors"))
-            model.colors = std.mem.bytesAsSlice(nm.vec3, @alignCast(@alignOf(nm.vec3), map.get("colors") orelse unreachable));
+            model.colors = std.mem.bytesAsSlice(nm.vec3, @alignCast(map.get("colors") orelse unreachable));
 
         model.mat.allocator = allocator;
         model.mat.name = allocator.dupe(u8, map.get("mat_name") orelse unreachable) catch unreachable;
         model.mat.double_sided = (map.get("mat_double_sided") orelse unreachable)[0] == 1;
 
         var map_tex_count: []u8 = map.get("mat_tex_count") orelse unreachable;
-        var tex_count: usize = @alignCast(@alignOf(usize), std.mem.bytesAsValue(usize, map_tex_count[0..8])).*;
+        var tex_count: usize = @as(*usize, @alignCast(std.mem.bytesAsValue(usize, map_tex_count[0..8]))).*;
         model.mat.samplers = allocator.alloc(Sampler, tex_count) catch unreachable;
         model.mat.images = allocator.alloc(Image, tex_count) catch unreachable;
 
         var sampler_infos = std.mem.bytesAsSlice(vk.SamplerCreateInfo, map.get("mat_samplers") orelse unreachable);
-        for (sampler_infos) |si, ind|
-            model.mat.samplers[ind].sampler_info = si;
+        for (sampler_infos, &model.mat.samplers) |si, *s|
+            s.sampler_info = si;
 
         var image_sizes = std.mem.bytesAsSlice(usize, map.get("mat_image_sizes") orelse unreachable);
-        for (image_sizes) |is, ind| {
+        for (image_sizes, 0..) |is, ind| {
             var image: *Image = &model.mat.images[ind / 2];
             var size: *usize = if (ind % 2 == 0) &image.width else &image.height;
             size.* = is;

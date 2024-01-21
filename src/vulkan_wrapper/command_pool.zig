@@ -16,7 +16,7 @@ pub const CommandPool = struct {
             },
         };
 
-        const pool: vk.CommandPool = vkfn.d.createCommandPool(vkctxt.device, pool_info, null) catch |err| {
+        const pool: vk.CommandPool = vkfn.d.createCommandPool(vkctxt.device, &pool_info, null) catch |err| {
             printVulkanError("Can't create command pool", err);
             return err;
         };

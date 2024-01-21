@@ -65,9 +65,9 @@ pub const Mesh = struct {
     fn copyBufferIfExist(buffer: ?[]nm.vec3, dst: []u8, offset: usize, vertex_size: usize) usize {
         if (buffer == null) return 0;
 
-        for (buffer.?) |e, ind| {
+        for (buffer.?, 0..) |e, ind| {
             const offset_index: usize = offset + ind * vertex_size;
-            std.mem.bytesAsValue(nm.vec3, @ptrCast(*[16]u8, &dst[offset_index])).* = e;
+            std.mem.bytesAsValue(nm.vec3, @as(*[16]u8, @ptrCast(&dst[offset_index]))).* = e;
         }
 
         return @sizeOf(nm.vec3);
@@ -75,7 +75,7 @@ pub const Mesh = struct {
 
     pub fn bind(self: *const Mesh, command_buffer: *CommandBuffer) void {
         const offset: u64 = 0;
-        vkfn.d.cmdBindVertexBuffers(command_buffer.vk_ref, 0, 1, @ptrCast([*]const vk.Buffer, &self.vertex_buffer.vk_ref), @ptrCast([*]const u64, &offset));
+        vkfn.d.cmdBindVertexBuffers(command_buffer.vk_ref, 0, 1, @ptrCast(&self.vertex_buffer.vk_ref), @ptrCast(&offset));
         vkfn.d.cmdBindIndexBuffer(command_buffer.vk_ref, self.index_buffer.vk_ref, 0, self.index_type);
     }
 

@@ -27,13 +27,13 @@ const function_definition: []const u8 =
 ;
 
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     ctxt.pushEnterInfo(iter);
-    ctxt.pushStackInfo(iter, -@intCast(i32, iter));
+    ctxt.pushStackInfo(iter, -@as(i32, @intCast(iter)));
 
-    data.mats[0] = @intCast(i32, mat_offset);
-    data.mats[1] = @intCast(i32, mat_offset);
+    data.mats[0] = @intCast(mat_offset);
+    data.mats[1] = @intCast(mat_offset);
 
     return util.std.fmt.allocPrint(ctxt.allocator, "", .{}) catch unreachable;
 }
@@ -41,7 +41,7 @@ fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, bu
 fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const u8 {
     _ = iter;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
     const ei: util.EnterInfo = ctxt.lastEnterInfo();
 
     const format: []const u8 = "float d{d} = opSmoothUnion(d{d}, d{d}, {d:.5});";
@@ -66,8 +66,8 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
             data.smoothing,
         }) catch unreachable;
 
-        data.mats[0] = data.mats[0] * @boolToInt(prev_info.material >= 0) + prev_info.material;
-        data.mats[1] = data.mats[1] * @boolToInt(prev_prev_info.material >= 0) + prev_prev_info.material;
+        data.mats[0] = data.mats[0] * @intFromBool(prev_info.material >= 0) + prev_info.material;
+        data.mats[1] = data.mats[1] * @intFromBool(prev_prev_info.material >= 0) + prev_prev_info.material;
         data.dist_indexes[0] = prev_info.index;
         data.dist_indexes[1] = prev_prev_info.index;
     }
@@ -79,20 +79,19 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
 
 fn appendMatCheck(ctxt: *util.IterationContext, exit_command: []const u8, buffer: *[]u8, mat_offset: usize, allocator: util.std.mem.Allocator) []const u8 {
     _ = mat_offset;
-    _ = ctxt;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
     const ei: util.EnterInfo = ctxt.popEnterInfo();
 
     const format_mat: []const u8 = "matToColor({d}.,l,n,v)";
     const format_gen_mat: []const u8 = "m{d}";
 
     var mat_str: [2][]const u8 = .{undefined} ** 2;
-    for (mat_str) |_, ind| {
-        if (data.mats[ind] >= 0) {
-            mat_str[ind] = util.std.fmt.allocPrint(allocator, format_mat, .{data.mats[ind]}) catch unreachable;
+    for (&mat_str, data.mats) |*str, mat_ind| {
+        if (mat_ind >= 0) {
+            str.* = util.std.fmt.allocPrint(allocator, format_mat, .{mat_ind}) catch unreachable;
         } else {
-            mat_str[ind] = util.std.fmt.allocPrint(allocator, format_gen_mat, .{-data.mats[ind]}) catch unreachable;
+            str.* = util.std.fmt.allocPrint(allocator, format_gen_mat, .{-mat_ind}) catch unreachable;
         }
     }
 

@@ -73,7 +73,7 @@ pub const Config = struct {
                 continue;
             }
 
-            var it: std.mem.SplitIterator(u8) = std.mem.split(u8, line, "=");
+            var it: std.mem.SplitIterator(u8, .scalar) = std.mem.splitScalar(u8, line, '=');
             const name: []const u8 = it.next() orelse continue;
             const value: []const u8 = it.rest();
             std.mem.copy(u8, groupBuffer[groupLen..], name);
@@ -100,7 +100,7 @@ pub const Config = struct {
             ind += 1;
         }
 
-        std.sort.sort(Entry, buffer, {}, compareEntries);
+        std.sort.pdq(Entry, buffer, {}, compareEntries);
 
         var current_group: []const u8 = undefined;
         var current_group_len: usize = 0;

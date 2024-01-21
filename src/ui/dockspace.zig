@@ -3,9 +3,9 @@ const std = @import("std");
 
 pub const DockSpace = struct {
     id: []const u8,
-    init_layout_fnc: fn (mainId: c.ImGuiID) void,
+    init_layout_fnc: *const fn (mainId: c.ImGuiID) void,
 
-    pub fn init(self: *DockSpace, id: []const u8, init_layout_fnc: fn (mainId: c.ImGuiID) void) void {
+    pub fn init(self: *DockSpace, id: []const u8, init_layout_fnc: *const fn (mainId: c.ImGuiID) void) void {
         self.id = id;
         self.init_layout_fnc = init_layout_fnc;
     }

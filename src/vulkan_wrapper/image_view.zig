@@ -39,7 +39,7 @@ pub const ImageView = struct {
             },
         };
 
-        self.vk_ref = vkfn.d.createImageView(vkctxt.device, view_info, null) catch |err| {
+        self.vk_ref = vkfn.d.createImageView(vkctxt.device, &view_info, null) catch |err| {
             printVulkanError("Can't create image view", err);
             return;
         };

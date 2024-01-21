@@ -35,7 +35,7 @@ fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, bu
 fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const u8 {
     _ = iter;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
     const ei: util.EnterInfo = ctxt.popEnterInfo();
 
     const command: []const u8 = "d{d} = opSmoothIntersection(d{d}, d{d}, {d:.5});";

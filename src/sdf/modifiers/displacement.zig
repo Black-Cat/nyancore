@@ -34,7 +34,7 @@ fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, bu
 fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const u8 {
     _ = iter;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
     const ei: util.EnterInfo = ctxt.popEnterInfo();
 
     const format: []const u8 = "float d{d} = opDisplace(d{d}, {s}, {d:.5});";

@@ -19,14 +19,14 @@ pub const Data = struct {
 fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, buffer: *[]u8) []const u8 {
     _ = mat_offset;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     const next_point: []const u8 = util.std.fmt.allocPrint(ctxt.allocator, "p{d}", .{iter}) catch unreachable;
 
     const format: []const u8 = "cpin = {s}; {{ {s} }} vec3 {s} = cpout;";
     const res: []const u8 = util.std.fmt.allocPrint(ctxt.allocator, format, .{
         ctxt.cur_point_name,
-        @ptrCast([*c]const u8, &data.enter_function),
+        data.enter_function,
         next_point,
     }) catch unreachable;
 
@@ -41,7 +41,7 @@ fn enterCommand(ctxt: *util.IterationContext, iter: usize, mat_offset: usize, bu
 fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const u8 {
     _ = iter;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
     const ei: util.EnterInfo = ctxt.popEnterInfo();
 
     ctxt.popPointName();
@@ -56,7 +56,7 @@ fn exitCommand(ctxt: *util.IterationContext, iter: usize, buffer: *[]u8) []const
         res = util.std.fmt.allocPrint(ctxt.allocator, format, .{
             ctxt.last_value_set_index,
             ctxt.cur_point_name,
-            @ptrCast([*c]const u8, &data.exit_function),
+            data.exit_function,
             ei.enter_index,
         }) catch unreachable;
     }

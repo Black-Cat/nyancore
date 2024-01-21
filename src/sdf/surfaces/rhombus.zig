@@ -46,9 +46,9 @@ fn exitCommand(data: *Data, enter_index: usize, cur_point_name: []const u8, allo
 fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
     _ = children;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
-    const hor_radius: f32 = @maximum(data.length_horizontal, data.length_vertical) + data.radius;
+    const hor_radius: f32 = @max(data.length_horizontal, data.length_vertical) + data.radius;
 
     bound.* = .{
         .pos = util.math.Vec3.zeros(),

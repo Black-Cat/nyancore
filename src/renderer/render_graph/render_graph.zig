@@ -15,7 +15,6 @@ const ResourceMap = std.AutoArrayHashMap(*anyopaque, *RGResource);
 
 const SyncPass = @import("passes/sync_pass.zig").SyncPass;
 const Swapchain = @import("../../vulkan_wrapper/swapchain.zig").Swapchain;
-const ViewportTexture = @import("resources/viewport_texture.zig").ViewportTexture;
 const CommandPool = @import("../../vulkan_wrapper/command_pool.zig").CommandPool;
 const CommandBuffers = @import("../../vulkan_wrapper/command_buffers.zig").CommandBuffers;
 const CommandBuffer = @import("../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
@@ -24,8 +23,8 @@ pub var global_render_graph: RenderGraph = undefined;
 
 pub const RenderGraph = struct {
     pub const ResourceChangeFn = struct {
-        res: *anyopaque,
-        change_fn: fn (res: *anyopaque) void,
+        res: *RGResource,
+        change_fn: *const fn (res: *RGResource) void,
     };
 
     allocator: std.mem.Allocator,
@@ -129,7 +128,7 @@ pub const RenderGraph = struct {
         return self.resources.get(res).?;
     }
 
-    pub fn changeResourceBetweenFrames(self: *RenderGraph, res: *anyopaque, change_fn: fn (res: *anyopaque) void) void {
+    pub fn changeResourceBetweenFrames(self: *RenderGraph, res: *RGResource, change_fn: *const fn (res: *RGResource) void) void {
         const fn_cxt: ResourceChangeFn = .{
             .res = res,
             .change_fn = change_fn,
@@ -138,7 +137,7 @@ pub const RenderGraph = struct {
     }
 
     pub fn hasResourceChanges(self: *RenderGraph) bool {
-        return self.resource_changes.items.len == 0;
+        return self.resource_changes.items.len != 0;
     }
 
     pub fn executeResourceChanges(self: *RenderGraph) void {
@@ -215,10 +214,10 @@ pub const RenderGraph = struct {
             var barrier_end: u32 = vk.PipelineStageFlags.toInt(.{ .bottom_of_pipe_bit = true });
 
             for (sync_pass.?.input_sync_point.rg_resource.writers.items) |synced_pass|
-                barrier_end = @maximum(barrier_end, vk.PipelineStageFlags.toInt(synced_pass.pipeline_end));
+                barrier_end = @max(barrier_end, vk.PipelineStageFlags.toInt(synced_pass.pipeline_end));
 
             for (sync_pass.?.output_sync_point.rg_resource.readers.items) |synced_pass|
-                barrier_end = @minimum(barrier_end, vk.PipelineStageFlags.toInt(synced_pass.pipeline_start));
+                barrier_end = @min(barrier_end, vk.PipelineStageFlags.toInt(synced_pass.pipeline_start));
 
             sync_pass.?.rg_pass.pipeline_start = vk.PipelineStageFlags.fromInt(barrier_start);
             sync_pass.?.rg_pass.pipeline_end = vk.PipelineStageFlags.fromInt(barrier_end);

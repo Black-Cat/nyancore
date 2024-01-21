@@ -14,13 +14,13 @@ pub const Camera = struct {
     // Dir expected to be normalized
     pub fn viewAlong(self: *Camera, dir: nm.vec3, up: nm.vec3) void {
         const dist: f32 = nm.Vec3.norm(self.position - self.target);
-        self.position = self.target - dir * @splat(3, dist);
+        self.position = self.target - dir * @as(nm.vec3, @splat(dist));
         self.up = up;
     }
 
     pub fn setDist(self: *Camera, dist: f32) void {
         const dir: nm.vec3 = nm.Vec3.normalize(self.position - self.target);
-        self.position = self.target + dir * @splat(3, dist);
+        self.position = self.target + dir * @as(nm.vec3, @splat(dist));
     }
 
     pub fn moveTargetTo(self: *Camera, pos: nm.vec3) void {
@@ -52,11 +52,11 @@ pub const Camera = struct {
         const new_dst: f32 = dst + dir * @log(dst);
 
         forward = nm.Vec3.normalize(forward);
-        self.position = self.target + forward * @splat(3, new_dst);
+        self.position = self.target + forward * @as(nm.vec3, @splat(new_dst));
     }
 
     pub fn zoomOrthographic(self: *Camera, dir: f32) void {
-        self.up = nm.Vec3.normalize(self.up) * @splat(3, nm.Vec3.norm(self.up) + dir);
+        self.up = nm.Vec3.normalize(self.up) * @as(nm.vec3, @splat(nm.Vec3.norm(self.up) + dir));
     }
 
     pub fn projectionPerspective(self: *Camera, fov_y: f32, aspect: f32, near: f32, far: f32) nm.mat4x4 {

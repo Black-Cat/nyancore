@@ -27,7 +27,7 @@ pub const Zone = struct {
     ctx: c.TracyCZoneCtx,
 
     pub fn hashColor(comptime str: []const u8) u32 {
-        return @truncate(u32, std.hash.Wyhash.hash(0, str));
+        return @truncate(std.hash.Wyhash.hash(0, str));
     }
 
     pub fn start(comptime src: std.builtin.SourceLocation, name: ?[]const u8, color: u32) Zone {
@@ -56,7 +56,6 @@ pub const Zone = struct {
     }
 
     pub fn end(self: *Zone) void {
-        _ = self;
         c.___tracy_emit_zone_end(self.ctx);
     }
 };

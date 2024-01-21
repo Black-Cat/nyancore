@@ -33,7 +33,7 @@ pub var app: Application = undefined;
 
 pub const Application = struct {
     pub const DelayedTask = struct {
-        task: fn (context: *anyopaque) void,
+        task: *const fn (context: *anyopaque) void,
         context: *anyopaque,
         delay: f64,
     };
@@ -123,7 +123,7 @@ pub const Application = struct {
 
         c.glfwWindowHint(c.GLFW_CLIENT_API, c.GLFW_NO_API);
         c.glfwWindowHint(c.GLFW_MAXIMIZED, c.GLFW_TRUE);
-        self.window = c.glfwCreateWindow(640, 480, @ptrCast([*c]const u8, self.name), null, null) orelse {
+        self.window = c.glfwCreateWindow(640, 480, @ptrCast(self.name), null, null) orelse {
             printError("GLFW", "Couldn't create window");
             return error.GLFW_FAILED_TO_CREATE_WINDOW;
         };
@@ -194,7 +194,7 @@ pub const Application = struct {
             prev_time = now_time;
 
             const io: *c.ImGuiIO = c.igGetIO();
-            io.DeltaTime = @floatCast(f32, elapsed);
+            io.DeltaTime = @floatCast(elapsed);
 
             self.updateDelayedTasks(elapsed);
 
@@ -221,7 +221,7 @@ pub const Application = struct {
 
         var self: *Application = application_glfw_map.get(window.?).?;
         if (action == c.GLFW_PRESS and button >= 0 and button < imgui_mouse_button_count)
-            self.mouse_just_pressed[@intCast(usize, button)] = true;
+            self.mouse_just_pressed[@intCast(button)] = true;
     }
 
     fn updateDelayedTasks(self: *Application, elapsed: f64) void {
@@ -243,7 +243,7 @@ pub const Application = struct {
 
         var i: usize = 0;
         while (i < imgui_mouse_button_count) : (i += 1) {
-            io.MouseDown[i] = self.mouse_just_pressed[i] or (c.glfwGetMouseButton(self.window, @intCast(c_int, i)) == c.GLFW_TRUE);
+            io.MouseDown[i] = self.mouse_just_pressed[i] or (c.glfwGetMouseButton(self.window, @intCast(i)) == c.GLFW_TRUE);
             self.mouse_just_pressed[i] = false;
         }
 
@@ -256,14 +256,14 @@ pub const Application = struct {
         const focused: bool = c.glfwGetWindowAttrib(self.window, c.GLFW_FOCUSED) == c.GLFW_TRUE;
         if (focused) {
             if (io.WantSetMousePos) {
-                c.glfwSetCursorPos(self.window, @floatCast(f64, mouse_pos_backup.x), @floatCast(f64, mouse_pos_backup.y));
+                c.glfwSetCursorPos(self.window, @floatCast(mouse_pos_backup.x), @floatCast(mouse_pos_backup.y));
             } else {
                 var mouseX: f64 = undefined;
                 var mouseY: f64 = undefined;
                 c.glfwGetCursorPos(self.window, &mouseX, &mouseY);
                 io.MousePos = .{
-                    .x = @floatCast(f32, mouseX),
-                    .y = @floatCast(f32, mouseY),
+                    .x = @floatCast(mouseX),
+                    .y = @floatCast(mouseY),
                 };
             }
         }
@@ -310,9 +310,9 @@ pub const Application = struct {
         var io: *c.ImGuiIO = c.igGetIO();
 
         if (action == c.GLFW_PRESS)
-            io.KeysDown[@intCast(c_uint, key)] = true;
+            io.KeysDown[@intCast(key)] = true;
         if (action == c.GLFW_RELEASE)
-            io.KeysDown[@intCast(c_uint, key)] = false;
+            io.KeysDown[@intCast(key)] = false;
 
         // Modifiers are not reliable across systems
         io.KeyCtrl = io.KeysDown[c.GLFW_KEY_LEFT_CONTROL] or io.KeysDown[c.GLFW_KEY_RIGHT_CONTROL];
@@ -335,8 +335,8 @@ pub const Application = struct {
     fn glfwScrollCallback(win: ?*c.GLFWwindow, xoffset: f64, yoffset: f64) callconv(.C) void {
         _ = win;
         var io: *c.ImGuiIO = c.igGetIO();
-        io.MouseWheelH += @floatCast(f32, xoffset);
-        io.MouseWheel += @floatCast(f32, yoffset);
+        io.MouseWheelH += @floatCast(xoffset);
+        io.MouseWheel += @floatCast(yoffset);
     }
 
     pub fn set_icon(self: *Application, data: []const u8) void {
@@ -350,10 +350,10 @@ pub const Application = struct {
         const glfw_images: []c.GLFWimage = self.allocator.alloc(c.GLFWimage, images.len) catch unreachable;
         defer self.allocator.free(glfw_images);
 
-        for (glfw_images) |*img, i|
-            img.* = images[i].asGLFWimage();
+        for (glfw_images, images) |*glfw_img, *img|
+            glfw_img.* = img.asGLFWimage();
 
-        c.glfwSetWindowIcon(self.window, @intCast(c_int, images.len), glfw_images.ptr);
+        c.glfwSetWindowIcon(self.window, @intCast(images.len), glfw_images.ptr);
 
         for (images) |img|
             self.allocator.free(img.data);

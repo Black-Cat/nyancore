@@ -1,11 +1,14 @@
 const vk = @import("../../../vk.zig");
 const std = @import("std");
 
+const vkctxt = @import("../../../vulkan_wrapper/vulkan_context.zig");
+
 const printError = @import("../../../application/print_error.zig").printError;
 const RGResource = @import("../render_graph_resource.zig").RGResource;
 const RenderGraph = @import("../render_graph.zig").RenderGraph;
 
-const Texture = @import("../../../vulkan_wrapper/texture.zig").Texture;
+const RenderPass = @import("../../../vulkan_wrapper/render_pass.zig").RenderPass;
+const Texture = @import("texture.zig").Texture;
 
 pub const ViewportTexture = struct {
     rg_resource: RGResource,
@@ -22,6 +25,8 @@ pub const ViewportTexture = struct {
     image_format: vk.Format,
     usage: vk.ImageUsageFlags,
     image_layout: vk.ImageLayout,
+
+    render_passes: std.ArrayList(*RenderPass),
 
     pub fn init(self: *ViewportTexture, name: []const u8, in_flight: u32, width: u32, height: u32, image_format: vk.Format, allocator: std.mem.Allocator) void {
         self.extent = .{
@@ -40,9 +45,11 @@ pub const ViewportTexture = struct {
             .transfer_dst_bit = true,
         };
         self.image_layout = .shader_read_only_optimal;
+        self.render_passes = std.ArrayList(*RenderPass).init(vkctxt.allocator);
     }
 
     pub fn deinit(self: *ViewportTexture) void {
+        self.render_passes.deinit();
         self.allocator.free(self.textures);
     }
 
@@ -76,5 +83,8 @@ pub const ViewportTexture = struct {
 
         self.destroy();
         self.alloc();
+
+        for (self.render_passes.items) |rp|
+            rp.target_recreated_callback(rp);
     }
 };

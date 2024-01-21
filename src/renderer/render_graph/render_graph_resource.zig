@@ -5,11 +5,6 @@ const RGPass = @import("render_graph_pass.zig").RGPass;
 const PassList = std.ArrayList(*RGPass);
 
 pub const RGResource = struct {
-    const OnChangeCallback = struct {
-        pass: *RGPass,
-        callback: fn (*RGPass) void,
-    };
-
     name: []const u8,
 
     writers: PassList,

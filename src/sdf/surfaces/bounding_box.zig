@@ -45,10 +45,10 @@ fn exitCommand(data: *Data, enter_index: usize, cur_point_name: []const u8, allo
 fn sphereBound(buffer: *[]u8, bound: *util.math.sphereBound, children: []util.math.sphereBound) void {
     _ = children;
 
-    const data: *Data = @ptrCast(*Data, @alignCast(@alignOf(Data), buffer.ptr));
+    const data: *Data = @ptrCast(@alignCast(buffer.ptr));
 
     var outer_pos: util.math.vec3 = .{ data.size[0], data.size[1], data.size[2] };
-    outer_pos += @splat(3, data.extent);
+    outer_pos += @splat(data.extent);
 
     bound.* = .{
         .pos = util.math.Vec3.zeros(),

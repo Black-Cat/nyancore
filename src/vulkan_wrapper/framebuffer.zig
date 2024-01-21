@@ -19,8 +19,8 @@ pub const Framebuffer = struct {
         var vk_image_views: []vk.ImageView = vkctxt.allocator.alloc(vk.ImageView, image_views.len) catch unreachable;
         defer vkctxt.allocator.free(vk_image_views);
 
-        for (vk_image_views) |*iv, ind|
-            iv.* = image_views[ind].vk_ref;
+        for (vk_image_views, image_views) |*viv, *iv|
+            viv.* = iv.vk_ref;
 
         switch (@TypeOf(target)) {
             *Swapchain => return createFromSwapchain(render_pass, target, vk_image_views),
@@ -44,20 +44,20 @@ pub const Framebuffer = struct {
         defer vkctxt.allocator.free(frame_image_views);
         std.mem.copy(vk.ImageView, frame_image_views[1..], image_views);
 
-        for (framebuffers) |*framebuffer, ind| {
-            frame_image_views[0] = target_image_views[ind];
+        for (framebuffers, target_image_views) |*framebuffer, *iv| {
+            frame_image_views[0] = iv.*;
 
             const create_info: vk.FramebufferCreateInfo = .{
                 .flags = .{},
                 .render_pass = render_pass.vk_ref,
-                .attachment_count = @intCast(u32, frame_image_views.len),
-                .p_attachments = @ptrCast([*]const vk.ImageView, frame_image_views.ptr),
+                .attachment_count = @intCast(frame_image_views.len),
+                .p_attachments = @ptrCast(frame_image_views.ptr),
                 .width = width,
                 .height = height,
                 .layers = 1,
             };
 
-            framebuffer.vk_ref = vkfn.d.createFramebuffer(vkctxt.device, create_info, null) catch |err| {
+            framebuffer.vk_ref = vkfn.d.createFramebuffer(vkctxt.device, &create_info, null) catch |err| {
                 printVulkanError("Can't create framebuffer from swapchain", err);
                 return undefined;
             };
@@ -82,8 +82,8 @@ pub const Framebuffer = struct {
         var target_image_views: []vk.ImageView = vkctxt.allocator.alloc(vk.ImageView, viewport_texture.textures.len) catch unreachable;
         defer vkctxt.allocator.free(target_image_views);
 
-        for (target_image_views) |*iv, ind|
-            iv.* = viewport_texture.textures[ind].view;
+        for (target_image_views, viewport_texture.textures) |*iv, *tex|
+            iv.* = tex.view;
 
         return createFromParams(
             render_pass,
