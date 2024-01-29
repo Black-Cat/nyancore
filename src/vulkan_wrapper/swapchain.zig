@@ -54,12 +54,12 @@ pub const Swapchain = struct {
     }
 
     fn cleanup(self: *Swapchain) void {
+        vkfn.d.destroySwapchainKHR(vkctxt.device, self.swapchain, null);
+
         for (self.image_views) |image_view|
             vkfn.d.destroyImageView(vkctxt.device, image_view, null);
 
         vkctxt.allocator.free(self.image_views);
-
-        vkfn.d.destroySwapchainKHR(vkctxt.device, self.swapchain, null);
     }
 
     fn createSwapchain(self: *Swapchain, width: u32, height: u32) !void {
@@ -95,6 +95,7 @@ pub const Swapchain = struct {
             .image_array_layers = 1,
             .image_usage = .{
                 .color_attachment_bit = true,
+                .transfer_dst_bit = true,
             },
 
             .pre_transform = swapchain_support.capabilities.current_transform,
@@ -172,7 +173,7 @@ pub const Swapchain = struct {
 
     fn chooseSwapSurfaceFormat(available_formats: []vk.SurfaceFormatKHR) vk.SurfaceFormatKHR {
         for (available_formats) |format| {
-            if (format.format == .r8g8b8a8_unorm and format.color_space == .srgb_nonlinear_khr) {
+            if (format.format == .b8g8r8a8_unorm and format.color_space == .srgb_nonlinear_khr) {
                 return format;
             }
         }
@@ -182,7 +183,7 @@ pub const Swapchain = struct {
 
     fn chooseSwapPresentMode(available_present_modes: []vk.PresentModeKHR, vsync: bool) vk.PresentModeKHR {
         const prefered_modes: []const vk.PresentModeKHR = if (vsync)
-            &.{.mailbox_khr}
+            &.{.fifo_khr}
         else
             &.{.immediate_khr};
 

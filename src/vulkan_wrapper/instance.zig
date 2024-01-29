@@ -28,7 +28,7 @@ pub fn create(app_name: [:0]const u8, comptime enable_validation: bool, allocato
         .application_version = vk.makeApiVersion(0, 1, 0, 0),
         .p_engine_name = "nyancore engine",
         .engine_version = vk.makeApiVersion(0, 1, 0, 0),
-        .api_version = vk.API_VERSION_1_2,
+        .api_version = vk.API_VERSION_1_3,
     };
 
     var glfw_extension_count: u32 = undefined;

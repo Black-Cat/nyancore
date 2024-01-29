@@ -128,13 +128,13 @@ pub fn init(a: Allocator, app: *Application) !void {
 pub fn deinit() void {
     c.vmaDestroyAllocator(vma_allocator.?);
 
+    vkfn.i.destroySurfaceKHR(instance, surface, null);
     Device.destroy(device);
 
     if (nyancore_options.use_vulkan_sdk) {
         vkfn.i.destroyDebugUtilsMessengerEXT(instance, debug_messenger, null);
     }
 
-    vkfn.i.destroySurfaceKHR(instance, surface, null);
     Instance.destroy(instance);
 }
 

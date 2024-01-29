@@ -149,16 +149,22 @@ pub const PhysicalDevice = struct {
     }
 
     fn checkDeviceFeatures(device: vk.PhysicalDevice) bool {
+        var features_11: vk.PhysicalDeviceVulkan11Features = .{};
+        var features_12: vk.PhysicalDeviceVulkan12Features = .{ .p_next = &features_11 };
+        var features_13: vk.PhysicalDeviceVulkan13Features = .{ .p_next = &features_12 };
+
         const features: vk.PhysicalDeviceFeatures = vkfn.i.getPhysicalDeviceFeatures(device);
-        var shader_draw_feature: vk.PhysicalDeviceShaderDrawParametersFeatures = .{ .shader_draw_parameters = vk.FALSE };
         var features2: vk.PhysicalDeviceFeatures2 = .{
-            .p_next = &shader_draw_feature,
+            .p_next = &features_13,
             .features = features,
         };
-
         vkfn.i.getPhysicalDeviceFeatures2(device, &features2);
 
-        return shader_draw_feature.shader_draw_parameters == vk.TRUE;
+        return features_11.shader_draw_parameters == vk.TRUE and
+            features_12.buffer_device_address == vk.TRUE and
+            features_12.descriptor_indexing == vk.TRUE and
+            features_13.dynamic_rendering == vk.TRUE and
+            features_13.synchronization_2 == vk.TRUE;
     }
 
     fn checkDeviceExtensionsSupport(device: vk.PhysicalDevice) !bool {
