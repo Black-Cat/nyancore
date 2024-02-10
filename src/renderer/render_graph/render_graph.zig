@@ -16,7 +16,6 @@ const ResourceMap = std.AutoArrayHashMap(*anyopaque, *RGResource);
 const SyncPass = @import("passes/sync_pass.zig").SyncPass;
 const Swapchain = @import("../../vulkan_wrapper/swapchain.zig").Swapchain;
 const CommandPool = @import("../../vulkan_wrapper/command_pool.zig").CommandPool;
-const CommandBuffers = @import("../../vulkan_wrapper/command_buffers.zig").CommandBuffers;
 const CommandBuffer = @import("../../vulkan_wrapper/command_buffer.zig").CommandBuffer;
 
 pub var global_render_graph: RenderGraph = undefined;
@@ -32,9 +31,8 @@ pub const RenderGraph = struct {
     final_swapchain: Swapchain,
     needs_rebuilding: bool,
 
-    command_pool: CommandPool,
-    compute_command_pool: CommandPool,
-    command_buffers: CommandBuffers,
+    command_pools: []CommandPool,
+    compute_command_pools: []CommandPool,
 
     frame_index: u32,
     image_index: u32,
@@ -76,28 +74,42 @@ pub const RenderGraph = struct {
     pub fn initVulkan(self: *RenderGraph, in_flight: u32) void {
         self.in_flight = in_flight;
 
-        self.command_pool = CommandPool.create(vkctxt.physical_device.family_indices.graphics_family) catch |err| {
-            printVulkanError("Can't create command pool for render graph", err);
-            return;
-        };
+        self.command_pools = vkctxt.allocator.alloc(CommandPool, in_flight) catch unreachable;
+        for (self.command_pools) |*cp| {
+            cp.* = CommandPool.create(vkctxt.physical_device.family_indices.graphics_family) catch |err| {
+                printVulkanError("Can't create command pool for render graph", err);
+                return;
+            };
 
-        self.compute_command_pool = CommandPool.create(vkctxt.physical_device.family_indices.compute_family) catch |err| {
-            printVulkanError("Can't create compute command pool for render graph", err);
-            return;
-        };
+            cp.allocateBuffers(1); // Main buffer
+        }
 
-        self.command_buffers = CommandBuffers.allocate(&self.command_pool, self.in_flight) catch |err| {
-            printVulkanError("Can't create command buffer for render graph", err);
-            return;
-        };
+        self.compute_command_pools = vkctxt.allocator.alloc(CommandPool, in_flight) catch unreachable;
+        for (self.compute_command_pools) |*cp| {
+            cp.* = CommandPool.create(vkctxt.physical_device.family_indices.compute_family) catch |err| {
+                printVulkanError("Can't create compute command pool for render graph", err);
+                return;
+            };
+            cp.allocateBuffers(1); // Main buffer
+        }
     }
 
     pub fn deinitCommandBuffers(self: *RenderGraph) void {
         vkfn.d.deviceWaitIdle(vkctxt.device) catch |err| {
             printVulkanError("Can't wait for device idle while destruction of command buffers", err);
         };
-        self.command_buffers.freeVulkan();
-        self.command_pool.destroy();
+
+        for (self.command_pools) |*cp| {
+            cp.freeBuffers();
+            cp.destroy();
+        }
+        vkctxt.allocator.free(self.command_pools);
+
+        for (self.compute_command_pools) |*cp| {
+            cp.freeBuffers();
+            cp.destroy();
+        }
+        vkctxt.allocator.free(self.compute_command_pools);
     }
 
     pub fn deinit(self: *RenderGraph) void {
@@ -114,8 +126,6 @@ pub const RenderGraph = struct {
 
         self.sorted_passes.deinit();
         self.sync_passes.deinit();
-
-        self.command_buffers.free();
     }
 
     pub fn addResource(self: *RenderGraph, res: *anyopaque, name: []const u8) void {
@@ -272,5 +282,9 @@ pub const RenderGraph = struct {
             pass.initFn(pass);
 
         self.build();
+    }
+
+    pub fn getCurrentCommandPool(self: RenderGraph) *CommandPool {
+        return &self.command_pools[self.frame_index];
     }
 };

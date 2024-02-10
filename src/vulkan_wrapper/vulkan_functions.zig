@@ -104,6 +104,7 @@ pub const DeviceDispatch = vk.DeviceWrapper(.{
     .queueSubmit = true,
     .queueWaitIdle = true,
     .resetCommandBuffer = true,
+    .resetCommandPool = true,
     .resetFences = true,
     .unmapMemory = true,
     .updateDescriptorSets = true,

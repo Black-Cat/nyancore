@@ -6,17 +6,26 @@ const vkfn = @import("vulkan_functions.zig");
 const printVulkanError = @import("print_vulkan_error.zig").printVulkanError;
 
 const CommandBuffer = @import("command_buffer.zig").CommandBuffer;
-const CommandBuffers = @import("command_buffers.zig").CommandBuffers;
 const CommandPool = @import("command_pool.zig").CommandPool;
 
 pub const SingleCommandBuffer = struct {
-    command_buffers: CommandBuffers,
     command_buffer: CommandBuffer,
+    command_pool: *CommandPool,
 
     pub fn allocate(pool: *CommandPool) !SingleCommandBuffer {
         var scb: SingleCommandBuffer = undefined;
-        scb.command_buffers = try CommandBuffers.allocate(pool, 1);
-        scb.command_buffer = scb.command_buffers.getBuffer(0);
+        scb.command_pool = pool;
+
+        const command_buffer_info: vk.CommandBufferAllocateInfo = .{
+            .level = .primary,
+            .command_pool = pool.vk_ref,
+            .command_buffer_count = 1,
+        };
+
+        vkfn.d.allocateCommandBuffers(vkctxt.device, &command_buffer_info, @ptrCast(&scb.command_buffer.vk_ref)) catch |err| {
+            printVulkanError("Can't allocate command buffers", err);
+        };
+
         return scb;
     }
 
@@ -38,7 +47,6 @@ pub const SingleCommandBuffer = struct {
             printVulkanError("Can't wait for queue", err);
         };
 
-        self.command_buffers.freeVulkan();
-        self.command_buffers.free();
+        vkfn.d.freeCommandBuffers(vkctxt.device, self.command_pool.vk_ref, 1, @ptrCast(&self.command_buffer.vk_ref));
     }
 };

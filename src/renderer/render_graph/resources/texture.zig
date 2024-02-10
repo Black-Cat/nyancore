@@ -128,7 +128,7 @@ pub const Texture = struct {
         };
 
         if (self.image_layout != .undefined) {
-            var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(&rg.global_render_graph.command_pool) catch unreachable;
+            var scb: SingleCommandBuffer = SingleCommandBuffer.allocate(rg.global_render_graph.getCurrentCommandPool()) catch unreachable;
             scb.command_buffer.beginSingleTimeCommands();
             self.transitionImageLayout(scb.command_buffer.vk_ref, .undefined, self.image_layout);
             scb.command_buffer.endSingleTimeCommands();

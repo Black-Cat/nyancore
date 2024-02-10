@@ -24,6 +24,7 @@ pub const PipelineCache = @import("vulkan_wrapper/pipeline_cache.zig").PipelineC
 pub const PipelineLayout = @import("vulkan_wrapper/pipeline_layout.zig").PipelineLayout;
 pub const ShaderModule = @import("vulkan_wrapper/shader_module.zig").ShaderModule;
 pub const SingleCommandBuffer = @import("vulkan_wrapper/single_command_buffer.zig").SingleCommandBuffer;
+pub const CommandPool = @import("vulkan_wrapper/command_pool.zig").CommandPool;
 
 pub const Config = @import("application/config.zig").Config;
 

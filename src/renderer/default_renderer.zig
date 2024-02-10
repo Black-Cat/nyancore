@@ -15,6 +15,7 @@ const RenderGraph = rg.RenderGraph;
 const RGPass = @import("render_graph/render_graph_pass.zig").RGPass;
 const RGResource = @import("render_graph/render_graph_resource.zig").RGResource;
 const CommandBuffer = @import("../vulkan_wrapper/command_buffer.zig").CommandBuffer;
+const CommandPool = @import("../vulkan_wrapper/command_pool.zig").CommandPool;
 const Fence = @import("../vulkan_wrapper/fence.zig").Fence;
 const Semaphore = @import("../vulkan_wrapper/semaphore.zig").Semaphore;
 
@@ -177,8 +178,10 @@ pub const DefaultRenderer = struct {
 
         rg.global_render_graph.image_index = try acquireImage(self.app.window, current_image_available_semaphore);
 
-        var command_buffer: CommandBuffer = rg.global_render_graph.command_buffers.getBuffer(rg.global_render_graph.frame_index);
-        command_buffer.reset();
+        var command_pool: *CommandPool = rg.global_render_graph.getCurrentCommandPool();
+        command_pool.reset();
+
+        var command_buffer: CommandBuffer = command_pool.getBuffer(0); // Grab main buffer
 
         command_buffer.beginSingleTimeCommands();
         rg.global_render_graph.render(&command_buffer);
