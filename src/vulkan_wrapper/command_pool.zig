@@ -31,8 +31,8 @@ pub const CommandPool = struct {
     }
 
     pub fn destroy(self: *CommandPool) void {
-        if (self.buffers) |_|
-            self.freeBuffers();
+        if (self.buffers) |b|
+            vkctxt.allocator.free(b);
         vkfn.d.destroyCommandPool(vkctxt.device, self.vk_ref, null);
     }
 
