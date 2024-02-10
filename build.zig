@@ -4,14 +4,19 @@ const builtin = @import("builtin");
 const Builder = std.build.Builder;
 const Step = std.build.Step;
 
+pub const BuildOptions = struct {
+    compile_glfw: bool,
+    dev_build: bool,
+    enable_tracing: bool,
+    panic_on_all_errors: bool,
+    use_vulkan_sdk: bool,
+};
+
 pub fn addStaticLibrary(
     b: *Builder,
     app: *std.build.LibExeObjStep,
     comptime path: []const u8,
-    use_vulkan_sdk: bool,
-    enable_tracing: bool,
-    panic_on_all_errors: bool,
-    compile_glfw: bool,
+    build_options: BuildOptions,
 ) *std.build.LibExeObjStep {
     const os_tag = if (app.target.os_tag != null) app.target.os_tag.? else builtin.os.tag;
 
@@ -23,10 +28,11 @@ pub fn addStaticLibrary(
     });
 
     const nyancore_options = b.addOptions();
-    nyancore_options.addOption(bool, "use_vulkan_sdk", use_vulkan_sdk);
-    nyancore_options.addOption(bool, "enable_tracing", enable_tracing);
-    nyancore_options.addOption(bool, "panic_on_all_errors", panic_on_all_errors);
-    nyancore_options.addOption(bool, "compile_glfw", compile_glfw);
+    nyancore_options.addOption(bool, "compile_glfw", build_options.compile_glfw);
+    nyancore_options.addOption(bool, "dev_build", build_options.dev_build);
+    nyancore_options.addOption(bool, "enable_tracing", build_options.enable_tracing);
+    nyancore_options.addOption(bool, "panic_on_all_errors", build_options.panic_on_all_errors);
+    nyancore_options.addOption(bool, "use_vulkan_sdk", build_options.use_vulkan_sdk);
     nyancoreLib.addOptions("nyancore_options", nyancore_options);
     app.addOptions("nyancore_options", nyancore_options);
 
@@ -51,7 +57,7 @@ pub fn addStaticLibrary(
     nyancoreLib.addModule("vulkan", vulkanModule);
     app.addModule("vulkan", vulkanModule);
 
-    if (use_vulkan_sdk) {
+    if (build_options.use_vulkan_sdk) {
         const vulkan_sdk_path = std.process.getEnvVarOwned(b.allocator, "VULKAN_SDK") catch {
             std.debug.print("[ERR] Can't get VULKAN_SDK environment variable", .{});
             return nyancoreLib;
@@ -102,7 +108,7 @@ pub fn addStaticLibrary(
     app.linkLibrary(vma_lib);
 
     // Tracy
-    if (enable_tracing) {
+    if (build_options.enable_tracing) {
         const tracy_path: []const u8 = path ++ "third_party/tracy/";
         const tracy_lib = b.addStaticLibrary(.{
             .name = "tracy",
@@ -134,7 +140,7 @@ pub fn addStaticLibrary(
     }
 
     // GLFW
-    if (compile_glfw) {
+    if (build_options.compile_glfw) {
         const glfw_path: []const u8 = path ++ "third_party/glfw/";
         const glfw_lib = b.addStaticLibrary(.{
             .name = "glfw",
