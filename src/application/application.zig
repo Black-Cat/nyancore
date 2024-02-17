@@ -13,6 +13,7 @@ const Image = @import("../image/image.zig").Image;
 pub const System = @import("../system/system.zig").System;
 const printError = @import("print_error.zig").printError;
 const printErrorNoPanic = @import("print_error.zig").printErrorNoPanic;
+const typeId = @import("typeid.zig").typeId;
 
 const imgui_mouse_button_count: usize = 5;
 
@@ -38,18 +39,20 @@ pub const Application = struct {
         delay: f64,
     };
 
+    pub const SystemsMap = std.AutoArrayHashMap(usize, *System);
+
     allocator: Allocator,
     config: *Config,
     config_file: []const u8,
     name: [:0]const u8,
     mouse_just_pressed: [imgui_mouse_button_count]bool,
-    systems: []*System,
+    systems: *SystemsMap,
     window: *c.GLFWwindow,
     framebuffer_resized: bool,
     args: std.StringHashMap([]const u8),
     delayed_tasks: std.ArrayList(DelayedTask),
 
-    pub fn init(self: *Application, comptime name: [:0]const u8, allocator: Allocator, systems: []*System) void {
+    pub fn init(self: *Application, comptime name: [:0]const u8, allocator: Allocator, systems: *SystemsMap) void {
         self.allocator = allocator;
         self.mouse_just_pressed = [_]bool{false} ** imgui_mouse_button_count;
         self.name = name;
@@ -143,7 +146,7 @@ pub const Application = struct {
             return error.GLFW_VULKAN_NOT_SUPPORTED;
         }
 
-        for (self.systems) |system|
+        for (self.systems.values()) |system|
             system.init(system, self);
 
         rg.global_render_graph.initPasses();
@@ -156,9 +159,9 @@ pub const Application = struct {
     pub fn deinitSystems(self: *Application) void {
         rg.global_render_graph.deinitCommandBuffers();
 
-        var i: usize = self.systems.len - 1;
+        var i: usize = self.systems.values().len - 1;
         while (i > 0) : (i -= 1) {
-            self.systems[i].deinit(self.systems[i]);
+            self.systems.values()[i].deinit(self.systems.values()[i]);
         }
 
         Global.config.flush() catch {
@@ -198,7 +201,7 @@ pub const Application = struct {
 
             self.updateDelayedTasks(elapsed);
 
-            for (self.systems) |system|
+            for (self.systems.values()) |system|
                 system.update(system, elapsed);
 
             self.framebuffer_resized = false;
@@ -357,5 +360,10 @@ pub const Application = struct {
 
         for (images) |img|
             self.allocator.free(img.data);
+    }
+
+    pub fn getSystem(self: *Application, comptime SystemT: type) *SystemT {
+        const system: *System = self.systems.get(typeId(SystemT)).?;
+        return @fieldParentPtr(SystemT, "system", system);
     }
 };

@@ -2,6 +2,7 @@ pub const nyancore_options = @import("nyancore_options");
 
 pub usingnamespace @import("application/application.zig");
 pub usingnamespace @import("application/print_error.zig");
+pub usingnamespace @import("application/typeid.zig");
 pub usingnamespace @import("vulkan_wrapper/print_vulkan_error.zig");
 pub usingnamespace @import("renderer/render_graph/render_graph.zig");
 pub usingnamespace @import("renderer/render_graph/passes/passes.zig");
