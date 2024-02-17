@@ -128,7 +128,7 @@ pub const DefaultRenderer = struct {
         const vkres_acquire: vk.Result = vkfn.d.dispatch.vkAcquireNextImageKHR(
             vkctxt.device,
             rg.global_render_graph.final_swapchain.swapchain,
-            std.math.maxInt(u64),
+            1000000000,
             acquire_semaphore.vk_ref,
             .null_handle,
             &image_index,
@@ -173,6 +173,7 @@ pub const DefaultRenderer = struct {
     fn render(self: *DefaultRenderer) !void {
         const current_fence: *Fence = &self.in_flight_fences[rg.global_render_graph.frame_index];
         current_fence.waitFor();
+        current_fence.reset();
 
         const current_image_available_semaphore: *Semaphore = &self.image_available_semaphores[rg.global_render_graph.frame_index];
 
@@ -201,8 +202,6 @@ pub const DefaultRenderer = struct {
             .signal_semaphore_count = 1,
             .p_signal_semaphores = @ptrCast(&current_render_finished_semaphore.vk_ref),
         };
-
-        current_fence.reset();
 
         vkfn.d.queueSubmit(vkctxt.graphics_queue, 1, @ptrCast(&submit_info), current_fence.vk_ref) catch |err| {
             printVulkanError("Can't submit render queue", err);
