@@ -193,4 +193,10 @@ pub const Texture = struct {
 
         vkfn.d.cmdPipelineBarrier(command_buffer, source_stage, destination_stage, .{}, 0, undefined, 0, undefined, 1, @ptrCast(&barrier));
     }
+
+    fn deleteBetweenFrames(res: *RGResource) void {
+        const self: *Texture = @fieldParentPtr(Texture, "rg_resource", res);
+        self.destroy();
+        self.deinit();
+    }
 };

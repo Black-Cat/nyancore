@@ -284,7 +284,20 @@ pub const RenderGraph = struct {
         self.build();
     }
 
-    pub fn getCurrentCommandPool(self: RenderGraph) *CommandPool {
+    pub fn getCurrentCommandPool(self: *RenderGraph) *CommandPool {
         return &self.command_pools[self.frame_index];
+    }
+
+    pub fn deleteResource(self: *RenderGraph, res: *RGResource, deleteFn: *const fn (res: *RGResource) void) void {
+        res.deinit();
+
+        for (self.resources.values(), self.resources.keys()) |v, k| {
+            if (v == res) {
+                self.resources.swapRemove(k);
+                break;
+            }
+        }
+
+        self.changeResourceBetweenFrames(res, deleteFn);
     }
 };

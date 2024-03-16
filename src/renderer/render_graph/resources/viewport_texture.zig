@@ -87,4 +87,10 @@ pub const ViewportTexture = struct {
         for (self.render_passes.items) |rp|
             rp.target_recreated_callback(rp);
     }
+
+    fn deleteBetweenFrames(res: *RGResource) void {
+        const self: *ViewportTexture = @fieldParentPtr(ViewportTexture, "rg_resource", res);
+        self.destroy();
+        self.deinit();
+    }
 };
