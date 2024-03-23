@@ -72,4 +72,13 @@ pub const GameplayController = struct {
 
         return gameplay_controller;
     }
+
+    pub fn createEmptyGameplaySystem(self: *GameplayController, name: []const u8) *GameplaySystem {
+        const gs: *GameplaySystem = self.gameplay_systems.addOne() catch unreachable;
+        gs.init(name, self.allocator);
+
+        self.gameplay_systems_paths.append("") catch unreachable;
+
+        return gs;
+    }
 };
