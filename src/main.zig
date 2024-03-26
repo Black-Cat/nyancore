@@ -35,6 +35,7 @@ pub const Math = @import("math/math.zig");
 pub const Sdf = @import("sdf/sdf.zig");
 
 pub const GameplayController = @import("gameplay/gameplay_controller.zig").GameplayController;
+pub const GameplaySystem = @import("gameplay/gameplay_system.zig").GameplaySystem;
 
 pub const RGResource = @import("renderer/render_graph/render_graph_resource.zig").RGResource;
 pub const RGPass = @import("renderer/render_graph/render_graph_pass.zig").RGPass;
