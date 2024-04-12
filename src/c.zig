@@ -24,7 +24,7 @@ pub usingnamespace @cImport({
         @cInclude("TracyC.h");
     }
 
-    @cInclude("fira_sans_regular.h");
+    @cInclude("noto_sans_sc_regular.h");
 });
 
 const vk = @import("vk.zig");

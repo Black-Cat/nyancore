@@ -326,7 +326,20 @@ pub const UIVulkanContext = struct {
         var scale: [2]f32 = undefined;
         c.glfwGetWindowContentScale(self.parent.app.window, &scale[0], &scale[1]);
 
-        _ = c.ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(io.Fonts, @ptrCast(&c.FiraSans_compressed_data_base85), 13.0 * scale[1], null, null);
+        var ranges: c.ImVector_ImWchar = undefined;
+        c.ImVector_ImWchar_Init(&ranges);
+        defer c.ImVector_ImWchar_UnInit(&ranges);
+
+        var range_builder: *c.ImFontGlyphRangesBuilder = c.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+        defer c.ImFontGlyphRangesBuilder_destroy(range_builder);
+
+        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesDefault(io.Fonts));
+        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesCyrillic(io.Fonts));
+        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesChineseSimplifiedCommon(io.Fonts));
+
+        c.ImFontGlyphRangesBuilder_BuildRanges(range_builder, &ranges);
+
+        _ = c.ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(io.Fonts, @ptrCast(&c.NotoSans_compressed_data_base85), 15.0 * scale[1], null, ranges.Data);
 
         var font_data: [*c]u8 = undefined;
         var tex_dim: [2]c_int = undefined;
