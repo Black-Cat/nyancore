@@ -335,7 +335,7 @@ pub const UIVulkanContext = struct {
 
         c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesDefault(io.Fonts));
         c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesCyrillic(io.Fonts));
-        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesChineseSimplifiedCommon(io.Fonts));
+        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesChineseFull(io.Fonts));
 
         c.ImFontGlyphRangesBuilder_BuildRanges(range_builder, &ranges);
 
