@@ -63,4 +63,17 @@ pub const GameplaySystem = struct {
         self.nameZ = self.allocator.dupeZ(u8, new_name) catch unreachable;
         self.name = self.nameZ[0..self.nameZ.len];
     }
+
+    pub fn deleteFromDisk(self: *GameplaySystem, folder_path: []const u8) void {
+        if (self.path == null)
+            return;
+
+        var cwd: std.fs.Dir = std.fs.cwd();
+        cwd = cwd.makeOpenPath(folder_path, .{}) catch unreachable;
+
+        cwd.deleteFile(self.path.?) catch unreachable;
+
+        self.allocator.free(self.path.?);
+        self.path = null;
+    }
 };
