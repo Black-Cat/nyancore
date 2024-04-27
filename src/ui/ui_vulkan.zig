@@ -1,3 +1,5 @@
+const nyancore_options = @import("nyancore_options");
+
 const c = @import("../c.zig");
 const vk = @import("../vk.zig");
 const std = @import("std");
@@ -333,9 +335,12 @@ pub const UIVulkanContext = struct {
         var range_builder: *c.ImFontGlyphRangesBuilder = c.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
         defer c.ImFontGlyphRangesBuilder_destroy(range_builder);
 
-        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesDefault(io.Fonts));
-        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesCyrillic(io.Fonts));
-        c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesChineseFull(io.Fonts));
+        if (nyancore_options.font_regular)
+            c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesDefault(io.Fonts));
+        if (nyancore_options.font_cyrilic)
+            c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesCyrillic(io.Fonts));
+        if (nyancore_options.font_chinese_full)
+            c.ImFontGlyphRangesBuilder_AddRanges(range_builder, c.ImFontAtlas_GetGlyphRangesChineseFull(io.Fonts));
 
         c.ImFontGlyphRangesBuilder_BuildRanges(range_builder, &ranges);
 

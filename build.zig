@@ -4,12 +4,19 @@ const builtin = @import("builtin");
 const Builder = std.build.Builder;
 const Step = std.build.Step;
 
+const FontOptions = packed struct {
+    regular: bool = true,
+    cyrilic: bool = false,
+    chinese_full: bool = false,
+};
+
 pub const BuildOptions = struct {
     compile_glfw: bool,
     dev_build: bool,
     enable_tracing: bool,
     panic_on_all_errors: bool,
     use_vulkan_sdk: bool,
+    font_options: FontOptions,
 };
 
 pub fn addStaticLibrary(
@@ -33,6 +40,9 @@ pub fn addStaticLibrary(
     nyancore_options.addOption(bool, "enable_tracing", build_options.enable_tracing);
     nyancore_options.addOption(bool, "panic_on_all_errors", build_options.panic_on_all_errors);
     nyancore_options.addOption(bool, "use_vulkan_sdk", build_options.use_vulkan_sdk);
+    nyancore_options.addOption(bool, "font_regular", build_options.font_options.regular);
+    nyancore_options.addOption(bool, "font_cyrilic", build_options.font_options.cyrilic);
+    nyancore_options.addOption(bool, "font_chinese_full", build_options.font_options.chinese_full);
     nyancoreLib.addOptions("nyancore_options", nyancore_options);
     app.addOptions("nyancore_options", nyancore_options);
 
