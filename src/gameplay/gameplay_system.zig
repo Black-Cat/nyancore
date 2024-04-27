@@ -17,7 +17,7 @@ pub const GameplaySystem = struct {
     pub fn init(self: *GameplaySystem, name: []const u8, allocator: std.mem.Allocator) void {
         self.allocator = allocator;
         self.nameZ = self.allocator.dupeZ(u8, name) catch unreachable;
-        self.name = self.nameZ[0 .. self.nameZ.len - 1];
+        self.name = self.nameZ[0..self.nameZ.len];
 
         self.path = null;
         self.modified = false;
@@ -40,6 +40,27 @@ pub const GameplaySystem = struct {
         const file: std.fs.File = cwd.createFile(file_name, .{ .read = true, .truncate = true }) catch unreachable;
         defer file.close();
 
+        if (self.path) |p| {
+            // Was renamed
+            if (!std.mem.endsWith(u8, p, file_name)) {
+                cwd.deleteFile(p) catch unreachable;
+            }
+            self.allocator.free(p);
+        }
+        self.path = self.allocator.dupe(u8, file_name) catch unreachable;
+
         self.modified = false;
+    }
+
+    pub fn rename(self: *GameplaySystem, new_name: []const u8) void {
+        if (std.mem.eql(u8, self.name, new_name))
+            return;
+
+        self.modified = true;
+
+        self.allocator.free(self.nameZ);
+
+        self.nameZ = self.allocator.dupeZ(u8, new_name) catch unreachable;
+        self.name = self.nameZ[0..self.nameZ.len];
     }
 };
