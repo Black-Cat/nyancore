@@ -1,5 +1,6 @@
 const std = @import("std");
 const AssetMap = @import("../application/asset.zig").AssetMap;
+const GameplayComponent = @import("gameplay_component.zig").GameplayComponent;
 
 // Gameplay systems are more specialized than regular systems
 pub const GameplaySystem = struct {
@@ -14,6 +15,8 @@ pub const GameplaySystem = struct {
     systemDeinit: ?*fn (system: *GameplaySystem) void = null,
     systemUpdate: ?*fn (system: *GameplaySystem, delta: f64) void = null,
 
+    components_descriptions: std.ArrayList(GameplayComponent),
+
     pub fn init(self: *GameplaySystem, name: []const u8, allocator: std.mem.Allocator) void {
         self.allocator = allocator;
         self.nameZ = self.allocator.dupeZ(u8, name) catch unreachable;
@@ -21,6 +24,8 @@ pub const GameplaySystem = struct {
 
         self.path = null;
         self.modified = false;
+
+        self.components_descriptions = std.ArrayList(GameplayComponent).init(self.allocator);
     }
 
     pub fn deinit(self: *GameplaySystem) void {
@@ -28,6 +33,10 @@ pub const GameplaySystem = struct {
 
         if (self.path) |p|
             self.allocator.free(p);
+
+        for (self.components_descriptions.items) |*cd|
+            cd.deinit();
+        self.components_descriptions.deinit();
     }
 
     pub fn save(self: *GameplaySystem, folder_path: []const u8) void {
